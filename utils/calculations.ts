@@ -14,32 +14,44 @@ export function calculateProfit(input: ProductInput): CalculationResult {
     monthly_sales_volume,
   } = input;
 
-  const commission = sale_price * (commission_pct / 100);
-  const vat = sale_price * (vat_pct / 100);
+  // 1.1 Komisyon
+  const commission_amount = sale_price * (commission_pct / 100);
+
+  // 1.2 KDV etkisi
+  const vat_amount = sale_price * (vat_pct / 100);
+
+  // 1.3 İade kaybı
   const expected_return_loss = (return_rate_pct / 100) * sale_price;
 
-  const unit_total_cost =
-    product_cost +
-    shipping_cost +
-    packaging_cost +
-    ad_cost_per_sale +
-    other_cost +
-    commission +
-    vat +
-    expected_return_loss;
+  // 1.4 Birim değişken gider toplamı
+  const unit_variable_cost = product_cost + shipping_cost + packaging_cost + ad_cost_per_sale + other_cost;
 
+  // 1.5 Birim toplam maliyet
+  const unit_total_cost = unit_variable_cost + commission_amount + vat_amount + expected_return_loss;
+
+  // 1.6 Birim net kâr
   const unit_net_profit = sale_price - unit_total_cost;
+
+  // 1.7 Net kâr marjı
   const margin_pct = sale_price > 0 ? (unit_net_profit / sale_price) * 100 : 0;
+
+  // 2.1 Aylık net kâr
   const monthly_net_profit = unit_net_profit * monthly_sales_volume;
+
+  // 2.2 Aylık ciro
   const monthly_revenue = sale_price * monthly_sales_volume;
+
+  // 2.3 Aylık toplam maliyet
   const monthly_total_cost = unit_total_cost * monthly_sales_volume;
+
+  // 3.1 Başabaş fiyat
   const breakeven_price = calculateBreakevenPrice(input);
-  const estimated_tax_after_profit = monthly_net_profit > 0 ? monthly_net_profit * 0.8 : 0;
 
   return {
-    commission,
-    vat,
+    commission_amount,
+    vat_amount,
     expected_return_loss,
+    unit_variable_cost,
     unit_total_cost,
     unit_net_profit,
     margin_pct,
@@ -47,11 +59,10 @@ export function calculateProfit(input: ProductInput): CalculationResult {
     monthly_revenue,
     monthly_total_cost,
     breakeven_price,
-    estimated_tax_after_profit,
   };
 }
 
-function calculateBreakevenPrice(input: ProductInput): number {
+export function calculateBreakevenPrice(input: ProductInput): number {
   const {
     product_cost,
     shipping_cost,
@@ -63,12 +74,12 @@ function calculateBreakevenPrice(input: ProductInput): number {
     return_rate_pct,
   } = input;
 
-  const fixed_per_unit = product_cost + shipping_cost + packaging_cost + ad_cost_per_sale + other_cost;
-  const variable_rate = (commission_pct + vat_pct + return_rate_pct) / 100;
+  const base_cost = product_cost + shipping_cost + packaging_cost + ad_cost_per_sale + other_cost;
+  const rate_sum = (commission_pct + vat_pct + return_rate_pct) / 100;
 
-  if (variable_rate >= 1) return Infinity;
+  if (rate_sum >= 1) return Infinity;
 
-  return fixed_per_unit / (1 - variable_rate);
+  return base_cost / (1 - rate_sum);
 }
 
 export function calculateWithOverrides(
@@ -76,6 +87,38 @@ export function calculateWithOverrides(
   overrides: Partial<ProductInput>
 ): CalculationResult {
   return calculateProfit({ ...base, ...overrides });
+}
+
+export function calculateRequiredPrice(
+  input: ProductInput,
+  type: 'margin' | 'profit',
+  value: number
+): number {
+  const {
+    product_cost,
+    shipping_cost,
+    packaging_cost,
+    ad_cost_per_sale,
+    other_cost,
+    commission_pct,
+    vat_pct,
+    return_rate_pct,
+  } = input;
+
+  const base_cost = product_cost + shipping_cost + packaging_cost + ad_cost_per_sale + other_cost;
+  const rate_sum = (commission_pct + vat_pct + return_rate_pct) / 100;
+
+  if (type === 'margin') {
+    const target_margin_rate = value / 100;
+    const denominator = 1 - rate_sum - target_margin_rate;
+    if (denominator <= 0) return 0;
+    return base_cost / denominator;
+  } else {
+    // Target net profit per unit
+    const denominator = 1 - rate_sum;
+    if (denominator <= 0) return 0;
+    return (value + base_cost) / denominator;
+  }
 }
 
 export function generateSensitivityAnalysis(input: ProductInput) {
@@ -115,7 +158,7 @@ export function calculateCashflow(input: ProductInput) {
   const dailyOutflow = monthlyOutflow / 30;
   const workingCapitalNeeded = dailyOutflow * input.payout_delay_days;
   const result = calculateProfit(input);
-  const monthlyInflow = result.monthly_revenue - result.commission - result.vat;
+  const monthlyInflow = result.monthly_revenue - result.commission_amount - result.vat_amount;
   const monthlyCashGap = monthlyOutflow - (monthlyInflow * (30 - input.payout_delay_days) / 30);
 
   return {

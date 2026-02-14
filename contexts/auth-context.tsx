@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { User } from '@/types';
-import { fetchProfile, login as authLogin, register as authRegister, logout as authLogout, updateUserPlan } from '@/lib/auth';
+import { fetchProfile, login as authLogin, register as authRegister, logout as authLogout, updateUserPlan, updateProfile as authUpdateProfile } from '@/lib/auth';
 import { supabase } from '@/lib/supabaseClient';
 
 interface AuthContextType {
@@ -13,6 +13,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   upgradePlan: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  updateProfile: (updates: Partial<User>) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -89,8 +90,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
+  const updateProfile = useCallback(async (updates: Partial<User>) => {
+    if (!user) return { success: false, error: 'Kullanici bulunamadi.' };
+    const result = await authUpdateProfile(user.id, updates);
+    if (result.success) {
+      setUser({ ...user, ...updates });
+    }
+    return result;
+  }, [user]);
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, upgradePlan, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, upgradePlan, refreshUser, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

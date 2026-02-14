@@ -11,8 +11,8 @@ interface CostBreakdownProps {
 export function CostBreakdown({ input, result }: CostBreakdownProps) {
   const items = [
     { label: 'Urun Maliyeti', value: input.product_cost },
-    { label: 'Komisyon', value: result.commission },
-    { label: 'KDV', value: result.vat },
+    { label: 'Komisyon', value: result.commission_amount },
+    { label: 'KDV', value: result.vat_amount },
     { label: 'Iade Kaybi', value: result.expected_return_loss },
     { label: 'Kargo', value: input.shipping_cost },
     { label: 'Paketleme', value: input.packaging_cost },

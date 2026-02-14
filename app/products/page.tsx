@@ -1,79 +1,65 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/auth-context';
+import { useAlerts } from '@/contexts/alert-context';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { ProductsTable } from '@/components/dashboard/products-table';
-import { getStoredAnalyses, deleteAnalysis, saveAnalysis, generateId, getUserAnalysisCount } from '@/lib/storage';
+import { deleteAnalysis, saveAnalysis, generateId } from '@/lib/storage';
 import { parseCSV, analysesToCSV, analysesToJSON } from '@/lib/csv';
 import { calculateProfit } from '@/utils/calculations';
 import { calculateRisk } from '@/utils/risk-engine';
 import { UpgradeModal } from '@/components/shared/upgrade-modal';
-import { Analysis } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Upload, Download, Lock } from 'lucide-react';
+import { Upload, Download, Lock, Settings2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { BulkUpdateModal } from '@/components/dashboard/bulk-update-modal';
+import { CSVImportSection } from '@/components/dashboard/csv-import-section';
+import { toast } from 'sonner';
 
 export default function ProductsPage() {
   const { user } = useAuth();
-  const [analyses, setAnalyses] = useState<Analysis[]>([]);
+  const { analyses, loading, refresh } = useAlerts();
   const [showUpgrade, setShowUpgrade] = useState(false);
-  const [csvErrors, setCsvErrors] = useState<string[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (user) {
-      (async () => {
-        const data = await getStoredAnalyses(user.id);
-        setAnalyses(data);
-      })();
-    }
-  }, [user]);
+  const [showBulkUpdate, setShowBulkUpdate] = useState(false);
 
   const isPro = user?.plan === 'pro';
 
   const handleDelete = async (id: string) => {
-    await deleteAnalysis(id);
-    if (user) {
-      const data = await getStoredAnalyses(user.id);
-      setAnalyses(data);
-    }
-  };
-
-  const handleCSVImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-
-    if (!isPro) {
-      setShowUpgrade(true);
+    const result = await deleteAnalysis(id);
+    if (!result.success) {
+      toast.error(`Silme islemi basarisiz: ${result.error}`);
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const text = ev.target?.result as string;
-      const { data, errors } = parseCSV(text);
-      setCsvErrors(errors);
+    toast.success('Urun analizi silindi.');
+    await refresh();
+  };
 
-      if (data.length > 0) {
-        for (const input of data) {
-          const result = calculateProfit(input);
-          const risk = calculateRisk(input, result);
-          await saveAnalysis({
-            id: generateId(),
-            userId: user.id,
-            input,
-            result,
-            risk,
-            createdAt: new Date().toISOString(),
-          });
-        }
-        const updatedAnalyses = await getStoredAnalyses(user.id);
-        setAnalyses(updatedAnalyses);
-      }
-    };
-    reader.readAsText(file);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+  const performImport = async (data: any[]) => {
+    if (!user) return;
+
+    if (!isPro && analyses.length + data.length > 5) {
+      setShowUpgrade(true);
+      toast.error('Ucretsiz planda en fazla 5 analiz yapabilirsiniz. Toplu yukleme icin Pro plana gecmelisiniz.');
+      return;
+    }
+
+    toast.info(`${data.length} urun yukleniyor...`);
+    for (const input of data) {
+      const result = calculateProfit(input);
+      const risk = calculateRisk(input, result);
+      await saveAnalysis({
+        id: generateId(),
+        userId: user.id,
+        input,
+        result,
+        risk,
+        createdAt: new Date().toISOString(),
+      });
+    }
+    toast.success('Import tamamlandi.');
+    await refresh();
   };
 
   const handleExportJSON = () => {
@@ -89,7 +75,10 @@ export default function ProductsPage() {
   };
 
   const handleExportCSV = () => {
-    if (analyses.length === 0 || !isPro) return;
+    if (analyses.length === 0 || !isPro) {
+      if (!isPro) setShowUpgrade(true);
+      return;
+    }
     const csv = analysesToCSV(analyses);
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -99,6 +88,17 @@ export default function ProductsPage() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  if (loading && analyses.length === 0) {
+    return (
+      <DashboardLayout>
+        <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Urunler yukleniyor...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -111,55 +111,32 @@ export default function ProductsPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv"
-              className="hidden"
-              onChange={handleCSVImport}
-            />
-            {isPro ? (
-              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-                <Upload className="mr-1.5 h-4 w-4" />
-                CSV Yukle
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" disabled>
-                <Lock className="mr-1.5 h-4 w-4" />
-                CSV Yukle (Pro)
-              </Button>
-            )}
             <Button variant="outline" size="sm" onClick={handleExportJSON} disabled={analyses.length === 0}>
               <Download className="mr-1.5 h-4 w-4" />
               JSON
             </Button>
-            {isPro ? (
-              <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={analyses.length === 0}>
-                <Download className="mr-1.5 h-4 w-4" />
-                CSV
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" disabled>
-                <Lock className="mr-1.5 h-4 w-4" />
-                CSV (Pro)
-              </Button>
-            )}
+            <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={analyses.length === 0}>
+              <Download className="mr-1.5 h-4 w-4" />
+              {isPro ? 'CSV' : 'CSV (Pro)'}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setShowBulkUpdate(true)} disabled={analyses.length === 0}>
+              <Settings2 className="mr-1.5 h-4 w-4" />
+              Toplu Guncelle
+            </Button>
             <Link href="/analysis/new">
               <Button size="sm">Yeni Analiz</Button>
             </Link>
           </div>
         </div>
 
-        {csvErrors.length > 0 && (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/30">
-            <p className="text-sm font-medium text-red-700 dark:text-red-400">CSV iceri aktarma hatalari:</p>
-            <ul className="mt-2 space-y-1">
-              {csvErrors.map((err, i) => (
-                <li key={i} className="text-xs text-red-600 dark:text-red-400">{err}</li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <CSVImportSection onImport={performImport} />
+
+        <BulkUpdateModal
+          open={showBulkUpdate}
+          onOpenChange={setShowBulkUpdate}
+          analyses={analyses}
+          onComplete={refresh}
+        />
 
         <ProductsTable analyses={analyses} onDelete={handleDelete} />
       </div>

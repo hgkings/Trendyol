@@ -11,14 +11,19 @@ import {
   CreditCard,
   User,
   Crown,
+  Settings,
 } from 'lucide-react';
 
-const navItems = [
+const mainNavItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
   { href: '/analysis/new', label: 'Yeni Analiz', icon: PlusCircle },
   { href: '/products', label: 'Urunler', icon: Package },
-  { href: '/pricing', label: 'Fiyatlandirma', icon: CreditCard },
-  { href: '/account', label: 'Hesap', icon: User },
+];
+
+const bottomNavItems = [
+  { href: '/pricing', label: 'Premium', icon: Crown, highlight: true },
+  { href: '/account', label: 'Profil', icon: User },
+  { href: '/settings', label: 'Ayarlar', icon: Settings },
 ];
 
 export function Sidebar() {
@@ -26,50 +31,62 @@ export function Sidebar() {
   const { user } = useAuth();
 
   return (
-    <aside className="hidden w-64 shrink-0 border-r bg-card lg:block">
-      <div className="flex h-full flex-col gap-2 p-4">
+    <aside className="flex h-full w-full flex-col bg-card">
+      <div className="flex h-full flex-col p-4">
+        {/* Main Navigation */}
         <div className="mb-4 px-3">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Menu
           </p>
         </div>
 
-        {navItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              )}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </Link>
-          );
-        })}
+        <div className="flex flex-col gap-1">
+          {mainNavItems.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                )}
+              >
+                <item.icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
 
-        {user?.plan === 'free' && (
-          <div className="mt-auto rounded-2xl border bg-gradient-to-br from-primary/5 to-primary/10 p-4">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <Crown className="h-4 w-4 text-primary" />
-              Pro&apos;ya Yukselt
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Sinirsiz urun, gelismis analitik ve daha fazlasi.
-            </p>
-            <Link
-              href="/pricing"
-              className="mt-3 block rounded-lg bg-primary px-3 py-1.5 text-center text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              Planlari Gor
-            </Link>
-          </div>
-        )}
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Bottom Navigation */}
+        <div className="mt-4 flex flex-col gap-1 border-t pt-4">
+          {bottomNavItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-primary/10 text-primary'
+                    : item.highlight
+                      ? 'text-primary font-semibold hover:bg-primary/5'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                )}
+              >
+                <item.icon className={cn("h-4 w-4", item.highlight && "text-primary")} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </aside>
   );

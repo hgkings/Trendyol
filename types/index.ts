@@ -6,6 +6,22 @@ export interface User {
   id: string;
   email: string;
   plan: PlanType;
+  email_alerts_enabled?: boolean;
+}
+
+export type AlertType = 'danger' | 'warning' | 'info';
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  analysis_id?: string;
+  type: AlertType;
+  category: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+  dedupe_key?: string;
 }
 
 export interface ProductInput {
@@ -22,20 +38,23 @@ export interface ProductInput {
   vat_pct: number;
   other_cost: number;
   payout_delay_days: number;
+  competitor_price?: number;
+  competitor_name?: string;
+  target_position?: 'cheaper' | 'same' | 'premium';
 }
 
 export interface CalculationResult {
-  commission: number;
-  vat: number;
+  commission_amount: number;
+  vat_amount: number;
   expected_return_loss: number;
+  unit_variable_cost: number;
   unit_total_cost: number;
   unit_net_profit: number;
-  margin_pct: number;
+  margin_pct: number; // Single source of truth for net_margin_pct
   monthly_net_profit: number;
   monthly_revenue: number;
   monthly_total_cost: number;
   breakeven_price: number;
-  estimated_tax_after_profit: number;
 }
 
 export interface RiskFactor {
@@ -59,23 +78,11 @@ export interface Analysis {
   createdAt: string;
 }
 
-export interface SensitivityRow {
-  scenario: string;
-  originalProfit: number;
-  newProfit: number;
-  difference: number;
-  percentChange: number;
-}
-
-export interface CashflowResult {
-  workingCapitalNeeded: number;
-  monthlyCashGap: number;
-  dailyCashBurn: number;
-}
-
 export interface MarketplaceDefaults {
   key: Marketplace;
   label: string;
   commission_pct: number;
   return_rate_pct: number;
+  vat_pct: number;
+  payout_delay_days: number;
 }

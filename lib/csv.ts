@@ -14,32 +14,55 @@ const EXPECTED_COLUMNS = [
   'vat_pct',
 ];
 
-const VALID_MARKETPLACES: Marketplace[] = ['trendyol', 'hepsiburada', 'n11', 'amazon_tr', 'custom'];
+export const CSV_TEMPLATE = `marketplace,product_name,monthly_sales_volume,product_cost,sale_price,commission_pct,shipping_cost,packaging_cost,ad_cost,return_rate,vat_pct
+trendyol,Ornek Urun 1,100,120,249,18,25,5,10,8,20
+hepsiburada,Ornek Urun 2,60,200,399,20,30,6,15,10,20
+amazon_tr,Ornek Urun 4,80,180,449,17,28,5,12,6,20`;
 
-export function parseCSV(text: string): { data: ProductInput[]; errors: string[] } {
+const MARKETPLACE_MAP: Record<string, Marketplace> = {
+  'trendyol': 'trendyol',
+  'hepsiburada': 'hepsiburada',
+  'n11': 'n11',
+  'amazon_tr': 'amazon_tr',
+  'amazon tr': 'amazon_tr',
+  'amazontr': 'amazon_tr',
+  'amazon': 'amazon_tr',
+  'custom': 'custom',
+  'ozel': 'custom',
+  'özel': 'custom',
+};
+
+export function parseCSV(text: string): { data: ProductInput[]; errors: string[]; missingColumns: string[] } {
   const errors: string[] = [];
+  const missingColumns: string[] = [];
   const lines = text.trim().split('\n').map((l) => l.trim()).filter(Boolean);
 
   if (lines.length < 2) {
-    return { data: [], errors: ['CSV dosyası en az bir başlık ve bir veri satırı içermelidir.'] };
+    return { data: [], errors: ['CSV dosyası en az bir başlık ve bir veri satırı içermelidir.'], missingColumns: [] };
   }
 
   const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
 
   for (const col of EXPECTED_COLUMNS) {
     if (!headers.includes(col)) {
-      errors.push(`Eksik sütun: ${col}`);
+      missingColumns.push(col);
     }
   }
 
-  if (errors.length > 0) return { data: [], errors };
+  if (missingColumns.length > 0) {
+    return {
+      data: [],
+      errors: missingColumns.map(col => `Eksik sütun: ${col}`),
+      missingColumns
+    };
+  }
 
   const data: ProductInput[] = [];
 
   for (let i = 1; i < lines.length; i++) {
     const values = lines[i].split(',').map((v) => v.trim());
     if (values.length !== headers.length) {
-      errors.push(`Satır ${i + 1}: Sütun sayısı uyuşmuyor.`);
+      errors.push(`Satır ${i + 1}: Sütun sayısı uyuşmuyor (${headers.length} beklenirken ${values.length} bulundu).`);
       continue;
     }
 
@@ -48,9 +71,11 @@ export function parseCSV(text: string): { data: ProductInput[]; errors: string[]
       row[h] = values[idx];
     });
 
-    const marketplace = row.marketplace?.toLowerCase() as Marketplace;
-    if (!VALID_MARKETPLACES.includes(marketplace)) {
-      errors.push(`Satır ${i + 1}: Geçersiz pazaryeri "${row.marketplace}".`);
+    const rawMp = row.marketplace?.toLowerCase().trim() || '';
+    const marketplace = MARKETPLACE_MAP[rawMp];
+
+    if (!marketplace) {
+      errors.push(`Satır ${i + 1}: Geçersiz pazaryeri "${row.marketplace}". Kabul edilenler: trendyol, hepsiburada, n11, amazon_tr, custom`);
       continue;
     }
 
@@ -73,7 +98,7 @@ export function parseCSV(text: string): { data: ProductInput[]; errors: string[]
     data.push(input);
   }
 
-  return { data, errors };
+  return { data, errors, missingColumns };
 }
 
 export function analysesToCSV(analyses: { input: ProductInput; result: { unit_net_profit: number; margin_pct: number; monthly_net_profit: number }; risk: { level: string } }[]): string {

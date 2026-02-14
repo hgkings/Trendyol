@@ -1,0 +1,19 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:3000",
+  "loginUser": "isbilirhilmi8@gmail.com",
+  "loginPassword": "544512",
+  "executionArgs": {
+    "projectName": "Trendyol",
+    "projectPath": "c:\\Users\\isbil\\Trendyol",
+    "testIds": [],
+    "additionalInstruction": "Focus on testing the persistent notification system (bell icon, drawer, mark as read) and the CSV bulk import feature. Ensure local server on port 3000 is used.",
+    "envs": {
+      "API_KEY": "sk-user-mZQU6aSsg7lufkz2PIt9bTOE60DvMvKlOePeC8PKokj3mRgGufAO2Fd5b6B2pp67qVMJUlGKALnAMZwxRom3TEHahZ4Ty2_Z0-KQSqGoybe3baxZRJT0Ph4CIap_ymI_gIY"
+    }
+  },
+  "serverPort": 49238,
+  "proxy": "http://7adf2691-4d00-4e7a-901f-6b147495866f:chpiXS4haxAsxaKgkcREx10tg4JB8YhD@tun.testsprite.com:8080"
+}

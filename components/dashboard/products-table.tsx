@@ -6,7 +6,7 @@ import { getMarketplaceLabel } from '@/lib/marketplace-data';
 import { formatCurrency, formatPercent } from '@/components/shared/format';
 import { RiskBadge } from '@/components/shared/risk-badge';
 import { Button } from '@/components/ui/button';
-import { Eye, Trash2 } from 'lucide-react';
+import { Eye, Trash2, Pencil } from 'lucide-react';
 
 interface ProductsTableProps {
   analyses: Analysis[];
@@ -69,8 +69,13 @@ export function ProductsTable({ analyses, onDelete }: ProductsTableProps) {
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-1">
                     <Link href={`/analysis/${a.id}`}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Goruntule">
                         <Eye className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <Link href={`/analysis/${a.id}/edit`}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700" title="Duzenle">
+                        <Pencil className="h-4 w-4" />
                       </Button>
                     </Link>
                     {onDelete && (

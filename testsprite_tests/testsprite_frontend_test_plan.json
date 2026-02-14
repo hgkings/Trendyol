@@ -1,0 +1,853 @@
+[
+  {
+    "id": "TC001",
+    "title": "Switch to Register tab shows registration form",
+    "description": "Verifies the user can toggle from Login to Register and see the registration UI.",
+    "category": "User Authentication",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Login\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Register\" tab"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Register\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Email\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Password\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Login with missing email shows validation error",
+    "description": "Verifies the login form prevents submission or shows an error when email is blank.",
+    "category": "User Authentication",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Login\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the submit button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Email\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/auth\""
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Login with missing password shows validation error",
+    "description": "Verifies the login form prevents submission or shows an error when password is blank.",
+    "category": "User Authentication",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Login\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Click the submit button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Password\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/auth\""
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Register with invalid email format shows validation error",
+    "description": "Verifies the registration form rejects an invalid email format and does not redirect.",
+    "category": "User Authentication",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Register\" tab"
+      },
+      {
+        "type": "action",
+        "description": "Type \"not-an-email\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"ValidPass!23456\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the submit button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/auth\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Email\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Create analysis, calculate profit/risk, and save to reach detailed analysis view",
+    "description": "Verifies a user can create a new product profit analysis, calculate results, save it, and land on the detailed analysis page.",
+    "category": "Product Profit Analysis",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" or \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click the \"New Analysis\" or \"New\" button/link to open the new product analysis form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/analysis/new"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Calculate\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Save after calculation redirects to detailed analysis page",
+    "description": "Verifies saving a calculated analysis redirects from the form to a detailed analysis view URL.",
+    "category": "Product Profit Analysis",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" or \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click the \"New Analysis\" or \"New\" button/link to open the new product analysis form"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Trendyol\" from the marketplace dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Type \"200\" into the product cost field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"275\" into the sale price field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"15\" into the shipping cost field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Calculate\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Save\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/analysis/\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Detailed\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Validation: cost required when attempting to calculate",
+    "description": "Verifies the form blocks calculation and shows the 'Cost is required' validation message when cost is empty.",
+    "category": "Product Profit Analysis",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" or \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click the \"New Analysis\" or \"New\" button/link to open the new product analysis form"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Trendyol\" from the marketplace dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Type \"150\" into the sale price field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Calculate\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Cost is required\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Fix validation error and successfully calculate after entering cost",
+    "description": "Verifies that after seeing 'Cost is required', entering cost and recalculating produces results.",
+    "category": "Product Profit Analysis",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" or \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click the \"New Analysis\" or \"New\" button/link to open the new product analysis form"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Trendyol\" from the marketplace dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Type \"150\" into the sale price field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Calculate\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Cost is required\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Type \"90\" into the product cost field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Calculate\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Net profit\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Risk\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Edge: negative profit scenario is displayed after calculation",
+    "description": "Verifies the UI can display a negative net profit scenario and still shows a risk assessment.",
+    "category": "Product Profit Analysis",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" or \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click the \"New Analysis\" or \"New\" button/link to open the new product analysis form"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Trendyol\" from the marketplace dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Type \"200\" into the product cost field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"150\" into the sale price field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"20\" into the shipping cost field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Calculate\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Net profit\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Risk\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"-\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Marketplace selection is required before calculation (if enforced)",
+    "description": "Verifies the form prompts the user if marketplace is not selected when calculating (only if the UI enforces it).",
+    "category": "Product Profit Analysis",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" or \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click the \"New Analysis\" or \"New\" button/link to open the new product analysis form"
+      },
+      {
+        "type": "action",
+        "description": "Type \"100\" into the product cost field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"150\" into the sale price field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Calculate\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Marketplace\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"required\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Cancel/leave form does not auto-save analysis (if cancel/back exists)",
+    "description": "Verifies that leaving the new analysis form via an explicit cancel/back control does not create a detailed analysis record.",
+    "category": "Product Profit Analysis",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" or \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click the \"New Analysis\" or \"New\" button/link to open the new product analysis form"
+      },
+      {
+        "type": "action",
+        "description": "Type \"100\" into the product cost field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Cancel\" or \"Back\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Open notification drawer from dashboard",
+    "description": "Verifies an authenticated user can open the notification drawer and see a notifications list area.",
+    "category": "Persistent Notifications",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click the notification bell"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Notifications\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Filter notifications by Unread",
+    "description": "Verifies the Unread filter can be applied and the UI reflects the Unread-only view.",
+    "category": "Persistent Notifications",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click the notification bell"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Unread\" filter option"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Unread\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Mark a notification as read and see unread count decrease",
+    "description": "Verifies marking an unread notification as read updates the visible unread count/badge.",
+    "category": "Persistent Notifications",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click the notification bell"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Unread\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click \"Mark as read\" on the first unread notification"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Unread\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Show loading indicator while fetching notifications",
+    "description": "Verifies a loading state is shown immediately after opening the drawer while notifications are being fetched.",
+    "category": "Persistent Notifications",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click the notification bell"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Loading\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "Unread filter updates after marking item as read",
+    "description": "Verifies that after applying the Unread filter, marking a notification as read removes it from the Unread list (or otherwise updates the list).",
+    "category": "Persistent Notifications",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click the notification bell"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Unread\" filter option"
+      },
+      {
+        "type": "action",
+        "description": "Click \"Mark as read\" on the first notification in the filtered list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"No unread notifications\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Import products by pasting CSV text and confirming",
+    "description": "Verifies a user can paste CSV text, see a parsed preview, confirm, and then see products listed.",
+    "category": "CSV Bulk Import",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click \"Products\" in the main navigation"
+      },
+      {
+        "type": "action",
+        "description": "Click \"CSV Upload\""
+      },
+      {
+        "type": "action",
+        "description": "Type \"name,sku,price\\nSample Product,SKU-123,19.99\" into the CSV paste area"
+      }
+    ]
+  },
+  {
+    "id": "TC018",
+    "title": "Cancel from preview closes modal and returns to Products list",
+    "description": "Verifies the user can cancel out of the CSV import preview and remain on /products.",
+    "category": "CSV Bulk Import",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click \"Products\" in the main navigation"
+      },
+      {
+        "type": "action",
+        "description": "Click \"CSV Upload\""
+      },
+      {
+        "type": "action",
+        "description": "Click \"Cancel\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/products\""
+      }
+    ]
+  },
+  {
+    "id": "TC019",
+    "title": "Column mapping step appears when required before confirming import",
+    "description": "Verifies that when column mapping is required, the UI presents mapping controls prior to confirming import.",
+    "category": "CSV Bulk Import",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click \"Products\" in the main navigation"
+      },
+      {
+        "type": "action",
+        "description": "Click \"CSV Upload\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Map\" is visible"
+      }
+    ]
+  }
+]

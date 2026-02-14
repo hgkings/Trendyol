@@ -16,7 +16,31 @@ import { CashflowEstimator } from '@/components/analysis/cashflow-estimator';
 import { formatCurrency, formatPercent } from '@/components/shared/format';
 import { getMarketplaceLabel } from '@/lib/marketplace-data';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Download, Lock, AlertTriangle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  ArrowLeft,
+  Download,
+  Lock,
+  AlertTriangle,
+  Target,
+  User2,
+  TrendingUp,
+  ChevronRight,
+  Save,
+  Rocket
+} from 'lucide-react';
+import { saveAnalysis } from '@/lib/storage';
+import { calculateProfit } from '@/utils/calculations';
+import { calculateRisk } from '@/utils/risk-engine';
+import { toast } from 'sonner';
 import { analysesToJSON, analysesToCSV } from '@/lib/csv';
 
 export default function AnalysisResultPage() {
@@ -25,15 +49,75 @@ export default function AnalysisResultPage() {
   const { user } = useAuth();
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // Competitor states
+  const [compName, setCompName] = useState('');
+  const [compPrice, setCompPrice] = useState<number>(0);
+  const [targetPos, setTargetPos] = useState<'cheaper' | 'same' | 'premium'>('same');
 
   useEffect(() => {
     (async () => {
       const id = params.id as string;
       const found = await getAnalysisById(id);
-      setAnalysis(found);
+      if (found) {
+        setAnalysis(found);
+        setCompName(found.input.competitor_name || '');
+        setCompPrice(found.input.competitor_price || 0);
+        setTargetPos(found.input.target_position || 'same');
+      }
       setLoading(false);
     })();
   }, [params.id]);
+
+  const handleSaveCompetitor = async () => {
+    if (!analysis) return;
+    setSaving(true);
+    try {
+      const updatedInput = {
+        ...analysis.input,
+        competitor_name: compName,
+        competitor_price: compPrice,
+        target_position: targetPos,
+      };
+      const res = await saveAnalysis({ ...analysis, input: updatedInput });
+      if (res.success) {
+        setAnalysis({ ...analysis, input: updatedInput });
+        toast.success('Rakip bilgileri kaydedildi.');
+      }
+    } catch (e) {
+      toast.error('Hata olustu.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleApplySuggestedPrice = async (price: number) => {
+    if (!analysis) return;
+    setSaving(true);
+    try {
+      const updatedInput = { ...analysis.input, sale_price: price };
+      const updatedResult = calculateProfit(updatedInput);
+      const updatedRisk = calculateRisk(updatedInput, updatedResult);
+
+      const updatedAnalysis = {
+        ...analysis,
+        input: updatedInput,
+        result: updatedResult,
+        risk: updatedRisk
+      };
+
+      const res = await saveAnalysis(updatedAnalysis);
+      if (res.success) {
+        setAnalysis(updatedAnalysis);
+        toast.success('Fiyat guncellendi ve yeniden hesaplandi.');
+      }
+    } catch (e) {
+      toast.error('Hata olustu.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const isPro = user?.plan === 'pro';
 
@@ -172,12 +256,114 @@ export default function AnalysisResultPage() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
+          <div className="rounded-2xl border bg-card p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <User2 className="h-5 w-5 text-primary" />
+                <h3 className="font-bold">Rakip Takibi</h3>
+              </div>
+              <Button size="sm" variant="outline" onClick={handleSaveCompetitor} disabled={saving}>
+                <Save className="mr-1.5 h-4 w-4" /> Kaydet
+              </Button>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Rakip Adi</Label>
+                <Input placeholder="Orn: MegaSatici" value={compName} onChange={e => setCompName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Rakip Fiyati</Label>
+                <div className="relative">
+                  <Input type="number" value={compPrice || ''} onChange={e => setCompPrice(parseFloat(e.target.value))} />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">₺</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Hedef Pozisyon</Label>
+              <Select value={targetPos} onValueChange={(v: any) => setTargetPos(v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cheaper">Daha Ucuz (%3 altı)</SelectItem>
+                  <SelectItem value="same">Ayni Fiyat</SelectItem>
+                  <SelectItem value="premium">Premium (+%5 ustu)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {compPrice > 0 && (
+              <div className="mt-4 p-4 rounded-xl bg-primary/5 border border-primary/10 space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Fiyat Farkı:</span>
+                  <span className={`font-semibold ${input.sale_price > compPrice ? 'text-red-500' : 'text-emerald-500'}`}>
+                    {formatCurrency(input.sale_price - compPrice)} ({formatPercent(((input.sale_price - compPrice) / compPrice) * 100)})
+                  </span>
+                </div>
+
+                {(() => {
+                  let suggested = compPrice;
+                  if (targetPos === 'cheaper') suggested = compPrice * 0.97;
+                  if (targetPos === 'premium') suggested = compPrice * 1.05;
+
+                  return (
+                    <div className="flex items-center justify-between pt-2 border-t border-primary/20">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Onerilen Fiyat</p>
+                        <p className="text-lg font-bold text-primary">{formatCurrency(suggested)}</p>
+                      </div>
+                      <Button size="sm" onClick={() => handleApplySuggestedPrice(suggested)} disabled={saving}>
+                        <Rocket className="mr-1.5 h-3.5 w-3.5" /> Uygula
+                      </Button>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-2xl border bg-card p-6">
+            <div className="flex items-center gap-2 mb-4 text-emerald-600">
+              <TrendingUp className="h-5 w-5" />
+              <h3 className="font-bold">Akilli Oneriler</h3>
+            </div>
+            <div className="space-y-4">
+              {result.margin_pct < 10 && (
+                <div className="flex gap-2">
+                  <div className="h-2 w-2 rounded-full bg-red-500 mt-1.5 shrink-0" />
+                  <p className="text-sm">Marjiniz cok dusuk. Maliyet kalemlerini veya satis fiyatini gozden gecirmelisiniz.</p>
+                </div>
+              )}
+              {input.ad_cost_per_sale > result.unit_net_profit && (
+                <div className="flex gap-2">
+                  <div className="h-2 w-2 rounded-full bg-red-500 mt-1.5 shrink-0" />
+                  <p className="text-sm">Reklam maliyetiniz birim kardan yuksek! Zarar ediyorsunuz.</p>
+                </div>
+              )}
+              {compPrice > 0 && input.sale_price < compPrice * 0.9 && (
+                <div className="flex gap-2">
+                  <div className="h-2 w-2 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                  <p className="text-sm">Piyasa fiyatindan %10 daha ucuzsunuz. Marj arttirmak icin fiyat yukseltebilirsiniz.</p>
+                </div>
+              )}
+              <div className="flex gap-2 text-muted-foreground">
+                <ChevronRight className="h-4 w-4 mt-0.5 shrink-0 font-bold text-primary" />
+                <p className="text-sm">Iade oranini %1 dusurmek size aylik <b>{formatCurrency(result.monthly_revenue * 0.01)}</b> ek kar saglar.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
           <div className="rounded-2xl border bg-card p-5">
-            <p className="text-xs font-medium text-muted-foreground">Vergi Sonrasi Tahmini Kar</p>
-            <p className="mt-1 text-2xl font-bold">
-              {formatCurrency(result.estimated_tax_after_profit)}
+            <p className="text-xs font-medium text-muted-foreground">Vergi Etkisi (Birim KDV)</p>
+            <p className="mt-1 text-2xl font-bold text-red-500">
+              -{formatCurrency(result.vat_amount)}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">Basit %20 vergi modeli ile</p>
+            <p className="mt-1 text-xs text-muted-foreground">Satis fiyatina dahil edilen KDV tutari.</p>
           </div>
           <div className="rounded-2xl border bg-card p-5">
             <p className="text-xs font-medium text-muted-foreground">Aylik Ciro</p>

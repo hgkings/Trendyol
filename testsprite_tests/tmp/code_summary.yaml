@@ -1,0 +1,94 @@
+version: "2"
+type: frontend
+tech_stack:
+  - TypeScript
+  - Next.js (App Router)
+  - TailwindCSS
+  - Shadcn/ui
+  - Supabase (Auth, Database, Storage)
+  - Recharts
+routes:
+  - path: /
+    file: app/page.tsx
+    auth_required: false
+    description: Landing page
+  - path: /auth
+    file: app/auth/page.tsx
+    auth_required: false
+    description: Authentication page (Login/Register)
+  - path: /dashboard
+    file: app/dashboard/page.tsx
+    auth_required: true
+    description: Main dashboard with KPIs and charts
+  - path: /products
+    file: app/products/page.tsx
+    auth_required: true
+    description: Product analyses list and CSV import
+  - path: /analysis/new
+    file: app/analysis/new/page.tsx
+    auth_required: true
+    description: New product analysis form
+  - path: /analysis/[id]
+    file: app/analysis/[id]/page.tsx
+    auth_required: true
+    description: Detailed product analysis view
+  - path: /pricing
+    file: app/pricing/page.tsx
+    auth_required: false
+    description: Pricing plans
+  - path: /settings
+    file: app/settings/page.tsx
+    auth_required: true
+    description: User settings and notification preferences
+features:
+  - name: User Authentication
+    description: Sign in and sign up using Supabase Auth
+    files:
+      - app/auth/page.tsx
+      - lib/auth.ts
+      - contexts/auth-context.tsx
+    entry_route: /auth
+    user_interactions:
+      - Toggle between Login and Register
+      - Enter email and password
+      - Click submit button
+    auth_required: false
+  - name: Product Profit Analysis
+    description: Calculate net profit and risk for products
+    files:
+      - app/analysis/new/page.tsx
+      - components/analysis/analysis-form.tsx
+      - utils/calculations.ts
+      - utils/risk-engine.ts
+    entry_route: /analysis/new
+    user_interactions:
+      - Select marketplace
+      - Enter product details (cost, price, etc.)
+      - Click calculate/save
+    auth_required: true
+  - name: Persistent Notifications
+    description: Real-time alerts stored in Supabase
+    files:
+      - components/dashboard/notification-drawer.tsx
+      - contexts/alert-context.tsx
+      - lib/alerts.ts
+      - lib/storage.ts
+    entry_route: /dashboard
+    user_interactions:
+      - Click notification bell
+      - Mark notifications as read
+      - Filter notifications
+    auth_required: true
+  - name: CSV Bulk Import
+    description: Import product data from CSV files and pasted text
+    files:
+      - components/dashboard/csv-import-modal.tsx
+      - lib/csv.ts
+    entry_route: /products
+    user_interactions:
+      - Click CSV Upload
+      - Upload file or paste text
+      - Preview data
+      - Confirm import
+    auth_required: true
+known_limitations: []
