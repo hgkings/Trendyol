@@ -57,6 +57,7 @@ export interface CalculationResult {
   monthly_revenue: number;
   monthly_total_cost: number;
   breakeven_price: number;
+  sale_price_excl_vat: number;
 }
 
 export interface RiskFactor {

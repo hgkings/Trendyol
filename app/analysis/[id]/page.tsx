@@ -13,6 +13,7 @@ import { CostBreakdown } from '@/components/analysis/cost-breakdown';
 import { SensitivityTable } from '@/components/analysis/sensitivity-table';
 import { MarketplaceComparison } from '@/components/analysis/marketplace-comparison';
 import { CashflowEstimator } from '@/components/analysis/cashflow-estimator';
+import { VatImpactCard } from '@/components/analysis/vat-impact-card';
 import { formatCurrency, formatPercent } from '@/components/shared/format';
 import { getMarketplaceLabel } from '@/lib/marketplace-data';
 import { Button } from '@/components/ui/button';
@@ -373,13 +374,7 @@ export default function AnalysisResultPage() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-2xl border bg-card p-5">
-            <p className="text-xs font-medium text-muted-foreground">Vergi Etkisi (Birim KDV)</p>
-            <p className="mt-1 text-2xl font-bold text-red-500">
-              {formatCurrency(Math.abs(result.vat_amount))}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">Satis fiyatina dahil edilen KDV tutari.</p>
-          </div>
+          <VatImpactCard input={input} vatAmount={result.vat_amount} />
           <div className="rounded-2xl border bg-card p-5">
             <p className="text-xs font-medium text-muted-foreground">Aylik Ciro</p>
             <p className="mt-1 text-2xl font-bold">{formatCurrency(result.monthly_revenue)}</p>

@@ -14,7 +14,7 @@ export function calculateProfit(input: ProductInput): CalculationResult {
   const packaging_cost = n(input.packaging_cost);
   const ad_cost_per_sale = n(input.ad_cost_per_sale);
   const return_rate_pct = n(input.return_rate_pct);
-  const vat_pct = n(input.vat_pct);
+  const vat_pct = n(input.vat_pct, 20); // Default VAT 20% if missing
   const other_cost = n(input.other_cost);
   const monthly_sales_volume = n(input.monthly_sales_volume);
 
@@ -23,9 +23,15 @@ export function calculateProfit(input: ProductInput): CalculationResult {
 
   // 1.2 KDV etkisi (Satiş fiyatı KDV dahil kabul edilerek)
   let vat_amount = 0;
-  if (sale_price > 0 && vat_pct > 0) {
-    const calc = sale_price - (sale_price / (1 + vat_pct / 100));
-    vat_amount = Number.isFinite(calc) ? calc : 0;
+  let sale_price_excl_vat = sale_price;
+
+  if (vat_pct > 0) {
+    const vatRate = vat_pct / 100;
+    const calcExcl = sale_price / (1 + vatRate);
+    sale_price_excl_vat = Number.isFinite(calcExcl) ? calcExcl : 0;
+
+    const calcVat = sale_price - sale_price_excl_vat;
+    vat_amount = Number.isFinite(calcVat) ? calcVat : 0;
   }
 
   // 1.3 İade kaybı
@@ -67,6 +73,7 @@ export function calculateProfit(input: ProductInput): CalculationResult {
     monthly_revenue,
     monthly_total_cost,
     breakeven_price,
+    sale_price_excl_vat,
   };
 }
 
@@ -77,7 +84,7 @@ export function calculateBreakevenPrice(input: ProductInput): number {
   const ad_cost_per_sale = n(input.ad_cost_per_sale);
   const other_cost = n(input.other_cost);
   const commission_pct = n(input.commission_pct);
-  const vat_pct = n(input.vat_pct);
+  const vat_pct = n(input.vat_pct, 20);
   const return_rate_pct = n(input.return_rate_pct);
 
   const base_cost = product_cost + shipping_cost + packaging_cost + ad_cost_per_sale + other_cost;
@@ -112,7 +119,7 @@ export function calculateRequiredPrice(
   const ad_cost_per_sale = n(input.ad_cost_per_sale);
   const other_cost = n(input.other_cost);
   const commission_pct = n(input.commission_pct);
-  const vat_pct = n(input.vat_pct);
+  const vat_pct = n(input.vat_pct, 20);
   const return_rate_pct = n(input.return_rate_pct);
 
   const base_cost = product_cost + shipping_cost + packaging_cost + ad_cost_per_sale + other_cost;
