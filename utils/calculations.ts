@@ -21,8 +21,12 @@ export function calculateProfit(input: ProductInput): CalculationResult {
   // 1.1 Komisyon
   const commission_amount = sale_price * (commission_pct / 100);
 
-  // 1.2 KDV etkisi
-  const vat_amount = sale_price * (vat_pct / 100);
+  // 1.2 KDV etkisi (Satiş fiyatı KDV dahil kabul edilerek)
+  let vat_amount = 0;
+  if (sale_price > 0 && vat_pct > 0) {
+    const calc = sale_price - (sale_price / (1 + vat_pct / 100));
+    vat_amount = Number.isFinite(calc) ? calc : 0;
+  }
 
   // 1.3 İade kaybı
   const expected_return_loss = (return_rate_pct / 100) * sale_price;
@@ -77,11 +81,17 @@ export function calculateBreakevenPrice(input: ProductInput): number {
   const return_rate_pct = n(input.return_rate_pct);
 
   const base_cost = product_cost + shipping_cost + packaging_cost + ad_cost_per_sale + other_cost;
-  const rate_sum = (commission_pct + vat_pct + return_rate_pct) / 100;
 
-  if (rate_sum >= 1) return Infinity;
+  // KDV dahil mantığına göre paydadaki vergi çarpanı: 1 / (1 + KDV/100)
+  const vat_factor = 1 / (1 + vat_pct / 100);
+  const commission_factor = commission_pct / 100;
+  const return_factor = return_rate_pct / 100;
 
-  return base_cost / (1 - rate_sum);
+  const denominator = vat_factor - commission_factor - return_factor;
+
+  if (denominator <= 0) return Infinity;
+
+  return base_cost / denominator;
 }
 
 export function calculateWithOverrides(
@@ -106,16 +116,18 @@ export function calculateRequiredPrice(
   const return_rate_pct = n(input.return_rate_pct);
 
   const base_cost = product_cost + shipping_cost + packaging_cost + ad_cost_per_sale + other_cost;
-  const rate_sum = (commission_pct + vat_pct + return_rate_pct) / 100;
+  const vat_factor = 1 / (1 + vat_pct / 100);
+  const commission_factor = commission_pct / 100;
+  const return_factor = return_rate_pct / 100;
 
   if (type === 'margin') {
     const target_margin_rate = value / 100;
-    const denominator = 1 - rate_sum - target_margin_rate;
+    const denominator = vat_factor - commission_factor - return_factor - target_margin_rate;
     if (denominator <= 0) return 0;
     return base_cost / denominator;
   } else {
     // Target net profit per unit
-    const denominator = 1 - rate_sum;
+    const denominator = vat_factor - commission_factor - return_factor;
     if (denominator <= 0) return 0;
     return (value + base_cost) / denominator;
   }
