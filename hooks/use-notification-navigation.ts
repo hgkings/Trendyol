@@ -40,6 +40,7 @@ export function useNotificationNavigation() {
             if (targetHref) {
                 router.push(targetHref);
             } else {
+                console.warn("Notification click: No valid target route found", notification);
                 toast.error('Kayıt bulunamadı', {
                     description: 'İlgili analiz veya ürün detayına ulaşılamıyor.',
                 });

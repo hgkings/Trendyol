@@ -16,9 +16,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { formatCurrency } from '@/components/shared/format';
 import { toast } from 'sonner';
-import { Target, ArrowRight, Lock, Calculator } from 'lucide-react';
+import { Target, ArrowRight, Lock, Calculator, ChevronDown, ChevronUp, Info } from 'lucide-react';
 
 const defaultInput: ProductInput = {
   marketplace: 'trendyol',
@@ -35,10 +36,22 @@ const defaultInput: ProductInput = {
   other_cost: 0,
   payout_delay_days: 28,
   // PRO defaults
+  pro_mode: false,
   sale_price_includes_vat: true,
+  sale_vat_pct: 20,
   product_cost_includes_vat: true,
-  income_tax_pct: 0,
-  accounting_mode: 'standard',
+  purchase_vat_pct: 20,
+  marketplace_fee_vat_pct: 20,
+  shipping_includes_vat: true,
+  shipping_vat_pct: 20,
+  packaging_includes_vat: true,
+  packaging_vat_pct: 20,
+  ad_includes_vat: true,
+  ad_vat_pct: 20,
+  other_cost_includes_vat: true,
+  other_cost_vat_pct: 20,
+  return_refunds_commission: true,
+  return_extra_cost: 0,
 };
 
 interface FieldConfig {
@@ -54,18 +67,18 @@ interface FieldConfig {
 }
 
 const fields: FieldConfig[] = [
-  { key: 'product_name', label: 'Urun Adi', type: 'text', required: true, group: 'basic' },
-  { key: 'monthly_sales_volume', label: 'Aylik Satis Adedi', type: 'number', suffix: 'adet', min: 0, step: 1, required: true, group: 'basic' },
-  { key: 'product_cost', label: 'Urun Maliyeti', type: 'number', suffix: '₺', min: 0, step: 0.01, required: true, group: 'costs' },
-  { key: 'sale_price', label: 'Satis Fiyati', type: 'number', suffix: '₺', min: 0, step: 0.01, required: true, group: 'costs' },
-  { key: 'commission_pct', label: 'Komisyon Orani', type: 'number', suffix: '%', min: 0, max: 100, step: 0.1, group: 'marketplace' },
-  { key: 'shipping_cost', label: 'Kargo Ucreti', type: 'number', suffix: '₺', min: 0, step: 0.01, group: 'costs' },
+  { key: 'product_name', label: 'Ürün Adı', type: 'text', required: true, group: 'basic' },
+  { key: 'monthly_sales_volume', label: 'Aylık Satış Adedi', type: 'number', suffix: 'adet', min: 0, step: 1, required: true, group: 'basic' },
+  { key: 'product_cost', label: 'Ürün Maliyeti', type: 'number', suffix: '₺', min: 0, step: 0.01, required: true, group: 'costs' },
+  { key: 'sale_price', label: 'Satış Fiyatı', type: 'number', suffix: '₺', min: 0, step: 0.01, required: true, group: 'costs' },
+  { key: 'commission_pct', label: 'Komisyon Oranı', type: 'number', suffix: '%', min: 0, max: 100, step: 0.1, group: 'marketplace' },
+  { key: 'shipping_cost', label: 'Kargo Ücreti', type: 'number', suffix: '₺', min: 0, step: 0.01, group: 'costs' },
   { key: 'packaging_cost', label: 'Paketleme Maliyeti', type: 'number', suffix: '₺', min: 0, step: 0.01, group: 'costs' },
   { key: 'ad_cost_per_sale', label: 'Reklam Maliyeti (Birim)', type: 'number', suffix: '₺', min: 0, step: 0.01, group: 'costs' },
-  { key: 'return_rate_pct', label: 'Iade Orani', type: 'number', suffix: '%', min: 0, max: 100, step: 0.1, group: 'marketplace' },
-  { key: 'vat_pct', label: 'KDV Orani', type: 'number', suffix: '%', min: 0, max: 100, step: 1, group: 'tax' },
-  { key: 'other_cost', label: 'Diger Giderler', type: 'number', suffix: '₺', min: 0, step: 0.01, group: 'costs' },
-  { key: 'payout_delay_days', label: 'Odeme Gecikme Suresi', type: 'number', suffix: 'gun', min: 0, step: 1, group: 'cashflow' },
+  { key: 'return_rate_pct', label: 'İade Oranı', type: 'number', suffix: '%', min: 0, max: 100, step: 0.1, group: 'marketplace' },
+  { key: 'vat_pct', label: 'Varsayılan KDV', type: 'number', suffix: '%', min: 0, max: 100, step: 1, group: 'tax' },
+  { key: 'other_cost', label: 'Diğer Giderler', type: 'number', suffix: '₺', min: 0, step: 0.01, group: 'costs' },
+  { key: 'payout_delay_days', label: 'Ödeme Gecikme Süresi', type: 'number', suffix: 'gün', min: 0, step: 1, group: 'cashflow' },
 ];
 
 interface AnalysisFormProps {
@@ -78,25 +91,25 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
   const { refresh } = useAlerts();
   const router = useRouter();
 
-  // Merge initialData with defaultInput to ensure PRO fields exist if editing old data
   const [input, setInput] = useState<ProductInput>({ ...defaultInput, ...initialData });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showProAdvanced, setShowProAdvanced] = useState(false);
 
   const [targetMargin, setTargetMargin] = useState<number | undefined>();
   const [targetProfit, setTargetProfit] = useState<number | undefined>();
   const [suggestedPrice, setSuggestedPrice] = useState<number | undefined>();
 
-  const isProUser = user?.plan === 'pro'; // or 'premium' if that's the plan key
-  const isProMode = input.accounting_mode === 'pro';
+  const isProUser = user?.plan === 'pro';
+  const isProMode = input.pro_mode === true;
 
   const handleProToggle = (checked: boolean) => {
     if (!isProUser) {
       setShowUpgrade(true);
       return;
     }
-    setInput(prev => ({ ...prev, accounting_mode: checked ? 'pro' : 'standard' }));
+    setInput(prev => ({ ...prev, pro_mode: checked }));
   };
 
   const handleMarketplaceChange = (mp: Marketplace) => {
@@ -107,54 +120,29 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
       commission_pct: defaults.commission_pct,
       return_rate_pct: defaults.return_rate_pct,
       vat_pct: defaults.vat_pct,
+      sale_vat_pct: defaults.vat_pct,
+      purchase_vat_pct: defaults.vat_pct,
       payout_delay_days: defaults.payout_delay_days
     }));
   };
 
-  const handleFieldChange = (key: keyof ProductInput, value: string | boolean | number) => {
-    const field = fields.find((f) => f.key === key);
-
-    // Handle booleans (new PRO fields) or direct updates
-    if (typeof value === 'boolean') {
-      setInput(prev => ({ ...prev, [key]: value }));
-      return;
-    }
-
-    // Handle standard fields
-    if (field) {
-      if (field.type === 'text') {
-        setInput((prev) => ({ ...prev, [key]: value }));
-      } else {
-        const strVal = value.toString();
-        const num = parseFloat(strVal);
-        if (strVal === '' || strVal === '-') {
-          setInput((prev) => ({ ...prev, [key]: 0 }));
-          return;
-        }
-        if (isNaN(num)) return;
-        if (field.min !== undefined && num < field.min) return;
-        if (field.max !== undefined && num > field.max) return;
-        setInput((prev) => ({ ...prev, [key]: num }));
-      }
-      setErrors((prev) => {
+  const handleFieldChange = (key: keyof ProductInput, value: any) => {
+    setInput(prev => ({ ...prev, [key]: value }));
+    if (errors[key]) {
+      setErrors(prev => {
         const next = { ...prev };
         delete next[key];
         return next;
       });
-    } else {
-      // Fallback for fields not in 'fields' array but valid in ProductInput (e.g. income_tax_pct)
-      if (typeof value === 'number') {
-        setInput(prev => ({ ...prev, [key]: value }));
-      }
     }
   };
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
-    if (!input.product_name.trim()) errs.product_name = 'Urun adi gereklidir.';
-    if (input.sale_price <= 0) errs.sale_price = 'Satis fiyati 0\'dan buyuk olmalidir.';
-    if (input.product_cost <= 0) errs.product_cost = 'Urun maliyeti 0\'dan buyuk olmalidir.';
-    if (input.monthly_sales_volume <= 0) errs.monthly_sales_volume = 'Satis adedi 0\'dan buyuk olmalidir.';
+    if (!input.product_name.trim()) errs.product_name = 'Ürün adı gereklidir.';
+    if (input.sale_price <= 0) errs.sale_price = 'Satış fiyatı 0\'dan büyük olmalıdır.';
+    if (input.product_cost <= 0) errs.product_cost = 'Ürün maliyeti 0\'dan büyük olmalıdır.';
+    if (input.monthly_sales_volume <= 0) errs.monthly_sales_volume = 'Satış adedi 0\'dan büyük olmalıdır.';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -175,11 +163,8 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
         }
       }
 
-      // Calculate logic based on mode
-      // CRITICAL: Even if free user managed to set mode='pro', we force check user.plan
-      const effectiveMode: 'standard' | 'pro' = (isProUser && input.accounting_mode === 'pro') ? 'pro' : 'standard';
-
-      const result = effectiveMode === 'pro'
+      const effectivePro = isProUser && input.pro_mode;
+      const result = effectivePro
         ? calculateProAccounting(input)
         : calculateProfit(input);
 
@@ -188,7 +173,7 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
       const analysisData = {
         id: analysisId || generateId(),
         userId: user.id,
-        input: { ...input, accounting_mode: effectiveMode }, // Ensure stored mode matches logic
+        input: { ...input, pro_mode: !!effectivePro },
         result,
         risk,
         createdAt: new Date().toISOString(),
@@ -197,12 +182,12 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
       const saveResult = await saveAnalysis(analysisData);
 
       if (!saveResult.success) {
-        toast.error(`Hata olustu: ${saveResult.error || 'Bilinmeyen hata'}`);
+        toast.error(`Hata oluştu: ${saveResult.error || 'Bilinmeyen hata'}`);
         setLoading(false);
         return;
       }
 
-      toast.success(analysisId ? 'Analiz guncellendi.' : 'Analiz basariyla kaydedildi.');
+      toast.success(analysisId ? 'Analiz güncellendi.' : 'Analiz başarıyla kaydedildi.');
       await refresh();
       router.push(analysisId ? '/dashboard' : `/analysis/${analysisData.id}`);
       router.refresh();
@@ -215,27 +200,27 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
   const groups = [
     { key: 'basic', title: 'Temel Bilgiler' },
     { key: 'costs', title: 'Maliyet Bilgileri' },
-    { key: 'marketplace', title: 'Pazaryeri Ayarlari' },
+    { key: 'marketplace', title: 'Pazaryeri Ayarları' },
     { key: 'tax', title: 'Vergi' },
-    { key: 'cashflow', title: 'Nakit Akisi' },
+    { key: 'cashflow', title: 'Nakit Akışı' },
   ];
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-8 pb-20">
 
         {/* PRO Toggle Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border bg-card p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${isProMode ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
-              <Calculator className="h-5 w-5" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border-2 border-primary/20 bg-card p-5 shadow-sm transition-all hover:border-primary/40">
+          <div className="flex items-center gap-4">
+            <div className={`p-3 rounded-xl transition-colors ${isProMode ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+              <Calculator className="h-6 w-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <Label htmlFor="pro-mode" className="font-semibold text-base cursor-pointer">PRO Muhasebe Modu</Label>
-                {!isProUser && <Lock className="h-3.5 w-3.5 text-amber-500" />}
+                <Label htmlFor="pro-mode" className="font-bold text-lg cursor-pointer">PRO Muhasebe Modu</Label>
+                {!isProUser && <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200"><Lock className="h-3 w-3 mr-1" /> Premium</Badge>}
               </div>
-              <p className="text-xs text-muted-foreground">Gerçek e-ticaret muhasebe modeline göre net kâr hesaplar.</p>
+              <p className="text-sm text-muted-foreground italic">Gerçek E-Ticaret Muhasebesi (VAT-Excl)</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -243,57 +228,139 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
               id="pro-mode"
               checked={isProMode}
               onCheckedChange={handleProToggle}
+              className="data-[state=checked]:bg-primary"
             />
-            <span className={`text-sm font-medium ${isProMode ? 'text-primary' : 'text-muted-foreground'}`}>
-              {isProMode ? 'Aktif' : 'Pasif'}
-            </span>
           </div>
         </div>
 
-        {/* PRO Fields Section */}
+        {/* PRO Granular Fields Section */}
         {isProMode && (
-          <div className="rounded-xl border border-primary/20 bg-primary/5 p-6 space-y-4 animate-in fade-in slide-in-from-top-2">
-            <div className="flex items-center gap-2 mb-2">
-              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">PRO Ayarlar</Badge>
+          <div className="rounded-2xl border border-primary/30 bg-primary/5 p-6 space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Badge className="bg-primary hover:bg-primary">PRO AYARLAR</Badge>
+                <span className="text-xs text-muted-foreground">İleri düzey KDV ve iade yönetimi</span>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-xs text-primary font-bold"
+                onClick={() => setShowProAdvanced(!showProAdvanced)}
+              >
+                {showProAdvanced ? <><ChevronUp className="h-4 w-4 mr-1" /> Basitleştir</> : <><ChevronDown className="h-4 w-4 mr-1" /> Detaylar</>}
+              </Button>
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="flex items-center justify-between rounded-lg border bg-card p-3 shadow-sm">
-                <Label htmlFor="sale_vat_inc" className="cursor-pointer flex-1">Satış Fiyatına KDV Dahil mi?</Label>
-                <Switch
-                  id="sale_vat_inc"
-                  checked={input.sale_price_includes_vat !== false}
-                  onCheckedChange={(c) => handleFieldChange('sale_price_includes_vat', c)}
-                />
-              </div>
-              <div className="flex items-center justify-between rounded-lg border bg-card p-3 shadow-sm">
-                <Label htmlFor="cost_vat_inc" className="cursor-pointer flex-1">Ürün Maliyetine KDV Dahil mi?</Label>
-                <Switch
-                  id="cost_vat_inc"
-                  checked={input.product_cost_includes_vat !== false}
-                  onCheckedChange={(c) => handleFieldChange('product_cost_includes_vat', c)}
-                />
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {/* Primary VAT Toggles */}
+              <div className="space-y-4 rounded-xl border bg-card p-4 shadow-sm">
+                <h4 className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-1">
+                  <Info className="h-3 w-3" /> Gelir/Gider Temeli
+                </h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Satış Fiyatı KDV Dahil</Label>
+                    <Switch checked={input.sale_price_includes_vat !== false} onCheckedChange={(v) => handleFieldChange('sale_price_includes_vat', v)} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Alış Fiyatı KDV Dahil</Label>
+                    <Switch checked={input.product_cost_includes_vat !== false} onCheckedChange={(v) => handleFieldChange('product_cost_includes_vat', v)} />
+                  </div>
+                </div>
               </div>
 
-              {/* Optional: Income Tax */}
-              {/*
-                    <div className="space-y-2">
-                        <Label>Gelir Vergisi Oranı (%)</Label>
-                        <Input 
-                            type="number" 
-                            min={0} 
-                            max={100} 
-                            value={input.income_tax_pct || 0}
-                            onChange={(e) => handleFieldChange('income_tax_pct', parseFloat(e.target.value))}
+              <div className="space-y-4 rounded-xl border bg-card p-4 shadow-sm">
+                <h4 className="text-xs font-bold uppercase text-muted-foreground">KDV Oranları</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] uppercase">Satış KDV %</Label>
+                    <Input type="number" value={input.sale_vat_pct ?? 20} onChange={(e) => handleFieldChange('sale_vat_pct', parseFloat(e.target.value))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] uppercase">Alış KDV %</Label>
+                    <Input type="number" value={input.purchase_vat_pct ?? 20} onChange={(e) => handleFieldChange('purchase_vat_pct', parseFloat(e.target.value))} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4 rounded-xl border bg-card p-4 shadow-sm">
+                <h4 className="text-xs font-bold uppercase text-muted-foreground">Pazaryeri & İade</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs truncate mr-2">İadede Komisyon İadesi Var mı?</Label>
+                    <Switch checked={input.return_refunds_commission !== false} onCheckedChange={(v) => handleFieldChange('return_refunds_commission', v)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px]">Hizmet KDV (Komisyon KDV) %</Label>
+                    <Input type="number" value={input.marketplace_fee_vat_pct ?? 20} onChange={(e) => handleFieldChange('marketplace_fee_vat_pct', parseFloat(e.target.value))} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {showProAdvanced && (
+              <div className="pt-4 animate-in fade-in duration-300">
+                <Separator className="mb-6" />
+                <h4 className="text-sm font-bold mb-4">Gider Bazlı KDV Ayarları</h4>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {[
+                    { id: 'shipping', label: 'Kargo', inc: 'shipping_includes_vat', pct: 'shipping_vat_pct' },
+                    { id: 'packaging', label: 'Paketleme', inc: 'packaging_includes_vat', pct: 'packaging_vat_pct' },
+                    { id: 'ad', label: 'Reklam', inc: 'ad_includes_vat', pct: 'ad_vat_pct' },
+                    { id: 'other', label: 'Diğer', inc: 'other_cost_includes_vat', pct: 'other_cost_vat_pct' },
+                  ].map((item) => (
+                    <div key={item.id} className="rounded-xl border bg-card p-3 shadow-sm space-y-3">
+                      <div className="flex items-center justify-between border-b pb-2">
+                        <span className="text-xs font-bold">{item.label}</span>
+                        <Switch
+                          checked={input[item.inc as keyof ProductInput] !== false}
+                          onCheckedChange={(v) => handleFieldChange(item.inc as keyof ProductInput, v)}
                         />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-muted-foreground uppercase flex-1">KDV Dahil</span>
+                        <div className="relative w-16">
+                          <Input
+                            className="h-7 px-1.5 text-xs pr-4"
+                            type="number"
+                            value={(input[item.pct as keyof ProductInput] as number) ?? 20}
+                            onChange={(e) => handleFieldChange(item.pct as keyof ProductInput, parseFloat(e.target.value))}
+                          />
+                          <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[9px] text-muted-foreground">%</span>
+                        </div>
+                      </div>
                     </div>
-                    */}
-            </div>
+                  ))}
+                </div>
+
+                <div className="mt-6 rounded-xl border bg-amber-50 dark:bg-amber-900/10 p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Info className="h-4 w-4 text-amber-600" />
+                    <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase">Ek İade Maliyeti</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 flex-1">
+                      Müşteri iade ettiğinde cebinizden çıkan ekstra kargo veya operasyon bedeli (Birim/Satış başına).
+                    </p>
+                    <div className="relative w-24">
+                      <Input
+                        type="number"
+                        value={input.return_extra_cost ?? 0}
+                        onChange={(e) => handleFieldChange('return_extra_cost', parseFloat(e.target.value))}
+                        className="h-8 border-amber-200 dark:border-amber-800"
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-amber-600">₺</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         <div className="space-y-3">
-          <Label>Pazaryeri Secimi</Label>
+          <Label>Pazaryeri Seçimi</Label>
           <div className="flex flex-wrap gap-2">
             {marketplaces.map((mp) => (
               <button
@@ -309,7 +376,7 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
               </button>
             ))}
           </div>
-          <p className="text-xs text-muted-foreground">Pazaryeri degisikligi komisyon, iade ve KDV alanlarini otomatik doldurur.</p>
+          <p className="text-xs text-muted-foreground">Pazaryeri değişikliği komisyon, iade ve KDV alanlarını otomatik doldurur.</p>
         </div>
 
         {groups.map((group) => {
@@ -356,10 +423,10 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
         <div className="rounded-2xl border bg-primary/5 p-6 space-y-4">
           <div className="flex items-center gap-2">
             <Target className="h-5 w-5 text-primary" />
-            <h3 className="font-bold text-lg">Kar Hedefi Simulasyonu</h3>
+            <h3 className="font-bold text-lg">Kar Hedefi Simülasyonu</h3>
           </div>
           <p className="text-sm text-muted-foreground">
-            Hedeflediginiz kar oranina veya birim kara gore gerekli satis fiyatini hesaplayin.
+            Hedeflediğiniz kar oranına veya birim kara göre gerekli satış fiyatını hesaplayın.
           </p>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -407,7 +474,7 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
                   const price = calculateRequiredPrice(input, 'profit', targetProfit);
                   setSuggestedPrice(price);
                 } else {
-                  toast.error('Lutfen bir hedef girin.');
+                  toast.error('Lütfen bir hedef girin.');
                 }
               }}
             >
@@ -419,7 +486,7 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
                 <ArrowRight className="h-4 w-4 text-muted-foreground" />
                 <div className="bg-background border rounded-lg px-3 py-2 flex items-center gap-3">
                   <div>
-                    <span className="text-xs text-muted-foreground block">Onerilen Satis Fiyati</span>
+                    <span className="text-xs text-muted-foreground block">Önerilen Satış Fiyatı</span>
                     <span className="font-bold text-primary">{formatCurrency(suggestedPrice)}</span>
                   </div>
                   <Button
@@ -430,7 +497,7 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
                     onClick={() => {
                       handleFieldChange('sale_price', suggestedPrice.toFixed(2));
                       setSuggestedPrice(undefined);
-                      toast.success('Satis fiyati guncellendi.');
+                      toast.success('Satış fiyatı güncellendi.');
                     }}
                   >
                     Uygula
@@ -443,7 +510,7 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
 
         <div className="pt-4">
           <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={loading}>
-            {loading ? 'Hesaplaniyor...' : (analysisId ? 'Guncelle' : 'Analiz Et')}
+            {loading ? 'Hesaplanıyor...' : (analysisId ? 'Güncelle' : 'Analiz Et')}
           </Button>
         </div>
       </form >

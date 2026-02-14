@@ -43,26 +43,51 @@ export interface ProductInput {
   competitor_price?: number;
   competitor_name?: string;
   target_position?: 'cheaper' | 'same' | 'premium';
-  // PRO Mode Fields
+
+  // Granular PRO Mode Fields
+  pro_mode?: boolean;
   sale_price_includes_vat?: boolean;
+  sale_vat_pct?: number;
   product_cost_includes_vat?: boolean;
-  income_tax_pct?: number;
+  purchase_vat_pct?: number;
+  marketplace_fee_vat_pct?: number;
+
+  shipping_includes_vat?: boolean;
+  shipping_vat_pct?: number;
+  packaging_includes_vat?: boolean;
+  packaging_vat_pct?: number;
+  ad_includes_vat?: boolean;
+  ad_vat_pct?: number;
+  other_cost_includes_vat?: boolean;
+  other_cost_vat_pct?: number;
+
+  return_refunds_commission?: boolean;
+  return_extra_cost?: number;
+
+  // Legacy/Standard fields keep compatibility
   accounting_mode?: 'standard' | 'pro';
+  income_tax_pct?: number;
 }
 
 export interface CalculationResult {
   commission_amount: number;
-  vat_amount: number;
+  vat_amount: number; // Unit Output VAT
   expected_return_loss: number;
   unit_variable_cost: number;
   unit_total_cost: number;
   unit_net_profit: number;
-  margin_pct: number; // Single source of truth for net_margin_pct
+  margin_pct: number;
   monthly_net_profit: number;
   monthly_revenue: number;
   monthly_total_cost: number;
   breakeven_price: number;
   sale_price_excl_vat: number;
+
+  // PRO specific results
+  output_vat_monthly: number;
+  input_vat_monthly: number;
+  vat_position_monthly: number;
+  monthly_net_sales: number;
 }
 
 export interface RiskFactor {

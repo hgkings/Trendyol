@@ -382,7 +382,7 @@ export default function AnalysisResultPage() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <VatImpactCard input={input} vatAmount={result.vat_amount} />
+          <VatImpactCard input={input} result={result} />
           <div className="rounded-2xl border bg-card p-5">
             <p className="text-xs font-medium text-muted-foreground">Aylik Ciro</p>
             <p className="mt-1 text-2xl font-bold">{formatCurrency(result.monthly_revenue)}</p>
