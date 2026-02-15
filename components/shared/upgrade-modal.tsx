@@ -3,6 +3,7 @@
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import { Crown, X, Check } from 'lucide-react';
+import { PRICING, formatPrice, monthlyLabel } from '@/config/pricing';
 
 interface UpgradeModalProps {
   open: boolean;
@@ -59,7 +60,7 @@ export function UpgradeModal({ open, onClose }: UpgradeModalProps) {
               onClose();
             }}
           >
-            Aylik 199₺ - Pro&apos;ya Gec
+            {monthlyLabel()} - Pro&apos;ya Geç
           </Button>
           <Button variant="outline" className="w-full" onClick={onClose}>
             Simdilik Degil

@@ -5,13 +5,15 @@ import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
 import { Crown, Mail, Shield } from 'lucide-react';
 import Link from 'next/link';
+import { PLAN_LIMITS } from '@/config/plans';
+import { isProUser } from '@/utils/access';
 
 export default function AccountPage() {
   const { user, upgradePlan } = useAuth();
 
   if (!user) return null;
 
-  const isPro = user.plan === 'pro';
+  const isPro = isProUser(user);
 
   return (
     <DashboardLayout>
@@ -59,7 +61,7 @@ export default function AccountPage() {
             <p className="mt-1 text-sm text-muted-foreground">
               {isPro
                 ? 'Tum ozelliklere erisiniz var. Sinirsiz analiz yapabilirsiniz.'
-                : 'Maks 5 urun analizi. Gelismis ozellikler icin Pro\'ya yukseltin.'}
+                : `Maksimum ${PLAN_LIMITS.free.maxProducts} urun analizi. Gelismis ozellikler icin Pro'ya yukseltin.`}
             </p>
 
             {!isPro && (

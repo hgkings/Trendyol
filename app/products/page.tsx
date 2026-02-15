@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { BulkUpdateModal } from '@/components/dashboard/bulk-update-modal';
 import { CSVImportSection } from '@/components/dashboard/csv-import-section';
 import { toast } from 'sonner';
+import { isProUser } from '@/utils/access';
 
 export default function ProductsPage() {
   const { user } = useAuth();
@@ -23,7 +24,7 @@ export default function ProductsPage() {
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [showBulkUpdate, setShowBulkUpdate] = useState(false);
 
-  const isPro = user?.plan === 'pro';
+  const isPro = isProUser(user);
 
   const handleDelete = async (id: string) => {
     const result = await deleteAnalysis(id);
@@ -94,7 +95,7 @@ export default function ProductsPage() {
       <DashboardLayout>
         <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Urunler yukleniyor...</p>
+          <p className="text-sm text-muted-foreground">Ürünler yükleniyor...</p>
         </div>
       </DashboardLayout>
     );
@@ -105,7 +106,7 @@ export default function ProductsPage() {
       <div className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Urunler</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Ürünler</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {analyses.length} urun analizi{!isPro && ` (Ucretsiz: maks 5)`}
             </p>

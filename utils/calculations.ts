@@ -73,6 +73,7 @@ export function calculateProfit(input: ProductInput): CalculationResult {
     monthly_revenue,
     monthly_total_cost,
     breakeven_price,
+    sale_price,
     sale_price_excl_vat,
     // PRO-specific fields default to 0 in standard mode
     output_vat_monthly: 0,

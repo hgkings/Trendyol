@@ -4,7 +4,7 @@ import { ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Navbar } from './navbar';
 import { Sidebar } from './sidebar';
-import { CriticalBanner } from './critical-banner';
+
 import { useAuth } from '@/contexts/auth-context';
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
@@ -34,20 +34,17 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
         <div className="pointer-events-auto">
           <Navbar />
         </div>
-        <div className="pointer-events-auto">
-          <CriticalBanner />
-        </div>
       </div>
 
       {/* Main Content Wrapper */}
       <div className="flex w-full pt-16">
         {/* Fixed Left Sidebar (Desktop) */}
-        <div className="hidden md:fixed md:left-0 md:top-16 md:bottom-0 md:flex md:w-64 md:flex-col md:border-r md:bg-card">
+        <div className="hidden md:fixed md:left-0 md:top-16 md:bottom-0 md:flex md:w-72 md:flex-col md:border-r md:bg-card">
           <Sidebar />
         </div>
 
         {/* Scrollable Main Content */}
-        <main className="flex-1 overflow-y-auto md:pl-64 h-[calc(100vh-64px)]">
+        <main className="flex-1 overflow-y-auto md:pl-72 h-[calc(100vh-64px)]">
           <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
             {children}
           </div>

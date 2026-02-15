@@ -13,35 +13,27 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <nav className="border-b bg-card/80 backdrop-blur-lg">
+    <nav className="border-b bg-card/80 backdrop-blur-xl shadow-premium-sm">
       <div className="mx-auto flex h-16 w-full items-center justify-between px-4 sm:px-6">
         <Link href={user ? '/dashboard' : '/'} className="flex items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
             <TrendingUp className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="text-lg font-bold tracking-tight">
-            Kar Kocu
+          <span className="text-lg font-semibold tracking-tight">
+            Kar Koçu
           </span>
         </Link>
         <div className="flex flex-1" />
 
         <div className="hidden items-center gap-2 md:flex">
-          {/* Desktop Navbar items logic can be simplified if Sidebar handles main nav 
-                 But let's keep it simple or remove duplicates if Sidebar is main Nav */}
-
-          {/* If user is logged in, sidebar has navigation. Navbar can just have user controls or be minimal. 
-                 However, user request says "Header sticky top-0".
-                 Let's keep minimal or essential links if needed, or just Theme/Logout.
-                 For now, let's keep existing but ensure it fits structure. 
-              */}
           {!user ? (
             <>
               <Link href="/pricing">
-                <Button variant="ghost" size="sm">Fiyatlandirma</Button>
+                <Button variant="ghost" size="sm" className="rounded-[10px] font-medium">Fiyatlandırma</Button>
               </Link>
               <ThemeToggle />
               <Link href="/auth">
-                <Button size="sm">Giris Yap</Button>
+                <Button size="sm" className="rounded-[10px] font-medium shadow-premium-sm">Giriş Yap</Button>
               </Link>
             </>
           ) : (
@@ -58,7 +50,7 @@ export function Navbar() {
         <div className="flex items-center gap-2 md:hidden">
           {user && <NotificationDrawer />}
           <ThemeToggle />
-          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setMobileOpen(!mobileOpen)}>
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg" onClick={() => setMobileOpen(!mobileOpen)}>
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </div>
@@ -66,38 +58,38 @@ export function Navbar() {
 
       {mobileOpen && (
         <div className="border-t bg-card px-4 py-4 md:hidden">
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             {user ? (
               <>
                 <Link href="/dashboard" onClick={() => setMobileOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start">Panel</Button>
+                  <Button variant="ghost" className="w-full justify-start rounded-lg">Panel</Button>
                 </Link>
                 <Link href="/analysis/new" onClick={() => setMobileOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start">Yeni Analiz</Button>
+                  <Button variant="ghost" className="w-full justify-start rounded-lg">Yeni Analiz</Button>
                 </Link>
                 <Link href="/products" onClick={() => setMobileOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start">Urunler</Button>
+                  <Button variant="ghost" className="w-full justify-start rounded-lg">Ürünler</Button>
                 </Link>
                 <Link href="/pricing" onClick={() => setMobileOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start">Premium</Button>
+                  <Button variant="ghost" className="w-full justify-start rounded-lg">Premium</Button>
                 </Link>
                 <Link href="/account" onClick={() => setMobileOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start">Profil</Button>
+                  <Button variant="ghost" className="w-full justify-start rounded-lg">Profil</Button>
                 </Link>
                 <Link href="/settings" onClick={() => setMobileOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start">Ayarlar</Button>
+                  <Button variant="ghost" className="w-full justify-start rounded-lg">Ayarlar</Button>
                 </Link>
-                <Button variant="outline" className="w-full" onClick={() => { logout(); setMobileOpen(false); }}>
-                  Cikis
+                <Button variant="outline" className="w-full rounded-[10px] mt-2" onClick={() => { logout(); setMobileOpen(false); }}>
+                  Çıkış
                 </Button>
               </>
             ) : (
               <>
                 <Link href="/pricing" onClick={() => setMobileOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start">Fiyatlandirma</Button>
+                  <Button variant="ghost" className="w-full justify-start rounded-lg">Fiyatlandırma</Button>
                 </Link>
                 <Link href="/auth" onClick={() => setMobileOpen(false)}>
-                  <Button className="w-full">Giris Yap</Button>
+                  <Button className="w-full rounded-[10px]">Giriş Yap</Button>
                 </Link>
               </>
             )}

@@ -1,11 +1,12 @@
-export function formatCurrency(value: number): string {
-  if (!Number.isFinite(value)) return '0,00 ₺';
+export function formatCurrency(value: number | string): string {
+  const num = typeof value === 'string' ? parseFloat(value.replace(',', '.')) : value;
+  if (!Number.isFinite(num)) return '0,00 ₺';
   return new Intl.NumberFormat('tr-TR', {
     style: 'currency',
     currency: 'TRY',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(value);
+  }).format(num);
 }
 
 export function formatPercent(value: number): string {

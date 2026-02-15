@@ -16,7 +16,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
-import { Shield, Database, LogOut, Sun, Moon, Bell } from 'lucide-react';
+import { Shield, Database, LogOut, Sun, Moon, Bell, SunMoon } from 'lucide-react';
 import { toast } from 'sonner';
 import { deleteAnalysis, getStoredAnalyses } from '@/lib/storage';
 import { Switch } from '@/components/ui/switch';
@@ -63,13 +63,10 @@ export default function SettingsPage() {
                 {/* Appearance Section */}
                 <div className="rounded-xl border bg-card p-6 shadow-sm">
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                            <Sun className="h-5 w-5 text-primary rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0 hidden dark:block" />
-                            <Moon className="h-5 w-5 text-primary rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100 block dark:hidden" />
-                            <span className="sr-only">Theme Icon</span>
-                            {/* Note: The icons above are just for show, ThemeToggle has its own */}
+                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-primary shadow-sm hover:ring-1 hover:ring-primary/20 transition-all">
+                            <SunMoon className="h-5 w-5" />
                         </div>
-                        <h2 className="text-lg font-semibold">Gorunum</h2>
+                        <h2 className="text-lg font-semibold">Görünüm</h2>
                     </div>
 
                     <div className="flex items-center justify-between">
@@ -95,18 +92,44 @@ export default function SettingsPage() {
                             <div>
                                 <p className="font-medium">E-posta Bildirimleri</p>
                                 <p className="text-sm text-muted-foreground">Kritik risk durumlarinda e-posta ile bilgilendirilmek istiyorum.</p>
+                                <p className="text-xs text-muted-foreground mt-1">Bildirim e-postası: {user?.email}</p>
                             </div>
-                            <Switch
-                                checked={user?.email_alerts_enabled || false}
-                                onCheckedChange={async (checked) => {
-                                    const res = await updateProfile({ email_alerts_enabled: checked });
-                                    if (res.success) {
-                                        toast.success(`E-posta bildirimleri ${checked ? 'acildi' : 'kapatildi'}.`);
-                                    } else {
-                                        toast.error('Guncelleme sirasinda bir hata olustu.');
-                                    }
-                                }}
-                            />
+                            <div className="flex items-center gap-4">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={async () => {
+                                        toast.loading('Test maili gönderiliyor...');
+                                        try {
+                                            const res = await fetch('/api/notifications/test-email', { method: 'POST' });
+                                            if (res.ok) {
+                                                toast.success('Test maili gönderildi! Inbox\'ınızı kontrol edin (Spam kutusuna da bakın).');
+                                            } else {
+                                                const err = await res.json();
+                                                toast.error(`Hata: ${err.error || 'Bilinmeyen hata'}`);
+                                            }
+                                        } catch (e) {
+                                            toast.error('Bağlantı hatası.');
+                                        } finally {
+                                            toast.dismiss();
+                                        }
+                                    }}
+                                >
+                                    Test Mail Gönder
+                                </Button>
+                                <Switch
+                                    checked={user?.email_notifications_enabled !== false}
+                                    onCheckedChange={async (checked) => {
+                                        // Optimistic UI update via AuthContext if possible, but for now we rely on re-fetch
+                                        const res = await updateProfile({ email_notifications_enabled: checked });
+                                        if (res.success) {
+                                            toast.success(`E-posta bildirimleri ${checked ? 'açıldı' : 'kapatıldı'}.`);
+                                        } else {
+                                            toast.error('Güncelleme sırasında bir hata oluştu.');
+                                        }
+                                    }}
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>

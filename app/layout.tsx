@@ -26,7 +26,14 @@ export default function RootLayout({
             <AlertProvider>
               {children}
             </AlertProvider>
-            <Toaster richColors position="top-right" />
+            <Toaster
+              richColors
+              position="top-right"
+              style={{ pointerEvents: 'none' }} // Container shouldn't capture clicks
+              toastOptions={{
+                style: { pointerEvents: 'auto' }, // Toast content should be clickable
+              }}
+            />
           </AuthProvider>
         </ThemeProvider>
       </body>

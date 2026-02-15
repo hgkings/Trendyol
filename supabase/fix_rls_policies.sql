@@ -1,59 +1,91 @@
--- Enable RLS
+-- ═══════════════════════════════════════════════════════════════
+-- Kar Kocu: Row Level Security (RLS) Policies
+-- Run this in Supabase SQL Editor if you see 403 errors.
+--
+-- This script is IDEMPOTENT — safe to run multiple times.
+-- It drops existing policies first to avoid "already exists" errors.
+-- ═══════════════════════════════════════════════════════════════
+
+-- ─── Enable RLS ───
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE analyses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
--- Profiles Policies
--- Allow users to insert their own profile (e.g. after signup/login)
+-- ═══════════════════════════════════════════════════════════════
+-- PROFILES TABLE
+-- Columns: id (uuid, PK, FK→auth.users), email, plan, email_alerts_enabled
+-- ═══════════════════════════════════════════════════════════════
+
+DROP POLICY IF EXISTS "Users can insert their own profile" ON profiles;
 CREATE POLICY "Users can insert their own profile"
-ON profiles FOR INSERT
-WITH CHECK (auth.uid() = id);
+  ON profiles FOR INSERT
+  WITH CHECK (auth.uid() = id);
 
--- Allow users to read their own profile
+DROP POLICY IF EXISTS "Users can read their own profile" ON profiles;
 CREATE POLICY "Users can read their own profile"
-ON profiles FOR SELECT
-USING (auth.uid() = id);
+  ON profiles FOR SELECT
+  USING (auth.uid() = id);
 
--- Allow users to update their own profile
+DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
 CREATE POLICY "Users can update their own profile"
-ON profiles FOR UPDATE
-USING (auth.uid() = id);
+  ON profiles FOR UPDATE
+  USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
 
+-- ═══════════════════════════════════════════════════════════════
+-- ANALYSES TABLE
+-- Columns: id, user_id, product_name, marketplace, inputs, outputs, risk, created_at
+-- ═══════════════════════════════════════════════════════════════
 
--- Analyses Policies
--- Allow users to insert their own analyses
+DROP POLICY IF EXISTS "Users can insert their own analyses" ON analyses;
 CREATE POLICY "Users can insert their own analyses"
-ON analyses FOR INSERT
-WITH CHECK (auth.uid() = user_id);
+  ON analyses FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
 
--- Allow users to read their own analyses
+DROP POLICY IF EXISTS "Users can read their own analyses" ON analyses;
 CREATE POLICY "Users can read their own analyses"
-ON analyses FOR SELECT
-USING (auth.uid() = user_id);
+  ON analyses FOR SELECT
+  USING (auth.uid() = user_id);
 
--- Allow users to update their own analyses
+DROP POLICY IF EXISTS "Users can update their own analyses" ON analyses;
 CREATE POLICY "Users can update their own analyses"
-ON analyses FOR UPDATE
-USING (auth.uid() = user_id);
+  ON analyses FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
--- Allow users to delete their own analyses
+DROP POLICY IF EXISTS "Users can delete their own analyses" ON analyses;
 CREATE POLICY "Users can delete their own analyses"
-ON analyses FOR DELETE
-USING (auth.uid() = user_id);
+  ON analyses FOR DELETE
+  USING (auth.uid() = user_id);
 
+-- ═══════════════════════════════════════════════════════════════
+-- NOTIFICATIONS TABLE
+-- ═══════════════════════════════════════════════════════════════
 
--- OPTIONAL: Database Trigger for automatic profile creation
--- This is recommended to ensure a profile exists immediately after signup.
--- If you use this, you don't need the client-side profile creation.
+DROP POLICY IF EXISTS "Users can insert their own notifications" ON notifications;
+CREATE POLICY "Users can insert their own notifications"
+  ON notifications FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
 
--- CREATE OR REPLACE FUNCTION public.handle_new_user()
--- RETURNS trigger AS $$
--- BEGIN
---   INSERT INTO public.profiles (id, email, plan)
---   VALUES (new.id, new.email, 'free');
---   RETURN new;
--- END;
--- $$ LANGUAGE plpgsql SECURITY DEFINER;
+DROP POLICY IF EXISTS "Users can read their own notifications" ON notifications;
+CREATE POLICY "Users can read their own notifications"
+  ON notifications FOR SELECT
+  USING (auth.uid() = user_id);
 
--- CREATE TRIGGER on_auth_user_created
---   AFTER INSERT ON auth.users
---   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+DROP POLICY IF EXISTS "Users can update their own notifications" ON notifications;
+CREATE POLICY "Users can update their own notifications"
+  ON notifications FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete their own notifications" ON notifications;
+CREATE POLICY "Users can delete their own notifications"
+  ON notifications FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- ═══════════════════════════════════════════════════════════════
+-- VERIFICATION: Run this to confirm policies are active
+-- ═══════════════════════════════════════════════════════════════
+-- SELECT tablename, policyname, cmd FROM pg_policies
+-- WHERE schemaname = 'public'
+-- ORDER BY tablename, policyname;

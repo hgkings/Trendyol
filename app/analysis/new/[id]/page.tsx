@@ -131,7 +131,7 @@ export default function AnalysisDetailPage() {
                         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                             <Link href="/dashboard" className="hover:text-foreground">Panel</Link>
                             <ChevronRight className="h-3 w-3" />
-                            <Link href="/products" className="hover:text-foreground">Urunler</Link>
+                            <Link href="/products" className="hover:text-foreground">Ürünler</Link>
                             <ChevronRight className="h-3 w-3" />
                             <span className="text-foreground">Analiz Detayi</span>
                         </div>

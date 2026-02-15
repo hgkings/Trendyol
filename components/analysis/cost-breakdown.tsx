@@ -79,7 +79,7 @@ export function CostBreakdown({ input, result }: CostBreakdownProps) {
         </div>
         <div className="flex items-center justify-between pb-1 border-b border-dashed">
           <span className="text-xs font-bold text-muted-foreground uppercase">Satış Fiyatı</span>
-          <span className="text-lg font-black text-primary">{formatCurrency(input.sale_price)}</span>
+          <span className="text-lg font-black text-primary">{formatCurrency(n(input.sale_price) || (result as any).sale_price || 0)}</span>
         </div>
 
         <div className="flex items-center justify-between pt-1">

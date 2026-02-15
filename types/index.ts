@@ -7,6 +7,7 @@ export interface User {
   email: string;
   plan: PlanType;
   email_alerts_enabled?: boolean;
+  email_notifications_enabled?: boolean;
 }
 
 export type AlertType = 'danger' | 'warning' | 'info';
@@ -81,6 +82,7 @@ export interface CalculationResult {
   monthly_revenue: number;
   monthly_total_cost: number;
   breakeven_price: number;
+  sale_price: number; // Added for consistency
   sale_price_excl_vat: number;
 
   // PRO specific results

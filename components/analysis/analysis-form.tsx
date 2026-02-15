@@ -6,10 +6,11 @@ import { useAuth } from '@/contexts/auth-context';
 import { useAlerts } from '@/contexts/alert-context';
 import { ProductInput, Marketplace } from '@/types';
 import { marketplaces, getMarketplaceDefaults } from '@/lib/marketplace-data';
-import { calculateProfit, calculateRequiredPrice } from '@/utils/calculations';
+import { calculateProfit, calculateRequiredPrice, n } from '@/utils/calculations';
 import { calculateProAccounting } from '@/utils/pro-accounting';
 import { calculateRisk } from '@/utils/risk-engine';
 import { saveAnalysis, generateId, getUserAnalysisCount } from '@/lib/storage';
+import { getPlanLimits } from '@/config/plans';
 import { UpgradeModal } from '@/components/shared/upgrade-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +21,7 @@ import { Separator } from '@/components/ui/separator';
 import { formatCurrency } from '@/components/shared/format';
 import { toast } from 'sonner';
 import { Target, ArrowRight, Lock, Calculator, ChevronDown, ChevronUp, Info } from 'lucide-react';
+import { isProUser } from '@/utils/access';
 
 const defaultInput: ProductInput = {
   marketplace: 'trendyol',
@@ -101,16 +103,28 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
   const [targetProfit, setTargetProfit] = useState<number | undefined>();
   const [suggestedPrice, setSuggestedPrice] = useState<number | undefined>();
 
-  const isProUser = user?.plan === 'pro';
+  const isProUserFlag = isProUser(user);
   const isProMode = input.pro_mode === true;
 
   const handleProToggle = (checked: boolean) => {
-    if (!isProUser) {
+    if (checked && !isProUserFlag) {
       setShowUpgrade(true);
+      // Ensure it stays off
+      setInput(prev => ({ ...prev, pro_mode: false }));
       return;
     }
     setInput(prev => ({ ...prev, pro_mode: checked }));
   };
+
+  // Watch for pro_mode changes from initialData or other sources
+  useEffect(() => {
+    if (input.pro_mode && !isProUserFlag && user) {
+      // Revert to standard mode if not pro
+      setInput(prev => ({ ...prev, pro_mode: false }));
+      // Optional: Show upgrade modal if they tried to access a pro analysis, but maybe too intrusive on load
+      // setShowUpgrade(true); 
+    }
+  }, [input.pro_mode, isProUserFlag, user]);
 
   const handleMarketplaceChange = (mp: Marketplace) => {
     const defaults = getMarketplaceDefaults(mp);
@@ -156,25 +170,37 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
     try {
       if (!analysisId) {
         const count = await getUserAnalysisCount(user.id);
-        if (user.plan === 'free' && count >= 5) {
+        const limits = getPlanLimits(user.plan);
+        if (count >= limits.maxProducts) {
           setShowUpgrade(true);
           setLoading(false);
           return;
         }
       }
 
-      const effectivePro = isProUser && input.pro_mode;
-      const result = effectivePro
-        ? calculateProAccounting(input)
-        : calculateProfit(input);
+      // Sanitize inputs to ensure numbers (fixes 0.00 display issue)
+      const sanitized = { ...input };
+      // Use fields config to identify numeric fields and parse them safely
+      fields.forEach(f => {
+        if (f.type === 'number') {
+          // @ts-ignore
+          sanitized[f.key] = n((sanitized as any)[f.key]);
+        }
+      });
 
-      const risk = calculateRisk(input, result);
+      const effectivePro = isProUserFlag && sanitized.pro_mode;
+      const result = effectivePro
+        ? calculateProAccounting(sanitized)
+        : calculateProfit(sanitized);
+
+      const risk = calculateRisk(sanitized, result);
 
       const analysisData = {
         id: analysisId || generateId(),
         userId: user.id,
-        input: { ...input, pro_mode: !!effectivePro },
-        result,
+        input: { ...sanitized, pro_mode: !!effectivePro },
+        // Ensure sale_price is explicitly included in result if not already
+        result: { ...result, sale_price: sanitized.sale_price },
         risk,
         createdAt: new Date().toISOString(),
       };
@@ -188,6 +214,16 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
       }
 
       toast.success(analysisId ? 'Analiz güncellendi.' : 'Analiz başarıyla kaydedildi.');
+
+      // Trigger Risk Check (Fire and forget, don't await blocking UI)
+      if (analysisData.id) {
+        fetch('/api/notifications/check-risk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ analysisId: analysisData.id })
+        }).catch(err => console.error('Risk check failed:', err));
+      }
+
       await refresh();
       router.push(analysisId ? '/dashboard' : `/analysis/${analysisData.id}`);
       router.refresh();
@@ -218,7 +254,7 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
             <div>
               <div className="flex items-center gap-2">
                 <Label htmlFor="pro-mode" className="font-bold text-lg cursor-pointer">PRO Muhasebe Modu</Label>
-                {!isProUser && <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200"><Lock className="h-3 w-3 mr-1" /> Premium</Badge>}
+                {!isProUserFlag && <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200"><Lock className="h-3 w-3 mr-1" /> Premium</Badge>}
               </div>
               <p className="text-sm text-muted-foreground italic">Gerçek E-Ticaret Muhasebesi (VAT-Excl)</p>
             </div>

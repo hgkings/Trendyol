@@ -15,12 +15,12 @@ interface KPICardProps {
 export function KPICard({ title, value, subtitle, icon: Icon, trend, className }: KPICardProps) {
   return (
     <div className={cn(
-      'rounded-2xl border bg-card p-6 shadow-sm transition-shadow hover:shadow-md',
+      'rounded-2xl border bg-card p-6 shadow-premium-sm transition-all duration-200 hover:shadow-premium-md',
       className
     )}>
       <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+        <div className="space-y-1.5">
+          <p className="text-[13px] font-medium text-muted-foreground">{title}</p>
           <p className="text-2xl font-bold tracking-tight">{value}</p>
           {subtitle && (
             <p className={cn(
@@ -34,7 +34,7 @@ export function KPICard({ title, value, subtitle, icon: Icon, trend, className }
             </p>
           )}
         </div>
-        <div className="rounded-xl bg-primary/10 p-2.5">
+        <div className="rounded-xl bg-primary/8 p-2.5">
           <Icon className="h-5 w-5 text-primary" />
         </div>
       </div>

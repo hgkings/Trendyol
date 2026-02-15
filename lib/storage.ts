@@ -62,7 +62,28 @@ export async function getAnalysisById(userId: string, id: string): Promise<Analy
   return rowToAnalysis(data);
 }
 
+import { checkAnalysisLimit } from './plan';
+import { PLAN_LIMITS } from '@/config/plans';
+
 export async function saveAnalysis(analysis: Analysis): Promise<{ success: boolean; error?: string }> {
+  // Only check limits for NEW analyses (not updates)
+  const { data: existing } = await supabase.from('analyses').select('id').eq('id', analysis.id).maybeSingle();
+
+  if (!existing) {
+    const allowed = await checkAnalysisLimit(analysis.userId);
+    if (!allowed) {
+      return { success: false, error: `Ücretsiz plan limiti aşıldı (Maksimum ${PLAN_LIMITS.free.maxProducts} analiz). Pro plana geçerek sınırsız analiz yapabilirsiniz.` };
+    }
+  }
+
+  // Runtime guard for sale_price
+  if (!Number.isFinite(analysis.input.sale_price) || analysis.input.sale_price <= 0) {
+    console.error('Invalid sale_price:', analysis.input.sale_price);
+    // We could throw here, but let's try to fix it or just log for now to avoid crashing valid saves if partially bad
+    // Actually per request: "throw new Error"
+    return { success: false, error: "SALE_PRICE_MISSING_OR_INVALID" };
+  }
+
   const outputsWithRisk = {
     ...analysis.result,
     _risk_factors: analysis.risk.factors,
@@ -158,4 +179,30 @@ export async function upsertNotifications(notifications: Partial<Notification>[]
   if (error) {
     console.error('upsertNotifications error:', error);
   }
+}
+// Sidebar Stats Aggregation
+export async function getSidebarStats(userId: string): Promise<{ total: number; profitable: number; risky: number }> {
+    const { data: analyses, error } = await supabase
+        .from('analyses')
+        .select('outputs, risk_level')
+        .eq('user_id', userId);
+
+    if (error || !analyses) return { total: 0, profitable: 0, risky: 0 };
+
+    const total = analyses.length;
+    let profitable = 0;
+    let risky = 0;
+
+    analyses.forEach((a: any) => {
+        // Profitable: monthly_net_profit > 0
+        if (Number(a.outputs?.monthly_net_profit) > 0) {
+            profitable++;
+        }
+        // Risky: risk_level === 'High' or 'Critical'
+        if (a.risk_level === 'High' || a.risk_level === 'Critical') {
+            risky++;
+        }
+    });
+
+    return { total, profitable, risky };
 }

@@ -50,20 +50,21 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-bold tracking-tight">Panel</h1>
+      <div className="space-y-8 pb-10">
+        {/* Header */}
+        <div className="flex flex-col gap-1.5 border-b pb-6">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Panel</h1>
           <p className="text-muted-foreground">
-            Ürünlerinizin karlılık ve risk durumuna hızlı bir bakış atın.
+            Ürün portföyünüzün anlık karlılık ve risk durumu.
           </p>
         </div>
 
         {/* Dashboard KPIs */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <KPICard
-            title="Aylık Tahmini Kar"
+            title="Aylık Tahmini Kâr"
             value={formatCurrency(totalProfit)}
-            subtitle={totalProfit >= 0 ? 'Toplam net kar' : 'Toplam zarar'}
+            subtitle={totalProfit >= 0 ? 'Toplam net kâr' : 'Toplam zarar'}
             icon={TrendingUp}
             trend={totalProfit >= 0 ? 'up' : 'down'}
           />
@@ -89,26 +90,25 @@ export default function DashboardPage() {
           />
         </div>
 
-        <ProfitTrendChart analyses={analyses} />
-
-        {/* Tables and Charts */}
-        <div className="grid gap-8 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center justify-between px-1">
-              <div className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-bold">Son Analizler</h2>
-              </div>
-            </div>
-            <ProductsTable analyses={analyses.slice(0, 10)} onDelete={handleDelete} />
+        {/* Charts Section */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <ProfitTrendChart analyses={analyses} />
           </div>
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 px-1">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-bold">Risk Dağılımı</h2>
-            </div>
+          <div>
             <RiskChart analyses={analyses} />
           </div>
+        </div>
+
+        {/* Products Table Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-bold text-foreground">Son Analizler</h2>
+            </div>
+          </div>
+          <ProductsTable analyses={analyses.slice(0, 10)} onDelete={handleDelete} />
         </div>
       </div>
     </DashboardLayout>

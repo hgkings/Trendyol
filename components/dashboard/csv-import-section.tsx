@@ -21,6 +21,11 @@ import { parseCSV, CSV_TEMPLATE } from '@/lib/csv';
 import { ProductInput } from '@/types';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '../shared/format';
+import { useAuth } from '@/contexts/auth-context';
+import { isPro } from '@/lib/plan';
+import { useRouter } from 'next/navigation';
+// Mock hook if actual one doesn't exist yet, or just use router for now
+const useUpgradeModal = () => ({ onOpen: () => { } });
 
 interface CSVImportSectionProps {
     onImport: (data: ProductInput[]) => Promise<void>;
@@ -87,13 +92,28 @@ export function CSVImportSection({ onImport }: CSVImportSectionProps) {
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
+    const { user } = useAuth();
+    const router = useRouter(); // To redirect to pricing if needed
+    const { onOpen } = useUpgradeModal(); // Assuming we have this, if not we'll use toast + redirect
+
     const handleImport = async () => {
+        if (!isPro(user)) {
+            toast.error('Bu özellik sadece PRO pakette mevcuttur.', {
+                action: {
+                    label: 'Yükselt',
+                    onClick: () => router.push('/pricing')
+                }
+            });
+            return;
+        }
+
         if (data.length === 0 && errors.length === 0) return;
 
         setIsProcessing(true);
         try {
             await onImport(data);
             reset();
+            toast.success('Başarıyla içe aktarıldı.');
         } catch (err) {
             toast.error('İçe aktarma sırasında hata oluştu.');
         } finally {

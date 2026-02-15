@@ -36,7 +36,9 @@ import {
   TrendingUp,
   ChevronRight,
   Save,
-  Rocket
+  Rocket,
+  FileText,
+  Loader2
 } from 'lucide-react';
 import { saveAnalysis } from '@/lib/storage';
 import { calculateProfit } from '@/utils/calculations';
@@ -44,14 +46,19 @@ import { calculateProAccounting } from '@/utils/pro-accounting';
 import { calculateRisk } from '@/utils/risk-engine';
 import { toast } from 'sonner';
 import { analysesToJSON, analysesToCSV } from '@/lib/csv';
+import { ProLockedSection } from '@/components/shared/pro-locked-section';
+import { UpgradeModal } from '@/components/shared/upgrade-modal';
+import { isProUser } from '@/utils/access';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function AnalysisResultPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   // Competitor states
   const [compName, setCompName] = useState('');
@@ -95,13 +102,13 @@ export default function AnalysisResultPage() {
     }
   };
 
+  const isPro = isProUser(user);
+
   const handleApplySuggestedPrice = async (price: number) => {
     if (!analysis) return;
     setSaving(true);
     try {
       const updatedInput = { ...analysis.input, sale_price: price };
-
-      const isPro = user?.plan === 'pro';
       const mode = (isPro && updatedInput.accounting_mode === 'pro') ? 'pro' : 'standard';
 
       const updatedResult = mode === 'pro'
@@ -129,7 +136,6 @@ export default function AnalysisResultPage() {
     }
   };
 
-  const isPro = user?.plan === 'pro';
 
   const handleExportJSON = () => {
     if (!analysis) return;
@@ -153,6 +159,73 @@ export default function AnalysisResultPage() {
     a.download = `${analysis.input.product_name}-analiz.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+
+
+  const handleExportPDF = async () => {
+    if (!analysis) return;
+
+    // Client-side Pro check
+    if (!isProUser(user)) {
+      setShowUpgrade(true);
+      return;
+    }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error('Oturum bulunamadı. Lütfen tekrar giriş yapın.');
+        window.location.href = '/auth';
+        return;
+      }
+
+      toast.loading('PDF hazırlanıyor...', { id: 'pdf-download' });
+
+      const res = await fetch(`/api/pdf/analysis/${params.id}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      toast.dismiss('pdf-download');
+
+      if (res.status === 401) {
+        toast.error('Oturum süresi dolmuş. Lütfen tekrar giriş yapın.');
+        window.location.href = '/auth';
+        return;
+      }
+
+      if (res.status === 403) {
+        const errData = await res.json().catch(() => ({}));
+        console.warn("[PDF Export] 403 Forbidden:", errData);
+        // If server says PRO_REQUIRED, show upgrade modal even if client thought it was Pro (sync issue)
+        if (errData.error === "PRO_REQUIRED") {
+          setShowUpgrade(true);
+        } else {
+          toast.error("Yetki hatası: " + (errData.error || "Erişim reddedildi"));
+        }
+        return;
+      }
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        console.error("PDF Error:", errJson);
+        toast.error('PDF oluşturulamadı: ' + (errJson.error || 'Bilinmeyen hata'));
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${analysis.input.product_name}-rapor.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('PDF indirildi!');
+    } catch (err) {
+      console.error(err);
+      toast.dismiss('pdf-download');
+      toast.error('PDF indirme hatası.');
+    }
   };
 
   if (loading) {
@@ -227,6 +300,19 @@ export default function AnalysisResultPage() {
                 CSV (Pro)
               </Button>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportPDF}
+              disabled={loading || authLoading}
+            >
+              {(loading || authLoading) ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <FileText className="mr-1.5 h-4 w-4" />
+              )}
+              PDF İndir
+            </Button>
           </div>
         </div>
 
@@ -393,19 +479,31 @@ export default function AnalysisResultPage() {
         {isPro ? (
           <SensitivityTable input={input} />
         ) : (
-          <ProLockedSection title="Hassasiyet Analizi" />
+          <ProLockedSection title="Hassasiyet Analizi">
+            <div className="blur-sm grayscale opacity-50 pointer-events-none select-none">
+              <SensitivityTable input={input} />
+            </div>
+          </ProLockedSection>
         )}
 
         {isPro ? (
           <MarketplaceComparison input={input} />
         ) : (
-          <ProLockedSection title="Pazaryeri Karsilastirmasi" />
+          <ProLockedSection title="Pazaryeri Karşılaştırması">
+            <div className="blur-sm grayscale opacity-50 pointer-events-none select-none">
+              <MarketplaceComparison input={input} />
+            </div>
+          </ProLockedSection>
         )}
 
         {isPro ? (
           <CashflowEstimator input={input} />
         ) : (
-          <ProLockedSection title="Nakit Akisi Tahmini" />
+          <ProLockedSection title="Nakit Akışı Tahmini">
+            <div className="blur-sm grayscale opacity-50 pointer-events-none select-none">
+              <CashflowEstimator input={input} />
+            </div>
+          </ProLockedSection>
         )}
 
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
@@ -414,21 +512,9 @@ export default function AnalysisResultPage() {
           </p>
         </div>
       </div>
+      <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} />
     </DashboardLayout>
   );
 }
 
-function ProLockedSection({ title }: { title: string }) {
-  return (
-    <div className="rounded-2xl border bg-card p-8 text-center">
-      <Lock className="mx-auto h-8 w-8 text-muted-foreground" />
-      <h3 className="mt-3 font-semibold">{title}</h3>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Bu ozellik Pro planla kullanilabilir.
-      </p>
-      <Link href="/pricing">
-        <Button size="sm" className="mt-4">Pro&apos;ya Yukselt</Button>
-      </Link>
-    </div>
-  );
-}
+

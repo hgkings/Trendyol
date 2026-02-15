@@ -92,6 +92,7 @@ export function calculateProAccounting(input: ProductInput): CalculationResult {
         monthly_revenue: n(input.sale_price) * volume, // Gross revenue for display
         monthly_total_cost: unit_total_cost * volume,
         breakeven_price: Number.isFinite(breakeven_price) ? breakeven_price : 0,
+        sale_price: n(input.sale_price),
         sale_price_excl_vat: Number.isFinite(sales.net) ? sales.net : 0,
 
         // PRO specific

@@ -1,99 +1,413 @@
 'use client';
 
 import Link from 'next/link';
+import { useState, useMemo } from 'react';
 import { Analysis } from '@/types';
 import { getMarketplaceLabel } from '@/lib/marketplace-data';
 import { formatCurrency, formatPercent } from '@/components/shared/format';
 import { RiskBadge } from '@/components/shared/risk-badge';
 import { Button } from '@/components/ui/button';
-import { Eye, Trash2, Pencil } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Eye,
+  Trash2,
+  Pencil,
+  Search,
+  Filter,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  MoreHorizontal
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ProductsTableProps {
   analyses: Analysis[];
   onDelete?: (id: string) => void;
 }
 
+type SortField = 'monthly_net_profit' | 'margin_pct' | 'risk_score' | 'created_at';
+type SortOrder = 'asc' | 'desc';
+
 export function ProductsTable({ analyses, onDelete }: ProductsTableProps) {
+  // --- States ---
+  const [searchTerm, setSearchTerm] = useState('');
+  const [marketplaceFilter, setMarketplaceFilter] = useState<string>('all');
+  const [riskFilter, setRiskFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all'); // profitable, loss
+
+  const [sortField, setSortField] = useState<SortField>('monthly_net_profit');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // --- Derived Data ---
+  const filteredAndSortedData = useMemo(() => {
+    let data = [...analyses];
+
+    // 1. Search
+    if (searchTerm) {
+      const lower = searchTerm.toLowerCase();
+      data = data.filter(a =>
+        a.input.product_name.toLowerCase().includes(lower) ||
+        getMarketplaceLabel(a.input.marketplace).toLowerCase().includes(lower)
+      );
+    }
+
+    // 2. Filters
+    if (marketplaceFilter !== 'all') {
+      data = data.filter(a => a.input.marketplace === marketplaceFilter);
+    }
+    if (riskFilter !== 'all') {
+      data = data.filter(a => a.risk.level === riskFilter);
+    }
+    if (statusFilter !== 'all') {
+      data = data.filter(a => {
+        if (statusFilter === 'profitable') return a.result.monthly_net_profit > 0;
+        if (statusFilter === 'loss') return a.result.monthly_net_profit <= 0;
+        return true;
+      });
+    }
+
+    // 3. Sort
+    data.sort((a, b) => {
+      let valA: number | string = 0;
+      let valB: number | string = 0;
+
+      switch (sortField) {
+        case 'monthly_net_profit':
+          valA = a.result.monthly_net_profit;
+          valB = b.result.monthly_net_profit;
+          break;
+        case 'margin_pct':
+          valA = a.result.margin_pct;
+          valB = b.result.margin_pct;
+          break;
+        case 'risk_score':
+          valA = a.risk.score;
+          valB = b.risk.score;
+          break;
+        case 'created_at':
+          valA = new Date(a.createdAt).getTime();
+          valB = new Date(b.createdAt).getTime();
+          break;
+      }
+
+      if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+      if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return data;
+  }, [analyses, searchTerm, marketplaceFilter, riskFilter, statusFilter, sortField, sortOrder]);
+
+  // 4. Pagination
+  const totalItems = filteredAndSortedData.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedData = filteredAndSortedData.slice(startIndex, startIndex + itemsPerPage);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('desc');
+    }
+  };
+
+  // --- Render Helpers ---
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground/50" />;
+    return (
+      <ArrowUpDown className={cn(
+        "ml-1 h-3 w-3 transition-transform",
+        sortOrder === 'desc' ? "text-primary" : "text-primary rotate-180"
+      )} />
+    );
+  };
+
   if (analyses.length === 0) {
     return (
-      <div className="rounded-2xl border bg-card p-12 text-center">
-        <p className="text-muted-foreground">Henuz analiz yapilmamis.</p>
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed bg-card/50 p-12 text-center shadow-sm">
+        <div className="rounded-full bg-primary/10 p-4 mb-4">
+          <Search className="h-8 w-8 text-primary/60" />
+        </div>
+        <h3 className="text-lg font-semibold text-foreground">Henüz ürün analizi yok</h3>
+        <p className="mt-2 text-sm text-muted-foreground max-w-sm">
+          İlk ürününüzü analiz ederek karlılık durumunu ve risk raporunu görebilirsiniz.
+        </p>
         <Link href="/analysis/new">
-          <Button className="mt-4">Ilk Analizini Yap</Button>
+          <Button className="mt-6 rounded-xl h-11 px-8 shadow-premium-md hover:scale-105 transition-transform">
+            Yeni Analiz Başlat
+          </Button>
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border bg-card">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-muted/50">
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Urun</th>
-              <th className="hidden px-4 py-3 text-left font-medium text-muted-foreground sm:table-cell">Pazaryeri</th>
-              <th className="px-4 py-3 text-right font-medium text-muted-foreground">Birim Kar</th>
-              <th className="hidden px-4 py-3 text-right font-medium text-muted-foreground md:table-cell">Marj</th>
-              <th className="hidden px-4 py-3 text-right font-medium text-muted-foreground lg:table-cell">Aylik Kar</th>
-              <th className="px-4 py-3 text-center font-medium text-muted-foreground">Risk</th>
-              <th className="px-4 py-3 text-right font-medium text-muted-foreground">Islem</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {analyses.map((a) => (
-              <tr key={a.id} className="transition-colors hover:bg-muted/30">
-                <td className="px-4 py-3">
-                  <div className="font-medium">{a.input.product_name}</div>
-                  <div className="text-xs text-muted-foreground sm:hidden">
-                    {getMarketplaceLabel(a.input.marketplace)}
+    <div className="space-y-4">
+      {/* --- Toolbar --- */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-card p-4 rounded-xl border shadow-sm">
+        <div className="relative w-full md:max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Ürün adı veya pazaryeri ara..."
+            className="pl-9 h-10 bg-muted/30 border-transparent focus:border-primary/20 focus:bg-background transition-all"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={marketplaceFilter} onValueChange={setMarketplaceFilter}>
+            <SelectTrigger className="h-9 w-[140px] text-xs">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Filter className="h-3.5 w-3.5" />
+                <SelectValue placeholder="Pazaryeri" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tüm Pazaryerleri</SelectItem>
+              <SelectItem value="trendyol">Trendyol</SelectItem>
+              <SelectItem value="hepsiburada">Hepsiburada</SelectItem>
+              <SelectItem value="amazon_tr">Amazon TR</SelectItem>
+              <SelectItem value="n11">N11</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={riskFilter} onValueChange={setRiskFilter}>
+            <SelectTrigger className="h-9 w-[130px] text-xs">
+              <SelectValue placeholder="Risk Durumu" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tüm Riskler</SelectItem>
+              <SelectItem value="safe">Güvenli</SelectItem>
+              <SelectItem value="moderate">Orta Risk</SelectItem>
+              <SelectItem value="risky">Riskli</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* --- Table --- */}
+      <div className="overflow-hidden rounded-2xl border bg-card shadow-premium-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground hover:bg-muted/50 transition-colors">
+                <th
+                  className="px-4 py-3.5 text-left font-semibold cursor-pointer select-none group"
+                  onClick={() => handleSort('monthly_net_profit')} // Default/Custom logic
+                >
+                  Ürün Detayı
+                </th>
+                <th className="hidden px-4 py-3.5 text-left font-semibold sm:table-cell">Pazaryeri</th>
+
+                <th
+                  className="px-4 py-3.5 text-right font-semibold cursor-pointer select-none group"
+                  onClick={() => handleSort('monthly_net_profit')}
+                >
+                  <div className="flex items-center justify-end gap-1 group-hover:text-foreground transition-colors">
+                    Birim Kâr
                   </div>
-                </td>
-                <td className="hidden px-4 py-3 sm:table-cell">
-                  <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium">
-                    {getMarketplaceLabel(a.input.marketplace)}
-                  </span>
-                </td>
-                <td className={`px-4 py-3 text-right font-medium ${a.result.unit_net_profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {formatCurrency(a.result.unit_net_profit)}
-                </td>
-                <td className={`hidden px-4 py-3 text-right font-medium md:table-cell ${a.result.margin_pct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {formatPercent(a.result.margin_pct)}
-                </td>
-                <td className={`hidden px-4 py-3 text-right font-medium lg:table-cell ${a.result.monthly_net_profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {formatCurrency(a.result.monthly_net_profit)}
-                </td>
-                <td className="px-4 py-3 text-center">
-                  <RiskBadge level={a.risk.level} />
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center justify-end gap-1">
-                    <Link href={`/analysis/${a.id}`}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Goruntule">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                    <Link href={`/analysis/${a.id}/edit`}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700" title="Duzenle">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                    {onDelete && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-red-600"
-                        onClick={() => onDelete(a.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
+                </th>
+
+                <th
+                  className="hidden px-4 py-3.5 text-right font-semibold md:table-cell cursor-pointer select-none group"
+                  onClick={() => handleSort('margin_pct')}
+                >
+                  <div className="flex items-center justify-end gap-1 group-hover:text-foreground transition-colors">
+                    Marj <SortIcon field="margin_pct" />
                   </div>
-                </td>
+                </th>
+
+                <th
+                  className="hidden px-4 py-3.5 text-right font-semibold lg:table-cell cursor-pointer select-none group"
+                  onClick={() => handleSort('monthly_net_profit')}
+                >
+                  <div className="flex items-center justify-end gap-1 group-hover:text-foreground transition-colors">
+                    Aylık Kâr <SortIcon field="monthly_net_profit" />
+                  </div>
+                </th>
+
+                <th
+                  className="px-4 py-3.5 text-center font-semibold cursor-pointer select-none group"
+                  onClick={() => handleSort('risk_score')}
+                >
+                  <div className="flex items-center justify-center gap-1 group-hover:text-foreground transition-colors">
+                    Risk <SortIcon field="risk_score" />
+                  </div>
+                </th>
+                <th className="px-4 py-3.5 text-right font-semibold">İşlem</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y relative">
+              {paginatedData.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="h-32 text-center text-muted-foreground">
+                    Sonuç bulunamadı.
+                    <Button variant="link" onClick={() => {
+                      setSearchTerm('');
+                      setMarketplaceFilter('all');
+                      setRiskFilter('all');
+                    }}>Filtreleri Temizle</Button>
+                  </td>
+                </tr>
+              ) : (
+                paginatedData.map((a) => (
+                  <tr key={a.id} className="transition-colors hover:bg-muted/30 group">
+                    <td className="px-4 py-3.5">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-foreground truncate max-w-[180px] sm:max-w-xs">{a.input.product_name}</span>
+                        <span className="text-[10px] text-muted-foreground mt-0.5">
+                          {new Date(a.createdAt).toLocaleDateString('tr-TR')}
+                        </span>
+                      </div>
+                      <div className="mt-1 sm:hidden">
+                        <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-[10px] font-medium text-muted-foreground">
+                          {getMarketplaceLabel(a.input.marketplace)}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="hidden px-4 py-3.5 sm:table-cell">
+                      <span className="inline-flex items-center rounded-full bg-secondary/50 px-2.5 py-1 text-xs font-medium text-secondary-foreground border border-secondary">
+                        {getMarketplaceLabel(a.input.marketplace)}
+                      </span>
+                    </td>
+                    <td className={`px-4 py-3.5 text-right font-bold tabular-nums ${a.result.unit_net_profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                      {formatCurrency(a.result.unit_net_profit)}
+                    </td>
+                    <td className={`hidden px-4 py-3.5 text-right font-bold tabular-nums md:table-cell ${a.result.margin_pct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                      {formatPercent(a.result.margin_pct)}
+                    </td>
+                    <td className={`hidden px-4 py-3.5 text-right font-bold tabular-nums lg:table-cell ${a.result.monthly_net_profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                      {formatCurrency(a.result.monthly_net_profit)}
+                    </td>
+                    <td className="px-4 py-3.5 text-center">
+                      <RiskBadge level={a.risk.level} />
+                    </td>
+                    <td className="px-4 py-3.5 text-right">
+                      {/* Desktop Actions */}
+                      <div className="hidden sm:flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Link href={`/analysis/${a.id}`}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors" title="Görüntüle">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <Link href={`/analysis/${a.id}/edit`}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors" title="Düzenle">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        {onDelete && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-colors"
+                            onClick={() => onDelete(a.id)}
+                            title="Sil"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      {/* Mobile Actions (Dropdown) */}
+                      <div className="sm:hidden">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <Link href={`/analysis/${a.id}`}>
+                              <DropdownMenuItem>Görüntüle</DropdownMenuItem>
+                            </Link>
+                            <Link href={`/analysis/${a.id}/edit`}>
+                              <DropdownMenuItem>Düzenle</DropdownMenuItem>
+                            </Link>
+                            {onDelete && (
+                              <DropdownMenuItem onClick={() => onDelete(a.id)} className="text-destructive focus:text-destructive">
+                                Sil
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* --- Pagination --- */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between border-t px-4 py-3 bg-muted/20">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>Satır:</span>
+              <Select
+                value={itemsPerPage.toString()}
+                onValueChange={(v) => {
+                  setItemsPerPage(Number(v));
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="h-7 w-[60px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-muted-foreground">
+                {currentPage} / {totalPages}
+              </span>
+              <div className="flex gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7 rounded-lg"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7 rounded-lg"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
