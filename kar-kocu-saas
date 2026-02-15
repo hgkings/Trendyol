@@ -1,0 +1,3 @@
+git remote add origin https://github.com/KULLANICI_ADINIZ/REPO_ADINIZ.git
+git branch -M main
+git push -u origin main
