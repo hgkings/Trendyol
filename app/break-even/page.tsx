@@ -31,6 +31,25 @@ export default function BreakEvenPage() {
         }
     }, [user]);
 
+    // Load all local values
+    useEffect(() => {
+        const savedPrice = localStorage.getItem('be_avgPrice');
+        const savedVarCost = localStorage.getItem('be_avgVarCost');
+        if (savedPrice) setAvgPrice(parseFloat(savedPrice));
+        if (savedVarCost) setAvgVarCost(parseFloat(savedVarCost));
+    }, []);
+
+    // Also save simple inputs to localStorage when they change
+    const updateLocalPrice = (val: number) => {
+        setAvgPrice(val);
+        localStorage.setItem('be_avgPrice', val.toString());
+    };
+
+    const updateLocalVarCost = (val: number) => {
+        setAvgVarCost(val);
+        localStorage.setItem('be_avgVarCost', val.toString());
+    };
+
     // Calculations
     const contribution = avgPrice - avgVarCost;
     const isValidContribution = contribution > 0;
@@ -48,13 +67,18 @@ export default function BreakEvenPage() {
     const handleSaveDefaults = async () => {
         if (!user) return;
         setIsSaving(true);
+
+        // Save local values explicitly again just in case
+        localStorage.setItem('be_avgPrice', avgPrice.toString());
+        localStorage.setItem('be_avgVarCost', avgVarCost.toString());
+
         const result = await updateProfile({
             fixed_cost_monthly: fixedCost,
             target_profit_monthly: targetProfit
         });
 
         if (result.success) {
-            toast.success('Varsayılan gider ve hedef kâr kaydedildi.');
+            toast.success('Gider, hedef kâr ve hesaplama verileri kaydedildi.');
         } else {
             toast.error('Kaydetme başarısız: ' + result.error);
         }
@@ -96,7 +120,7 @@ export default function BreakEvenPage() {
                                         min="0"
                                         placeholder="0.00"
                                         value={avgPrice || ''}
-                                        onChange={(e) => setAvgPrice(parseFloat(e.target.value) || 0)}
+                                        onChange={(e) => updateLocalPrice(parseFloat(e.target.value) || 0)}
                                         className="pl-9 tabular-nums"
                                     />
                                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₺</span>
@@ -113,7 +137,7 @@ export default function BreakEvenPage() {
                                         min="0"
                                         placeholder="0.00"
                                         value={avgVarCost || ''}
-                                        onChange={(e) => setAvgVarCost(parseFloat(e.target.value) || 0)}
+                                        onChange={(e) => updateLocalVarCost(parseFloat(e.target.value) || 0)}
                                         className="pl-9 tabular-nums"
                                     />
                                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₺</span>
