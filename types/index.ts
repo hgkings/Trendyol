@@ -17,6 +17,18 @@ export interface User {
   monthly_profit_target?: number;
   default_return_rate?: number;
   default_ads_cost?: number;
+  fixed_cost_monthly?: number;
+  target_profit_monthly?: number;
+}
+
+export interface CashPlanRow {
+  id?: string;
+  user_id: string;
+  month: string; // YYYY-MM
+  opening_cash: number;
+  cash_in: number;
+  cash_out: number;
+  closing_cash: number;
 }
 
 export type AlertType = 'danger' | 'warning' | 'info';

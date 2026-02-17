@@ -1,12 +1,13 @@
 import { User, PlanType, Marketplace } from '@/types';
 import { supabase } from './supabaseClient';
 
-const PROFILE_SELECT_FULL = 'id, email, plan, email_notifications_enabled, target_margin, margin_alert, default_marketplace, default_commission, default_vat, monthly_profit_target, default_return_rate, default_ads_cost';
+const PROFILE_SELECT_FULL = 'id, email, plan, email_notifications_enabled, target_margin, margin_alert, default_marketplace, default_commission, default_vat, monthly_profit_target, default_return_rate, default_ads_cost, fixed_cost_monthly, target_profit_monthly';
 const PROFILE_SELECT_CORE = 'id, email, plan, email_notifications_enabled';
 
 // Preference keys that may not exist as DB columns yet
 const PREF_KEYS: (keyof User)[] = [
   'target_margin', 'margin_alert', 'default_marketplace', 'default_commission', 'default_vat', 'monthly_profit_target', 'default_return_rate', 'default_ads_cost',
+  'fixed_cost_monthly', 'target_profit_monthly'
 ];
 
 function mapProfileRow(data: any): User {
@@ -23,6 +24,8 @@ function mapProfileRow(data: any): User {
     monthly_profit_target: data.monthly_profit_target ?? undefined,
     default_return_rate: data.default_return_rate ?? undefined,
     default_ads_cost: data.default_ads_cost ?? undefined,
+    fixed_cost_monthly: data.fixed_cost_monthly ?? undefined,
+    target_profit_monthly: data.target_profit_monthly ?? undefined,
   };
 }
 async function ensureProfile(userId: string, email: string): Promise<User> {

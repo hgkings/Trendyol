@@ -17,7 +17,9 @@ import {
   CreditCard,
   Calendar,
   AlertTriangle,
-  ArrowRight
+  ArrowRight,
+  Target,
+  Landmark
 } from 'lucide-react';
 import { getSidebarStats } from '@/lib/storage';
 import { useEffect, useState } from 'react';
@@ -27,6 +29,8 @@ const mainNavItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/analysis/new', label: 'Yeni Analiz', icon: PlusCircle },
   { href: '/products', label: 'Ürünler', icon: Package },
+  { href: '/break-even', label: 'Başabaş', icon: Target },
+  { href: '/cash-plan', label: 'Nakit Planı', icon: Landmark },
 ];
 
 const bottomNavItems = [

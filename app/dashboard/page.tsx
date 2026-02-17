@@ -10,6 +10,7 @@ import { ProfitTrendChart } from '@/components/dashboard/profit-trend-chart';
 import { formatCurrency, formatPercent } from '@/components/shared/format';
 import { TrendingUp, Percent, AlertTriangle, Star, BarChart3, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { GeneralRiskCard } from '@/components/dashboard/general-risk-card';
 
 export default function DashboardPage() {
   const { analyses, loading, refresh } = useAlerts();
@@ -51,12 +52,17 @@ export default function DashboardPage() {
   return (
     <DashboardLayout>
       <div className="space-y-8 pb-10">
-        {/* Header */}
-        <div className="flex flex-col gap-1.5 border-b pb-6">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Panel</h1>
-          <p className="text-muted-foreground">
-            Ürün portföyünüzün anlık karlılık ve risk durumu.
-          </p>
+        {/* Header with Risk Card */}
+        <div className="flex flex-col lg:flex-row gap-6 items-start justify-between border-b pb-6">
+          <div className="space-y-1.5">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">Panel</h1>
+            <p className="text-muted-foreground">
+              Ürün portföyünüzün anlık karlılık ve risk durumu.
+            </p>
+          </div>
+          <div className="w-full lg:w-auto min-w-[300px]">
+            <GeneralRiskCard />
+          </div>
         </div>
 
         {/* Dashboard KPIs */}
