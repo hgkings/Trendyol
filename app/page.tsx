@@ -2,9 +2,14 @@
 
 import { Header } from '@/components/landing/header';
 import { Hero } from '@/components/landing/hero';
+import { SocialProofBar } from '@/components/landing/social-proof-bar';
+import { QuickCalc } from '@/components/landing/quick-calc';
 import { Features } from '@/components/landing/features';
+import { Testimonials } from '@/components/landing/testimonials';
 import { HowItWorks } from '@/components/landing/how-it-works';
 import { BenefitsList } from '@/components/landing/benefits-list';
+import { TrustStrip } from '@/components/landing/trust-strip';
+import { FAQSection } from '@/components/landing/faq-section';
 import { CTASection } from '@/components/landing/cta-section';
 import { TrendingUp } from 'lucide-react';
 
@@ -15,9 +20,14 @@ export default function LandingPage() {
 
       <main>
         <Hero />
+        <SocialProofBar />
+        <QuickCalc />
         <Features />
+        <Testimonials />
         <HowItWorks />
         <BenefitsList />
+        <TrustStrip />
+        <FAQSection />
         <CTASection />
       </main>
 
@@ -27,11 +37,11 @@ export default function LandingPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <TrendingUp className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="text-sm font-bold tracking-tight">Kar Koçu</span>
+            <span className="text-sm font-bold tracking-tight">Kârnet</span>
           </div>
 
           <p className="text-xs text-muted-foreground text-center sm:text-right">
-            © {new Date().getFullYear()} PazarYeri Kar Koçu. Tüm hakları saklıdır.
+            © {new Date().getFullYear()} Kârnet. Tüm hakları saklıdır.
           </p>
         </div>
       </footer>

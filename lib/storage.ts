@@ -181,28 +181,31 @@ export async function upsertNotifications(notifications: Partial<Notification>[]
   }
 }
 // Sidebar Stats Aggregation
-export async function getSidebarStats(userId: string): Promise<{ total: number; profitable: number; risky: number }> {
-    const { data: analyses, error } = await supabase
-        .from('analyses')
-        .select('outputs, risk_level')
-        .eq('user_id', userId);
+export async function getSidebarStats(userId: string): Promise<{ total: number; profitable: number; risky: number; lastUpdated: string | null }> {
+  const { data: analyses, error } = await supabase
+    .from('analyses')
+    .select('outputs, risk_level, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
 
-    if (error || !analyses) return { total: 0, profitable: 0, risky: 0 };
+  if (error || !analyses) return { total: 0, profitable: 0, risky: 0, lastUpdated: null };
 
-    const total = analyses.length;
-    let profitable = 0;
-    let risky = 0;
+  const total = analyses.length;
+  let profitable = 0;
+  let risky = 0;
 
-    analyses.forEach((a: any) => {
-        // Profitable: monthly_net_profit > 0
-        if (Number(a.outputs?.monthly_net_profit) > 0) {
-            profitable++;
-        }
-        // Risky: risk_level === 'High' or 'Critical'
-        if (a.risk_level === 'High' || a.risk_level === 'Critical') {
-            risky++;
-        }
-    });
+  analyses.forEach((a: any) => {
+    // Profitable: monthly_net_profit > 0
+    if (Number(a.outputs?.monthly_net_profit) > 0) {
+      profitable++;
+    }
+    // Risky: risk_level === 'High' or 'Critical'
+    if (a.risk_level === 'High' || a.risk_level === 'Critical') {
+      risky++;
+    }
+  });
 
-    return { total, profitable, risky };
+  const lastUpdated = analyses.length > 0 ? analyses[0].created_at : null;
+
+  return { total, profitable, risky, lastUpdated };
 }

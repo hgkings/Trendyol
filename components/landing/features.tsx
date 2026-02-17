@@ -30,7 +30,7 @@ export function Features() {
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="text-center max-w-2xl mx-auto mb-16">
                     <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">
-                        Neden Kar Koçu?
+                        Neden Kârnet?
                     </h2>
                     <p className="text-lg text-muted-foreground">
                         Pazaryeri satışında gizli kalan tüm maliyetleri ortaya çıkarır, kârınızı ve riskinizi net olarak gösterir.

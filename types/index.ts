@@ -8,6 +8,15 @@ export interface User {
   plan: PlanType;
   email_alerts_enabled?: boolean;
   email_notifications_enabled?: boolean;
+  // Account preferences
+  target_margin?: number;
+  margin_alert?: boolean;
+  default_marketplace?: Marketplace;
+  default_commission?: number;
+  default_vat?: number;
+  monthly_profit_target?: number;
+  default_return_rate?: number;
+  default_ads_cost?: number;
 }
 
 export type AlertType = 'danger' | 'warning' | 'info';

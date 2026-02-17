@@ -86,9 +86,10 @@ const fields: FieldConfig[] = [
 interface AnalysisFormProps {
   initialData?: ProductInput;
   analysisId?: string;
+  isDemo?: boolean;
 }
 
-export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
+export function AnalysisForm({ initialData, analysisId, isDemo = false }: AnalysisFormProps) {
   const { user } = useAuth();
   const { refresh } = useAlerts();
   const router = useRouter();
@@ -103,11 +104,16 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
   const [targetProfit, setTargetProfit] = useState<number | undefined>();
   const [suggestedPrice, setSuggestedPrice] = useState<number | undefined>();
 
-  const isProUserFlag = isProUser(user);
+  // In demo mode, treat as free user unless simulated otherwise
+  const isProUserFlag = isDemo ? false : isProUser(user);
   const isProMode = input.pro_mode === true;
 
   const handleProToggle = (checked: boolean) => {
     if (checked && !isProUserFlag) {
+      if (isDemo) {
+        toast.info('Demo modunda sadece standart analiz yapılabilir.');
+        return;
+      }
       setShowUpgrade(true);
       // Ensure it stays off
       setInput(prev => ({ ...prev, pro_mode: false }));
@@ -118,13 +124,11 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
 
   // Watch for pro_mode changes from initialData or other sources
   useEffect(() => {
-    if (input.pro_mode && !isProUserFlag && user) {
+    if (input.pro_mode && !isProUserFlag && ((user) || isDemo)) {
       // Revert to standard mode if not pro
       setInput(prev => ({ ...prev, pro_mode: false }));
-      // Optional: Show upgrade modal if they tried to access a pro analysis, but maybe too intrusive on load
-      // setShowUpgrade(true); 
     }
-  }, [input.pro_mode, isProUserFlag, user]);
+  }, [input.pro_mode, isProUserFlag, user, isDemo]);
 
   const handleMarketplaceChange = (mp: Marketplace) => {
     const defaults = getMarketplaceDefaults(mp);
@@ -163,12 +167,15 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate() || !user) return;
+    if (!validate()) return;
+
+    // Auth check skipped in demo mode
+    if (!isDemo && !user) return;
 
     setLoading(true);
 
     try {
-      if (!analysisId) {
+      if (!isDemo && !analysisId && user) {
         const count = await getUserAnalysisCount(user.id);
         const limits = getPlanLimits(user.plan);
         if (count >= limits.maxProducts) {
@@ -194,6 +201,25 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
         : calculateProfit(sanitized);
 
       const risk = calculateRisk(sanitized, result);
+
+      if (isDemo) {
+        // In demo mode, just show success and maybe scroll to result (if we were showing result on same page)
+        // Since we redirect to detail page normally, for demo we might want to just show a toast 
+        // OR prompt to sign up to see detailed report.
+        // For now, let's just simulate a calculation "success" toast.
+        // In a real app, we'd probably redirect to a /demo/result page or show a modal.
+
+        setLoading(false);
+        toast.success('Hesaplama Başarılı! (Demo Modu)');
+
+        // Optional: We could trigger a state update to show results right here if the UI supported it.
+        // But AnalysisForm relies on redirecting.
+        // Let's redirect to a demo result page? Or simply show an alert.
+        toast.info('Detaylı rapor ve kaydetme için ücretsiz hesap oluşturun.');
+        return;
+      }
+
+      if (!user) return; // Should not happen given check above
 
       const analysisData = {
         id: analysisId || generateId(),
@@ -243,100 +269,98 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="space-y-8 pb-20">
+      <form onSubmit={handleSubmit} className="space-y-6 p-6 sm:p-8">
 
         {/* PRO Toggle Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border-2 border-primary/20 bg-card p-5 shadow-sm transition-all hover:border-primary/40">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border bg-gradient-to-r from-card to-muted/30 p-5 sm:p-6 shadow-sm transition-all">
           <div className="flex items-center gap-4">
-            <div className={`p-3 rounded-xl transition-colors ${isProMode ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-              <Calculator className="h-6 w-6" />
+            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-colors ${isProMode ? 'bg-primary text-primary-foreground shadow-premium-sm' : 'bg-muted text-muted-foreground'}`}>
+              <Calculator className="h-5 w-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <Label htmlFor="pro-mode" className="font-bold text-lg cursor-pointer">PRO Muhasebe Modu</Label>
-                {!isProUserFlag && <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200"><Lock className="h-3 w-3 mr-1" /> Premium</Badge>}
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2.5">
+                <Label htmlFor="pro-mode" className="font-bold text-base cursor-pointer">PRO Muhasebe Modu</Label>
+                {!isProUserFlag && <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800 text-[10px] px-2 py-0.5"><Lock className="h-3 w-3 mr-1" /> Premium</Badge>}
               </div>
-              <p className="text-sm text-muted-foreground italic">Gerçek E-Ticaret Muhasebesi (VAT-Excl)</p>
+              <p className="text-xs text-muted-foreground">Gerçek E-Ticaret Muhasebesi (KDV Ayrıştırma)</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Switch
-              id="pro-mode"
-              checked={isProMode}
-              onCheckedChange={handleProToggle}
-              className="data-[state=checked]:bg-primary"
-            />
-          </div>
+          <Switch
+            id="pro-mode"
+            checked={isProMode}
+            onCheckedChange={handleProToggle}
+            className="data-[state=checked]:bg-primary"
+          />
         </div>
 
         {/* PRO Granular Fields Section */}
         {isProMode && (
-          <div className="rounded-2xl border border-primary/30 bg-primary/5 p-6 space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Badge className="bg-primary hover:bg-primary">PRO AYARLAR</Badge>
+          <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.03] to-transparent p-6 sm:p-7 space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <Badge className="bg-primary hover:bg-primary text-xs px-2.5 py-1">PRO AYARLAR</Badge>
                 <span className="text-xs text-muted-foreground">İleri düzey KDV ve iade yönetimi</span>
               </div>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="text-xs text-primary font-bold"
+                className="text-xs text-primary font-semibold gap-1.5 self-start sm:self-auto"
                 onClick={() => setShowProAdvanced(!showProAdvanced)}
               >
-                {showProAdvanced ? <><ChevronUp className="h-4 w-4 mr-1" /> Basitleştir</> : <><ChevronDown className="h-4 w-4 mr-1" /> Detaylar</>}
+                {showProAdvanced ? <><ChevronUp className="h-4 w-4" /> Basitleştir</> : <><ChevronDown className="h-4 w-4" /> Detaylar</>}
               </Button>
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {/* Primary VAT Toggles */}
-              <div className="space-y-4 rounded-xl border bg-card p-4 shadow-sm">
-                <h4 className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-1">
-                  <Info className="h-3 w-3" /> Gelir/Gider Temeli
+              <div className="space-y-4 rounded-xl border bg-card p-5 shadow-sm">
+                <h4 className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider flex items-center gap-1.5">
+                  <Info className="h-3.5 w-3.5" /> Gelir/Gider Temeli
                 </h4>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs">Satış Fiyatı KDV Dahil</Label>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <Label className="text-sm">Satış Fiyatı KDV Dahil</Label>
                     <Switch checked={input.sale_price_includes_vat !== false} onCheckedChange={(v) => handleFieldChange('sale_price_includes_vat', v)} />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs">Alış Fiyatı KDV Dahil</Label>
+                  <div className="flex items-center justify-between gap-3">
+                    <Label className="text-sm">Alış Fiyatı KDV Dahil</Label>
                     <Switch checked={input.product_cost_includes_vat !== false} onCheckedChange={(v) => handleFieldChange('product_cost_includes_vat', v)} />
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-4 rounded-xl border bg-card p-4 shadow-sm">
-                <h4 className="text-xs font-bold uppercase text-muted-foreground">KDV Oranları</h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] uppercase">Satış KDV %</Label>
-                    <Input type="number" value={input.sale_vat_pct ?? 20} onChange={(e) => handleFieldChange('sale_vat_pct', parseFloat(e.target.value))} />
+              <div className="space-y-4 rounded-xl border bg-card p-5 shadow-sm">
+                <h4 className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">KDV Oranları</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Satış KDV %</Label>
+                    <Input type="number" className="h-10" value={input.sale_vat_pct ?? 20} onChange={(e) => handleFieldChange('sale_vat_pct', parseFloat(e.target.value))} />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] uppercase">Alış KDV %</Label>
-                    <Input type="number" value={input.purchase_vat_pct ?? 20} onChange={(e) => handleFieldChange('purchase_vat_pct', parseFloat(e.target.value))} />
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Alış KDV %</Label>
+                    <Input type="number" className="h-10" value={input.purchase_vat_pct ?? 20} onChange={(e) => handleFieldChange('purchase_vat_pct', parseFloat(e.target.value))} />
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-4 rounded-xl border bg-card p-4 shadow-sm">
-                <h4 className="text-xs font-bold uppercase text-muted-foreground">Pazaryeri & İade</h4>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs truncate mr-2">İadede Komisyon İadesi Var mı?</Label>
+              <div className="space-y-4 rounded-xl border bg-card p-5 shadow-sm">
+                <h4 className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">Pazaryeri & İade</h4>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <Label className="text-sm">İadede Komisyon İadesi</Label>
                     <Switch checked={input.return_refunds_commission !== false} onCheckedChange={(v) => handleFieldChange('return_refunds_commission', v)} />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-[11px]">Hizmet KDV (Komisyon KDV) %</Label>
-                    <Input type="number" value={input.marketplace_fee_vat_pct ?? 20} onChange={(e) => handleFieldChange('marketplace_fee_vat_pct', parseFloat(e.target.value))} />
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Hizmet KDV (Komisyon) %</Label>
+                    <Input type="number" className="h-10" value={input.marketplace_fee_vat_pct ?? 20} onChange={(e) => handleFieldChange('marketplace_fee_vat_pct', parseFloat(e.target.value))} />
                   </div>
                 </div>
               </div>
             </div>
 
             {showProAdvanced && (
-              <div className="pt-4 animate-in fade-in duration-300">
+              <div className="pt-2 animate-in fade-in duration-300">
                 <Separator className="mb-6" />
                 <h4 className="text-sm font-bold mb-4">Gider Bazlı KDV Ayarları</h4>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -346,47 +370,47 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
                     { id: 'ad', label: 'Reklam', inc: 'ad_includes_vat', pct: 'ad_vat_pct' },
                     { id: 'other', label: 'Diğer', inc: 'other_cost_includes_vat', pct: 'other_cost_vat_pct' },
                   ].map((item) => (
-                    <div key={item.id} className="rounded-xl border bg-card p-3 shadow-sm space-y-3">
-                      <div className="flex items-center justify-between border-b pb-2">
-                        <span className="text-xs font-bold">{item.label}</span>
+                    <div key={item.id} className="rounded-xl border bg-card p-4 shadow-sm space-y-3">
+                      <div className="flex items-center justify-between border-b pb-2.5">
+                        <span className="text-sm font-semibold">{item.label}</span>
                         <Switch
                           checked={input[item.inc as keyof ProductInput] !== false}
                           onCheckedChange={(v) => handleFieldChange(item.inc as keyof ProductInput, v)}
                         />
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-muted-foreground uppercase flex-1">KDV Dahil</span>
-                        <div className="relative w-16">
+                        <span className="text-xs text-muted-foreground flex-1">KDV Dahil</span>
+                        <div className="relative w-20">
                           <Input
-                            className="h-7 px-1.5 text-xs pr-4"
+                            className="h-9 px-2 text-sm pr-5"
                             type="number"
                             value={(input[item.pct as keyof ProductInput] as number) ?? 20}
                             onChange={(e) => handleFieldChange(item.pct as keyof ProductInput, parseFloat(e.target.value))}
                           />
-                          <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[9px] text-muted-foreground">%</span>
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-6 rounded-xl border bg-amber-50 dark:bg-amber-900/10 p-4">
-                  <div className="flex items-center gap-2 mb-2">
+                <div className="mt-6 rounded-xl border bg-amber-50 dark:bg-amber-900/10 p-5">
+                  <div className="flex items-center gap-2 mb-2.5">
                     <Info className="h-4 w-4 text-amber-600" />
-                    <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase">Ek İade Maliyeti</span>
+                    <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Ek İade Maliyeti</span>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 flex-1">
-                      Müşteri iade ettiğinde cebinizden çıkan ekstra kargo veya operasyon bedeli (Birim/Satış başına).
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    <p className="text-xs text-amber-700/80 dark:text-amber-400/80 flex-1 leading-relaxed">
+                      Müşteri iade ettiğinde cebinizden çıkan ekstra kargo veya operasyon bedeli (birim başına).
                     </p>
-                    <div className="relative w-24">
+                    <div className="relative w-28 shrink-0">
                       <Input
                         type="number"
                         value={input.return_extra_cost ?? 0}
                         onChange={(e) => handleFieldChange('return_extra_cost', parseFloat(e.target.value))}
-                        className="h-8 border-amber-200 dark:border-amber-800"
+                        className="h-10 border-amber-200 dark:border-amber-800 pr-6"
                       />
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-amber-600">₺</span>
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-amber-600">₺</span>
                     </div>
                   </div>
                 </div>
@@ -395,16 +419,17 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
           </div>
         )}
 
+        {/* Marketplace Selector */}
         <div className="space-y-3">
-          <Label>Pazaryeri Seçimi</Label>
+          <Label className="text-sm font-semibold">Pazaryeri Seçimi</Label>
           <div className="flex flex-wrap gap-2">
             {marketplaces.map((mp) => (
               <button
                 key={mp.key}
                 type="button"
-                className={`rounded-xl border px-4 py-2 text-sm font-medium transition-colors ${input.marketplace === mp.key
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border bg-card hover:bg-muted'
+                className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition-all duration-200 ${input.marketplace === mp.key
+                  ? 'border-primary bg-primary/10 text-primary shadow-sm'
+                  : 'border-border bg-card hover:bg-muted hover:border-border'
                   }`}
                 onClick={() => handleMarketplaceChange(mp.key)}
               >
@@ -415,19 +440,21 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
           <p className="text-xs text-muted-foreground">Pazaryeri değişikliği komisyon, iade ve KDV alanlarını otomatik doldurur.</p>
         </div>
 
+        {/* Field Groups */}
         {groups.map((group) => {
           const groupFields = fields.filter((f) => f.group === group.key);
           if (groupFields.length === 0) return null;
 
           return (
-            <div key={group.key} className="space-y-4">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider border-b pb-2">
-                {group.title}
-              </h3>
-              <div className="grid gap-4 sm:grid-cols-2">
+            <div key={group.key} className="space-y-5">
+              <div className="flex items-center gap-3">
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{group.title}</h3>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+              <div className="grid gap-5 sm:grid-cols-2">
                 {groupFields.map((field) => (
                   <div key={field.key} className="space-y-2">
-                    <Label htmlFor={field.key}>{field.label}</Label>
+                    <Label htmlFor={field.key} className="text-sm font-medium">{field.label}</Label>
                     <div className="relative">
                       <Input
                         id={field.key}
@@ -437,11 +464,11 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
                         min={field.min}
                         max={field.max}
                         step={field.step}
-                        className={errors[field.key] ? 'border-red-500' : ''}
+                        className={`h-11 ${field.suffix ? 'pr-10' : ''} ${errors[field.key] ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                         placeholder={field.type === 'text' ? '' : '0'}
                       />
                       {field.suffix && (
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">
                           {field.suffix}
                         </span>
                       )}
@@ -456,18 +483,21 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
           );
         })}
 
-        <div className="rounded-2xl border bg-primary/5 p-6 space-y-4">
-          <div className="flex items-center gap-2">
-            <Target className="h-5 w-5 text-primary" />
-            <h3 className="font-bold text-lg">Kar Hedefi Simülasyonu</h3>
+        {/* Profit Target Simulation */}
+        <div className="rounded-2xl border bg-gradient-to-br from-primary/[0.04] to-transparent p-6 sm:p-7 space-y-5">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+              <Target className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-bold text-base">Kâr Hedefi Simülasyonu</h3>
+              <p className="text-xs text-muted-foreground">Hedef kâra göre gerekli satış fiyatını hesaplayın.</p>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Hedeflediğiniz kar oranına veya birim kara göre gerekli satış fiyatını hesaplayın.
-          </p>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Hedef Marj (%)</Label>
+              <Label className="text-sm font-medium">Hedef Marj (%)</Label>
               <div className="relative">
                 <Input
                   type="number"
@@ -477,12 +507,13 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
                     setTargetMargin(parseFloat(e.target.value));
                     setTargetProfit(undefined);
                   }}
+                  className="h-11 pr-8"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Hedef Net Kar (₺/birim)</Label>
+              <Label className="text-sm font-medium">Hedef Net Kâr (₺/birim)</Label>
               <div className="relative">
                 <Input
                   type="number"
@@ -492,6 +523,7 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
                     setTargetProfit(parseFloat(e.target.value));
                     setTargetMargin(undefined);
                   }}
+                  className="h-11 pr-8"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">₺</span>
               </div>
@@ -502,6 +534,7 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
             <Button
               type="button"
               variant="secondary"
+              className="rounded-[10px]"
               onClick={() => {
                 if (targetMargin) {
                   const price = calculateRequiredPrice(input, 'margin', targetMargin);
@@ -520,16 +553,16 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
             {suggestedPrice !== undefined && suggestedPrice > 0 && (
               <div className="flex items-center gap-3 animate-in fade-in slide-in-from-left-2">
                 <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                <div className="bg-background border rounded-lg px-3 py-2 flex items-center gap-3">
+                <div className="bg-background border rounded-xl px-4 py-2.5 flex items-center gap-4 shadow-sm">
                   <div>
                     <span className="text-xs text-muted-foreground block">Önerilen Satış Fiyatı</span>
-                    <span className="font-bold text-primary">{formatCurrency(suggestedPrice)}</span>
+                    <span className="font-bold text-primary text-lg">{formatCurrency(suggestedPrice)}</span>
                   </div>
                   <Button
                     type="button"
                     size="sm"
                     variant="ghost"
-                    className="h-8 text-xs hover:bg-primary hover:text-white"
+                    className="h-8 text-xs hover:bg-primary hover:text-white rounded-lg"
                     onClick={() => {
                       handleFieldChange('sale_price', suggestedPrice.toFixed(2));
                       setSuggestedPrice(undefined);
@@ -544,12 +577,13 @@ export function AnalysisForm({ initialData, analysisId }: AnalysisFormProps) {
           </div>
         </div>
 
-        <div className="pt-4">
-          <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={loading}>
+        {/* Submit */}
+        <div className="pt-2">
+          <Button type="submit" size="lg" className="w-full sm:w-auto h-12 px-8 text-base rounded-[10px] shadow-premium-sm" disabled={loading}>
             {loading ? 'Hesaplanıyor...' : (analysisId ? 'Güncelle' : 'Analiz Et')}
           </Button>
         </div>
-      </form >
+      </form>
 
       <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} />
     </>

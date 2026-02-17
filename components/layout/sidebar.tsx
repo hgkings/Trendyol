@@ -38,15 +38,20 @@ const bottomNavItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const [stats, setStats] = useState({ total: 0, profitable: 0, risky: 0 });
+  const [stats, setStats] = useState<{ total: number; profitable: number; risky: number; lastUpdated: string | null }>({ total: 0, profitable: 0, risky: 0, lastUpdated: null });
   const [dateStr, setDateStr] = useState('');
 
   useEffect(() => {
     if (user?.id) {
-      getSidebarStats(user.id).then(setStats);
+      getSidebarStats(user.id).then(data => {
+        setStats(data);
+        if (data.lastUpdated) {
+          setDateStr(new Date(data.lastUpdated).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' }));
+        } else {
+          setDateStr('-');
+        }
+      });
     }
-    // Set date client-side to avoid hydration mismatch
-    setDateStr(new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' }));
   }, [user?.id]);
 
   const isPro = isProUser(user);

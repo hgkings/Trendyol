@@ -47,7 +47,7 @@ export function Header() {
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary transition-transform group-hover:scale-105">
                         <TrendingUp className="h-5 w-5 text-primary-foreground" />
                     </div>
-                    <span className="text-lg font-semibold tracking-tight">Kar Koçu</span>
+                    <span className="text-lg font-semibold tracking-tight">Kârnet</span>
                 </Link>
 
                 {/* Desktop Nav */}
@@ -103,7 +103,7 @@ export function Header() {
                                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
                                         <TrendingUp className="h-4 w-4 text-primary-foreground" />
                                     </div>
-                                    Kar Koçu
+                                    Kârnet
                                 </SheetTitle>
                             </SheetHeader>
                             <div className="mt-8 flex flex-col gap-1">

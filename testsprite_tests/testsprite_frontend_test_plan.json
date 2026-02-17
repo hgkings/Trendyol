@@ -1,51 +1,91 @@
 [
   {
     "id": "TC001",
-    "title": "Switch to Register tab shows registration form",
-    "description": "Verifies the user can toggle from Login to Register and see the registration UI.",
-    "category": "User Authentication",
-    "priority": "Medium",
+    "title": "Create profit analysis with all fields completed",
+    "description": "Verifies a user can calculate and view profit analysis results when all required inputs are provided.",
+    "category": "Create Profit Analysis",
+    "priority": "High",
     "steps": [
       {
         "type": "action",
-        "description": "Navigate to /auth"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Login\" is visible"
+        "description": "Navigate to /login"
       },
       {
         "type": "action",
-        "description": "Click on \"Register\" tab"
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
       },
       {
         "type": "assertion",
-        "description": "Verify text \"Register\" is visible"
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"New Analysis\" or \"Create Analysis\" navigation option"
       },
       {
         "type": "assertion",
-        "description": "Verify element \"Email\" is visible"
+        "description": "Verify URL contains \"/analysis/new\""
+      },
+      {
+        "type": "action",
+        "description": "Select a marketplace option from the Marketplace dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Test Product\" into the Product Name field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"100\" into the Price field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"60\" into the Cost field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"10\" into the Commission field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Calculate\" button"
       },
       {
         "type": "assertion",
-        "description": "Verify element \"Password\" is visible"
+        "description": "Verify text \"Margin\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Fees\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Analysis Results\" is visible"
       }
     ]
   },
   {
     "id": "TC002",
-    "title": "Login with missing email shows validation error",
-    "description": "Verifies the login form prevents submission or shows an error when email is blank.",
-    "category": "User Authentication",
+    "title": "Create profit analysis with blank commission (default applied)",
+    "description": "Verifies calculation succeeds when commission is left blank and results are still displayed.",
+    "category": "Create Profit Analysis",
     "priority": "Medium",
     "steps": [
       {
         "type": "action",
-        "description": "Navigate to /auth"
+        "description": "Navigate to /login"
       },
       {
-        "type": "assertion",
-        "description": "Verify text \"Login\" is visible"
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
       },
       {
         "type": "action",
@@ -53,98 +93,202 @@
       },
       {
         "type": "action",
-        "description": "Click the submit button"
+        "description": "Click the \"Sign in\" button"
       },
       {
         "type": "assertion",
-        "description": "Verify text \"Email\" is visible"
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"New Analysis\" or \"Create Analysis\" navigation option"
       },
       {
         "type": "assertion",
-        "description": "Verify URL contains \"/auth\""
+        "description": "Verify URL contains \"/analysis/new\""
+      },
+      {
+        "type": "action",
+        "description": "Select a marketplace option from the Marketplace dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Type \"No Commission Product\" into the Product Name field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"120\" into the Price field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"80\" into the Cost field"
+      },
+      {
+        "type": "action",
+        "description": "Click the Commission field"
+      },
+      {
+        "type": "action",
+        "description": "Press \"Backspace\""
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Calculate\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Analysis Results\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Margin\" is visible"
       }
     ]
   },
   {
     "id": "TC003",
-    "title": "Login with missing password shows validation error",
-    "description": "Verifies the login form prevents submission or shows an error when password is blank.",
-    "category": "User Authentication",
-    "priority": "Medium",
+    "title": "Validation error when Price is missing",
+    "description": "Verifies the form blocks calculation and shows a required-field error when Price is empty.",
+    "category": "Create Profit Analysis",
+    "priority": "High",
     "steps": [
       {
         "type": "action",
-        "description": "Navigate to /auth"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Login\" is visible"
+        "description": "Navigate to /login"
       },
       {
         "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
       },
       {
         "type": "action",
-        "description": "Click the submit button"
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
       },
       {
         "type": "assertion",
-        "description": "Verify text \"Password\" is visible"
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"New Analysis\" or \"Create Analysis\" navigation option"
       },
       {
         "type": "assertion",
-        "description": "Verify URL contains \"/auth\""
+        "description": "Verify URL contains \"/analysis/new\""
+      },
+      {
+        "type": "action",
+        "description": "Select a marketplace option from the Marketplace dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Missing Price Product\" into the Product Name field"
+      },
+      {
+        "type": "action",
+        "description": "Click the Price field"
+      },
+      {
+        "type": "action",
+        "description": "Press \"Backspace\""
+      },
+      {
+        "type": "action",
+        "description": "Type \"50\" into the Cost field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"10\" into the Commission field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Calculate\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Price is required\" is visible"
       }
     ]
   },
   {
     "id": "TC004",
-    "title": "Register with invalid email format shows validation error",
-    "description": "Verifies the registration form rejects an invalid email format and does not redirect.",
-    "category": "User Authentication",
-    "priority": "Medium",
+    "title": "Validation error for non-numeric Price input",
+    "description": "Verifies the form shows a numeric validation error when Price contains non-numeric characters.",
+    "category": "Create Profit Analysis",
+    "priority": "High",
     "steps": [
       {
         "type": "action",
-        "description": "Navigate to /auth"
+        "description": "Navigate to /login"
       },
       {
         "type": "action",
-        "description": "Click on \"Register\" tab"
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
       },
       {
         "type": "action",
-        "description": "Type \"not-an-email\" into the email field"
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
       },
       {
         "type": "action",
-        "description": "Type \"ValidPass!23456\" into the password field"
-      },
-      {
-        "type": "action",
-        "description": "Click the submit button"
+        "description": "Click the \"Sign in\" button"
       },
       {
         "type": "assertion",
-        "description": "Verify URL contains \"/auth\""
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"New Analysis\" or \"Create Analysis\" navigation option"
       },
       {
         "type": "assertion",
-        "description": "Verify element \"Email\" is visible"
+        "description": "Verify URL contains \"/analysis/new\""
+      },
+      {
+        "type": "action",
+        "description": "Select a marketplace option from the Marketplace dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Bad Price Product\" into the Product Name field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"abc\" into the Price field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"50\" into the Cost field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"10\" into the Commission field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Calculate\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"numeric\" is visible"
       }
     ]
   },
   {
     "id": "TC005",
-    "title": "Create analysis, calculate profit/risk, and save to reach detailed analysis view",
-    "description": "Verifies a user can create a new product profit analysis, calculate results, save it, and land on the detailed analysis page.",
-    "category": "Product Profit Analysis",
-    "priority": "High",
+    "title": "Commission rejects non-numeric input",
+    "description": "Verifies the form prevents calculation and shows a numeric validation error when Commission is non-numeric.",
+    "category": "Create Profit Analysis",
+    "priority": "Medium",
     "steps": [
       {
         "type": "action",
-        "description": "Navigate to /auth"
+        "description": "Navigate to /login"
       },
       {
         "type": "action",
@@ -156,7 +300,7 @@
       },
       {
         "type": "action",
-        "description": "Click the \"Sign in\" or \"Log in\" button"
+        "description": "Click the \"Sign in\" button"
       },
       {
         "type": "assertion",
@@ -164,28 +308,52 @@
       },
       {
         "type": "action",
-        "description": "Click the \"New Analysis\" or \"New\" button/link to open the new product analysis form"
+        "description": "Click on the \"New Analysis\" or \"Create Analysis\" navigation option"
       },
       {
         "type": "assertion",
-        "description": "Verify URL contains \"/analysis/new"
+        "description": "Verify URL contains \"/analysis/new\""
+      },
+      {
+        "type": "action",
+        "description": "Select a marketplace option from the Marketplace dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Bad Commission Product\" into the Product Name field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"100\" into the Price field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"50\" into the Cost field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"ten\" into the Commission field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Calculate\" button"
       },
       {
         "type": "assertion",
-        "description": "Verify text \"Calculate\" is visible"
+        "description": "Verify text \"numeric\" is visible"
       }
     ]
   },
   {
     "id": "TC006",
-    "title": "Save after calculation redirects to detailed analysis page",
-    "description": "Verifies saving a calculated analysis redirects from the form to a detailed analysis view URL.",
-    "category": "Product Profit Analysis",
-    "priority": "High",
+    "title": "Validation error when Cost is missing",
+    "description": "Verifies the form blocks calculation and shows a required-field error when Cost is empty.",
+    "category": "Create Profit Analysis",
+    "priority": "Medium",
     "steps": [
       {
         "type": "action",
-        "description": "Navigate to /auth"
+        "description": "Navigate to /login"
       },
       {
         "type": "action",
@@ -197,7 +365,7 @@
       },
       {
         "type": "action",
-        "description": "Click the \"Sign in\" or \"Log in\" button"
+        "description": "Click the \"Sign in\" button"
       },
       {
         "type": "assertion",
@@ -205,52 +373,56 @@
       },
       {
         "type": "action",
-        "description": "Click the \"New Analysis\" or \"New\" button/link to open the new product analysis form"
+        "description": "Click on the \"New Analysis\" or \"Create Analysis\" navigation option"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/analysis/new\""
       },
       {
         "type": "action",
-        "description": "Select \"Trendyol\" from the marketplace dropdown"
+        "description": "Select a marketplace option from the Marketplace dropdown"
       },
       {
         "type": "action",
-        "description": "Type \"200\" into the product cost field"
+        "description": "Type \"Missing Cost Product\" into the Product Name field"
       },
       {
         "type": "action",
-        "description": "Type \"275\" into the sale price field"
+        "description": "Type \"100\" into the Price field"
       },
       {
         "type": "action",
-        "description": "Type \"15\" into the shipping cost field"
+        "description": "Click the Cost field"
+      },
+      {
+        "type": "action",
+        "description": "Press \"Backspace\""
+      },
+      {
+        "type": "action",
+        "description": "Type \"10\" into the Commission field"
       },
       {
         "type": "action",
         "description": "Click the \"Calculate\" button"
       },
       {
-        "type": "action",
-        "description": "Click the \"Save\" button"
-      },
-      {
         "type": "assertion",
-        "description": "Verify URL contains \"/analysis/\""
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Detailed\" is visible"
+        "description": "Verify text \"Cost is required\" is visible"
       }
     ]
   },
   {
     "id": "TC007",
-    "title": "Validation: cost required when attempting to calculate",
-    "description": "Verifies the form blocks calculation and shows the 'Cost is required' validation message when cost is empty.",
-    "category": "Product Profit Analysis",
-    "priority": "High",
+    "title": "Negative margin scenario (cost higher than price)",
+    "description": "Verifies the calculation completes and displays results even when the margin is negative.",
+    "category": "Create Profit Analysis",
+    "priority": "Low",
     "steps": [
       {
         "type": "action",
-        "description": "Navigate to /auth"
+        "description": "Navigate to /login"
       },
       {
         "type": "action",
@@ -262,7 +434,7 @@
       },
       {
         "type": "action",
-        "description": "Click the \"Sign in\" or \"Log in\" button"
+        "description": "Click the \"Sign in\" button"
       },
       {
         "type": "assertion",
@@ -270,15 +442,31 @@
       },
       {
         "type": "action",
-        "description": "Click the \"New Analysis\" or \"New\" button/link to open the new product analysis form"
+        "description": "Click on the \"New Analysis\" or \"Create Analysis\" navigation option"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/analysis/new\""
       },
       {
         "type": "action",
-        "description": "Select \"Trendyol\" from the marketplace dropdown"
+        "description": "Select a marketplace option from the Marketplace dropdown"
       },
       {
         "type": "action",
-        "description": "Type \"150\" into the sale price field"
+        "description": "Type \"Loss Product\" into the Product Name field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"50\" into the Price field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"80\" into the Cost field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"5\" into the Commission field"
       },
       {
         "type": "action",
@@ -286,85 +474,24 @@
       },
       {
         "type": "assertion",
-        "description": "Verify text \"Cost is required\" is visible"
+        "description": "Verify element \"Analysis Results\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Margin\" is visible"
       }
     ]
   },
   {
     "id": "TC008",
-    "title": "Fix validation error and successfully calculate after entering cost",
-    "description": "Verifies that after seeing 'Cost is required', entering cost and recalculating produces results.",
-    "category": "Product Profit Analysis",
-    "priority": "High",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to /auth"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Sign in\" or \"Log in\" button"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify URL contains \"/dashboard\""
-      },
-      {
-        "type": "action",
-        "description": "Click the \"New Analysis\" or \"New\" button/link to open the new product analysis form"
-      },
-      {
-        "type": "action",
-        "description": "Select \"Trendyol\" from the marketplace dropdown"
-      },
-      {
-        "type": "action",
-        "description": "Type \"150\" into the sale price field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Calculate\" button"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Cost is required\" is visible"
-      },
-      {
-        "type": "action",
-        "description": "Type \"90\" into the product cost field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Calculate\" button"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Net profit\" is visible"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Risk\" is visible"
-      }
-    ]
-  },
-  {
-    "id": "TC009",
-    "title": "Edge: negative profit scenario is displayed after calculation",
-    "description": "Verifies the UI can display a negative net profit scenario and still shows a risk assessment.",
-    "category": "Product Profit Analysis",
+    "title": "Marketplace must be selected before calculating",
+    "description": "Verifies the form blocks calculation and shows an error when Marketplace is not selected.",
+    "category": "Create Profit Analysis",
     "priority": "Medium",
     "steps": [
       {
         "type": "action",
-        "description": "Navigate to /auth"
+        "description": "Navigate to /login"
       },
       {
         "type": "action",
@@ -376,7 +503,7 @@
       },
       {
         "type": "action",
-        "description": "Click the \"Sign in\" or \"Log in\" button"
+        "description": "Click the \"Sign in\" button"
       },
       {
         "type": "assertion",
@@ -384,80 +511,27 @@
       },
       {
         "type": "action",
-        "description": "Click the \"New Analysis\" or \"New\" button/link to open the new product analysis form"
-      },
-      {
-        "type": "action",
-        "description": "Select \"Trendyol\" from the marketplace dropdown"
-      },
-      {
-        "type": "action",
-        "description": "Type \"200\" into the product cost field"
-      },
-      {
-        "type": "action",
-        "description": "Type \"150\" into the sale price field"
-      },
-      {
-        "type": "action",
-        "description": "Type \"20\" into the shipping cost field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Calculate\" button"
+        "description": "Click on the \"New Analysis\" or \"Create Analysis\" navigation option"
       },
       {
         "type": "assertion",
-        "description": "Verify text \"Net profit\" is visible"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Risk\" is visible"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"-\" is visible"
-      }
-    ]
-  },
-  {
-    "id": "TC010",
-    "title": "Marketplace selection is required before calculation (if enforced)",
-    "description": "Verifies the form prompts the user if marketplace is not selected when calculating (only if the UI enforces it).",
-    "category": "Product Profit Analysis",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to /auth"
+        "description": "Verify URL contains \"/analysis/new\""
       },
       {
         "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+        "description": "Type \"No Marketplace Product\" into the Product Name field"
       },
       {
         "type": "action",
-        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+        "description": "Type \"100\" into the Price field"
       },
       {
         "type": "action",
-        "description": "Click the \"Sign in\" or \"Log in\" button"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify URL contains \"/dashboard\""
+        "description": "Type \"60\" into the Cost field"
       },
       {
         "type": "action",
-        "description": "Click the \"New Analysis\" or \"New\" button/link to open the new product analysis form"
-      },
-      {
-        "type": "action",
-        "description": "Type \"100\" into the product cost field"
-      },
-      {
-        "type": "action",
-        "description": "Type \"150\" into the sale price field"
+        "description": "Type \"10\" into the Commission field"
       },
       {
         "type": "action",
@@ -466,18 +540,178 @@
       {
         "type": "assertion",
         "description": "Verify text \"Marketplace\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Dashboard loads with stats cards and recent analyses list",
+    "description": "Verifies an authenticated user can open the dashboard and see summary stats and the recent analyses section populated.",
+    "category": "Dashboard Overview",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
       },
       {
         "type": "assertion",
-        "description": "Verify text \"required\" is visible"
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Recent\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Stats\" section is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Recent analyses\" list is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Open analysis detail from a recent analysis item",
+    "description": "Verifies a user can navigate from the dashboard recent analyses list to an analysis detail page.",
+    "category": "Dashboard Overview",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click on the first item in the \"Recent analyses\" list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/analysis/\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Analysis\" is visible"
       }
     ]
   },
   {
     "id": "TC011",
-    "title": "Cancel/leave form does not auto-save analysis (if cancel/back exists)",
-    "description": "Verifies that leaving the new analysis form via an explicit cancel/back control does not create a detailed analysis record.",
-    "category": "Product Profit Analysis",
+    "title": "Dashboard shows a loading state before recent analyses appear",
+    "description": "Verifies the dashboard provides a visible loading indicator for the recent analyses section before data renders.",
+    "category": "Dashboard Overview",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Loading\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Wait for element \"Recent analyses\" list to appear"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Recent analyses\" list is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Dashboard shows stats cards consistently after login",
+    "description": "Verifies that stats cards render on the dashboard for an authenticated user (regardless of analyses list contents).",
+    "category": "Dashboard Overview",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Stats\" section is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify at least one stats card is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify at least one numeric value is visible within the stats area"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Recent analyses item click is ignored when list is not yet loaded",
+    "description": "Verifies that before recent analyses are loaded, the UI does not navigate to an analysis detail page when the list is still in a loading state.",
+    "category": "Dashboard Overview",
     "priority": "Low",
     "steps": [
       {
@@ -494,113 +728,31 @@
       },
       {
         "type": "action",
-        "description": "Click the \"Sign in\" or \"Log in\" button"
+        "description": "Click the \"Sign in\" button"
       },
       {
         "type": "assertion",
         "description": "Verify URL contains \"/dashboard\""
       },
       {
-        "type": "action",
-        "description": "Click the \"New Analysis\" or \"New\" button/link to open the new product analysis form"
+        "type": "assertion",
+        "description": "Verify text \"Loading\" is visible"
       },
       {
         "type": "action",
-        "description": "Type \"100\" into the product cost field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Cancel\" or \"Back\" button"
+        "description": "Click in the \"Recent analyses\" section where items will appear"
       },
       {
         "type": "assertion",
         "description": "Verify URL contains \"/dashboard\""
-      }
-    ]
-  },
-  {
-    "id": "TC012",
-    "title": "Open notification drawer from dashboard",
-    "description": "Verifies an authenticated user can open the notification drawer and see a notifications list area.",
-    "category": "Persistent Notifications",
-    "priority": "High",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to /auth"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Login\" button"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify URL contains \"/dashboard\""
-      },
-      {
-        "type": "action",
-        "description": "Click the notification bell"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify element \"Notifications\" is visible"
-      }
-    ]
-  },
-  {
-    "id": "TC013",
-    "title": "Filter notifications by Unread",
-    "description": "Verifies the Unread filter can be applied and the UI reflects the Unread-only view.",
-    "category": "Persistent Notifications",
-    "priority": "High",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to /auth"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Login\" button"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify URL contains \"/dashboard\""
-      },
-      {
-        "type": "action",
-        "description": "Click the notification bell"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Unread\" filter option"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Unread\" is visible"
       }
     ]
   },
   {
     "id": "TC014",
-    "title": "Mark a notification as read and see unread count decrease",
-    "description": "Verifies marking an unread notification as read updates the visible unread count/badge.",
-    "category": "Persistent Notifications",
+    "title": "Toggle Dark Mode from Settings applies immediately",
+    "description": "Verifies that enabling dark mode on the Settings page updates the UI theme immediately.",
+    "category": "Settings Management",
     "priority": "High",
     "steps": [
       {
@@ -617,7 +769,7 @@
       },
       {
         "type": "action",
-        "description": "Click the \"Login\" button"
+        "description": "Click the \"Sign in\" or \"Login\" button"
       },
       {
         "type": "assertion",
@@ -625,27 +777,23 @@
       },
       {
         "type": "action",
-        "description": "Click the notification bell"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify element \"Unread\" is visible"
+        "description": "Click on \"Settings\" in the app navigation/menu"
       },
       {
         "type": "action",
-        "description": "Click \"Mark as read\" on the first unread notification"
+        "description": "Toggle Dark Mode"
       },
       {
         "type": "assertion",
-        "description": "Verify element \"Unread\" is visible"
+        "description": "Verify text \"Dark Mode\" is visible"
       }
     ]
   },
   {
     "id": "TC015",
-    "title": "Show loading indicator while fetching notifications",
-    "description": "Verifies a loading state is shown immediately after opening the drawer while notifications are being fetched.",
-    "category": "Persistent Notifications",
+    "title": "Toggle Dark Mode twice returns to original theme state",
+    "description": "Verifies that dark mode can be toggled on and then off without breaking the Settings page UI.",
+    "category": "Settings Management",
     "priority": "Medium",
     "steps": [
       {
@@ -662,7 +810,7 @@
       },
       {
         "type": "action",
-        "description": "Click the \"Login\" button"
+        "description": "Click the \"Sign in\" or \"Login\" button"
       },
       {
         "type": "assertion",
@@ -670,64 +818,27 @@
       },
       {
         "type": "action",
-        "description": "Click the notification bell"
+        "description": "Click on \"Settings\" in the app navigation/menu"
+      },
+      {
+        "type": "action",
+        "description": "Toggle Dark Mode"
+      },
+      {
+        "type": "action",
+        "description": "Toggle Dark Mode"
       },
       {
         "type": "assertion",
-        "description": "Verify text \"Loading\" is visible"
+        "description": "Verify element \"Settings\" is visible"
       }
     ]
   },
   {
     "id": "TC016",
-    "title": "Unread filter updates after marking item as read",
-    "description": "Verifies that after applying the Unread filter, marking a notification as read removes it from the Unread list (or otherwise updates the list).",
-    "category": "Persistent Notifications",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to /auth"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Login\" button"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify URL contains \"/dashboard\""
-      },
-      {
-        "type": "action",
-        "description": "Click the notification bell"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Unread\" filter option"
-      },
-      {
-        "type": "action",
-        "description": "Click \"Mark as read\" on the first notification in the filtered list"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"No unread notifications\" is visible"
-      }
-    ]
-  },
-  {
-    "id": "TC017",
-    "title": "Import products by pasting CSV text and confirming",
-    "description": "Verifies a user can paste CSV text, see a parsed preview, confirm, and then see products listed.",
-    "category": "CSV Bulk Import",
+    "title": "Enable Email Notifications and save preference successfully",
+    "description": "Verifies that email notification preference can be enabled and saved with a visible confirmation.",
+    "category": "Settings Management",
     "priority": "High",
     "steps": [
       {
@@ -736,7 +847,7 @@
       },
       {
         "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
       },
       {
         "type": "action",
@@ -744,7 +855,7 @@
       },
       {
         "type": "action",
-        "description": "Click the \"Sign in\" button"
+        "description": "Click the \"Sign in\" or \"Login\" button"
       },
       {
         "type": "assertion",
@@ -752,24 +863,73 @@
       },
       {
         "type": "action",
-        "description": "Click \"Products\" in the main navigation"
+        "description": "Click on \"Settings\" in the app navigation/menu"
       },
       {
         "type": "action",
-        "description": "Click \"CSV Upload\""
+        "description": "Toggle Email Notifications"
       },
       {
         "type": "action",
-        "description": "Type \"name,sku,price\\nSample Product,SKU-123,19.99\" into the CSV paste area"
+        "description": "Click the \"Save\" or \"Apply\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"updated\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Disable Email Notifications and save preference successfully",
+    "description": "Verifies that email notification preference can be disabled and saved with a visible confirmation.",
+    "category": "Settings Management",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /auth"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" or \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Settings\" in the app navigation/menu"
+      },
+      {
+        "type": "action",
+        "description": "Toggle Email Notifications"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Save\" or \"Apply\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"updated\" is visible"
       }
     ]
   },
   {
     "id": "TC018",
-    "title": "Cancel from preview closes modal and returns to Products list",
-    "description": "Verifies the user can cancel out of the CSV import preview and remain on /products.",
-    "category": "CSV Bulk Import",
-    "priority": "Medium",
+    "title": "Send Test Email from Settings shows success confirmation",
+    "description": "Verifies that clicking Send Test Email triggers the action and displays a visible success message/toast.",
+    "category": "Settings Management",
+    "priority": "High",
     "steps": [
       {
         "type": "action",
@@ -777,7 +937,7 @@
       },
       {
         "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
       },
       {
         "type": "action",
@@ -785,7 +945,7 @@
       },
       {
         "type": "action",
-        "description": "Click the \"Sign in\" button"
+        "description": "Click the \"Sign in\" or \"Login\" button"
       },
       {
         "type": "assertion",
@@ -793,28 +953,24 @@
       },
       {
         "type": "action",
-        "description": "Click \"Products\" in the main navigation"
+        "description": "Click on \"Settings\" in the app navigation/menu"
       },
       {
         "type": "action",
-        "description": "Click \"CSV Upload\""
-      },
-      {
-        "type": "action",
-        "description": "Click \"Cancel\""
+        "description": "Click Send Test Email button"
       },
       {
         "type": "assertion",
-        "description": "Verify URL contains \"/products\""
+        "description": "Verify text \"Test email sent\" is visible"
       }
     ]
   },
   {
     "id": "TC019",
-    "title": "Column mapping step appears when required before confirming import",
-    "description": "Verifies that when column mapping is required, the UI presents mapping controls prior to confirming import.",
-    "category": "CSV Bulk Import",
-    "priority": "Medium",
+    "title": "Settings page shows content when authenticated (smoke check)",
+    "description": "Verifies that an authenticated user can reach Settings and core controls are visible.",
+    "category": "Settings Management",
+    "priority": "High",
     "steps": [
       {
         "type": "action",
@@ -822,7 +978,7 @@
       },
       {
         "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+        "description": "Type \"{{LOGIN_USER}}\" into the email/username field"
       },
       {
         "type": "action",
@@ -830,7 +986,7 @@
       },
       {
         "type": "action",
-        "description": "Click the \"Sign in\" button"
+        "description": "Click the \"Sign in\" or \"Login\" button"
       },
       {
         "type": "assertion",
@@ -838,15 +994,15 @@
       },
       {
         "type": "action",
-        "description": "Click \"Products\" in the main navigation"
-      },
-      {
-        "type": "action",
-        "description": "Click \"CSV Upload\""
+        "description": "Click on \"Settings\" in the app navigation/menu"
       },
       {
         "type": "assertion",
-        "description": "Verify text \"Map\" is visible"
+        "description": "Verify text \"Email Notifications\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Dark Mode\" is visible"
       }
     ]
   }

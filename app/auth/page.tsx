@@ -4,10 +4,24 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
+import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { TrendingUp, Eye, EyeOff } from 'lucide-react';
+import {
+  TrendingUp,
+  Eye,
+  EyeOff,
+  HelpCircle,
+  BarChart3,
+  ShieldAlert,
+  Layers,
+  Star,
+  BadgeCheck,
+  Zap,
+  CreditCard,
+  Lock as LockIcon,
+} from 'lucide-react';
 
 export default function AuthPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -16,6 +30,7 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const { login, register, user } = useAuth();
   const router = useRouter();
 
@@ -48,132 +63,347 @@ export default function AuthPage() {
     setLoading(false);
   };
 
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    setError('');
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) {
+      setError(error.message);
+      setGoogleLoading(false);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Left Visual Panel */}
-      <div className="hidden w-1/2 bg-gradient-to-br from-primary/10 via-primary/5 to-background lg:flex lg:flex-col lg:items-center lg:justify-center lg:p-12">
-        <div className="max-w-md text-center">
-          <div className="mx-auto mb-8 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-premium-md">
-            <TrendingUp className="h-8 w-8 text-primary-foreground" />
-          </div>
-          <h2 className="text-3xl font-bold tracking-tight">Kar Koçu</h2>
-          <p className="mt-4 text-muted-foreground leading-relaxed">
-            Pazaryerinde gerçekten kâr ediyor musun? Tüm giderlerini hesapla, gerçek net kârını gör.
-          </p>
-          <div className="mt-8 rounded-2xl border bg-card/60 p-6 text-left backdrop-blur shadow-premium-sm">
-            <p className="text-sm font-semibold text-foreground">Demo Hesap</p>
-            <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-              <p>E-posta: demo@demo.com</p>
-              <p>Şifre: 123456</p>
+    <div className="flex min-h-screen bg-background relative overflow-hidden">
+      {/* Subtle ambient gradients */}
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -top-32 -left-32 h-[500px] w-[500px] rounded-full bg-primary/[0.04] blur-[100px]" />
+        <div className="absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full bg-blue-500/[0.03] blur-[80px]" />
+      </div>
+
+      {/* ─── LEFT COLUMN: Compact Product Context (Desktop only) ─── */}
+      <div className="hidden lg:flex w-[48%] flex-col justify-center px-12 xl:px-16 py-10">
+        <div className="max-w-md mx-auto space-y-8">
+
+          {/* Logo */}
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-premium-sm">
+              <TrendingUp className="h-4 w-4 text-primary-foreground" />
             </div>
+            <span className="text-lg font-bold tracking-tight">Kârnet</span>
+          </div>
+
+          {/* Headline + subline */}
+          <div className="space-y-3">
+            <h1 className="text-3xl font-bold tracking-tight leading-tight">
+              Kârnet ile{' '}
+              <span className="text-primary">net kârını gör.</span>
+            </h1>
+            <p className="text-muted-foreground leading-relaxed">
+              Komisyon, kargo, reklam, iade, KDV dahil.
+            </p>
+          </div>
+
+          {/* 3 icon bullets */}
+          <div className="space-y-3">
+            {[
+              { icon: BarChart3, text: 'Net kâr & marj', color: 'text-blue-500' },
+              { icon: ShieldAlert, text: 'Zarar/risk uyarısı', color: 'text-amber-500' },
+              { icon: Layers, text: 'Ürün bazlı maliyet dökümü', color: 'text-emerald-500' },
+            ].map((item) => (
+              <div key={item.text} className="flex items-center gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                  <item.icon className={`h-4 w-4 ${item.color}`} />
+                </div>
+                <span className="text-sm font-medium">{item.text}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Örnek Sonuç Card ── */}
+          <div className="rounded-xl border bg-card/80 backdrop-blur-sm p-5 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Örnek Sonuç</span>
+              <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                Risk: Orta
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <p className="text-[10px] text-muted-foreground">Satış</p>
+                <p className="text-sm font-bold tabular-nums">₺349</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground">Maliyet</p>
+                <p className="text-sm font-bold tabular-nums">₺287</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground">Net Kâr</p>
+                <p className="text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400">₺62</p>
+              </div>
+            </div>
+            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+              <div className="h-full w-[18%] rounded-full bg-emerald-500" />
+            </div>
+            <p className="text-[10px] text-muted-foreground text-right">Marj: %17.8</p>
+          </div>
+
+          {/* ── Compact Testimonials ── */}
+          <div className="space-y-3">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Yorumlar</span>
+            <div className="grid gap-3">
+              {[
+                { quote: 'Zarar ettiğimi fark etmem 2 dakika sürdü.', name: 'Emre K.', role: 'Trendyol Satıcısı' },
+                { quote: 'Excel\'den kurtuldum, her şey tek panelde.', name: 'Seda A.', role: 'E-ticaret Danışmanı' },
+              ].map((t) => (
+                <div key={t.name} className="rounded-lg border bg-card/60 backdrop-blur-sm p-3.5 space-y-2">
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
+                    ))}
+                  </div>
+                  <p className="text-xs leading-relaxed text-foreground/90">&ldquo;{t.quote}&rdquo;</p>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-semibold">{t.name}</span>
+                    <span className="text-[10px] text-muted-foreground">· {t.role}</span>
+                    <BadgeCheck className="h-3 w-3 text-emerald-500 ml-auto" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Trust line */}
+          <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1"><CreditCard className="h-3 w-3" /> Kredi kartı gerekmez</span>
+            <span>•</span>
+            <span className="flex items-center gap-1"><LockIcon className="h-3 w-3" /> Veriler satılmaz</span>
           </div>
         </div>
       </div>
 
-      {/* Right Form Panel */}
-      <div className="flex flex-1 flex-col items-center justify-center px-4 py-12">
-        <div className="w-full max-w-[440px]">
-          {/* Mobile Logo */}
-          <div className="mb-8 text-center lg:hidden">
-            <Link href="/" className="inline-flex items-center gap-2.5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
-                <TrendingUp className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold">Kar Koçu</span>
-            </Link>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Pazaryeri kâr analiz aracı
-            </p>
+      {/* ─── RIGHT COLUMN: Auth Card ─── */}
+      <div className="flex flex-1 flex-col items-center justify-center px-4 py-10 sm:py-12 lg:border-l lg:bg-muted/20">
+
+        {/* Mobile Header */}
+        <div className="lg:hidden w-full max-w-[420px] mb-8 text-center space-y-3">
+          <div className="flex justify-center">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary shadow-premium-sm">
+              <TrendingUp className="h-5 w-5 text-primary-foreground" />
+            </div>
           </div>
+          <h1 className="text-xl font-bold tracking-tight">Kârnet</h1>
+          <p className="text-sm text-muted-foreground">Net kârını gör. Komisyon, kargo, iade dahil.</p>
+        </div>
 
-          {/* Card */}
-          <div className="rounded-2xl border bg-card p-8 shadow-premium-md">
-            <h1 className="text-2xl font-bold tracking-tight">
-              {mode === 'login' ? 'Giriş Yap' : 'Kayıt Ol'}
-            </h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {mode === 'login'
-                ? 'Hesabınıza giriş yaparak devam edin.'
-                : 'Yeni bir hesap oluşturun.'}
-            </p>
+        <div className="w-full max-w-[420px] space-y-5">
+          {/* ── Glass Auth Card ── */}
+          <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-7 sm:p-8 shadow-premium-md relative overflow-hidden">
+            {/* Subtle inner glow */}
+            <div className="pointer-events-none absolute -top-16 -right-16 h-32 w-32 bg-primary/[0.06] rounded-full blur-[50px]" />
 
-            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">E-posta</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="ornek@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="h-12 rounded-xl px-4 text-[15px]"
-                />
+            {/* Mode badge */}
+            <div className="absolute top-4 right-4">
+              <span className="px-2 py-0.5 rounded-md bg-muted text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+                {mode === 'login' ? 'Giriş' : 'Kayıt'}
+              </span>
+            </div>
+
+            <div className="relative z-10">
+              <div className="space-y-1.5 mb-7">
+                <h2 className="text-2xl font-bold tracking-tight">
+                  {mode === 'login' ? 'Hoş Geldiniz' : 'Hesap Oluştur'}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {mode === 'login'
+                    ? 'Devam etmek için bilgilerinizi girin.'
+                    : 'Kârnet ile kârlılığınızı artırmaya başlayın.'}
+                </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium">Şifre</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="En az 6 karakter"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    className="h-12 rounded-xl px-4 pr-12 text-[15px]"
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
-              {error && (
-                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-400">
-                  {error}
-                </div>
-              )}
-
-              <Button type="submit" className="w-full h-12 rounded-xl text-base font-semibold shadow-premium-sm" disabled={loading}>
-                {loading ? 'Yükleniyor...' : mode === 'login' ? 'Giriş Yap' : 'Kayıt Ol'}
+              {/* Google Sign-In */}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-12 text-sm font-medium rounded-[10px] gap-3 border-border hover:bg-muted/60 transition-all"
+                onClick={handleGoogleSignIn}
+                disabled={googleLoading}
+              >
+                {googleLoading ? (
+                  <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg className="h-5 w-5" viewBox="0 0 24 24">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                  </svg>
+                )}
+                Google ile devam et
               </Button>
-            </form>
 
-            <div className="mt-6 text-center text-sm">
-              {mode === 'login' ? (
-                <p className="text-muted-foreground">
-                  Hesabınız yok mu?{' '}
-                  <button
-                    className="font-semibold text-primary hover:underline"
-                    onClick={() => { setMode('register'); setError(''); }}
-                  >
-                    Kayıt Ol
-                  </button>
-                </p>
-              ) : (
-                <p className="text-muted-foreground">
-                  Zaten hesabınız var mı?{' '}
-                  <button
-                    className="font-semibold text-primary hover:underline"
-                    onClick={() => { setMode('login'); setError(''); }}
-                  >
-                    Giriş Yap
-                  </button>
-                </p>
-              )}
+              {/* Divider */}
+              <div className="relative my-1">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-card/80 px-3 text-muted-foreground">veya e-posta ile devam et</span>
+                </div>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium">E-posta</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="ornek@sirket.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="h-11"
+                    autoComplete="email"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password" className="text-sm font-medium">Şifre</Label>
+                    {mode === 'login' && (
+                      <Link href="#" className="text-xs text-primary hover:underline">
+                        Şifremi unuttum
+                      </Link>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={6}
+                      className="h-11 pr-10"
+                      autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="p-3 rounded-xl bg-red-50 text-red-600 text-sm border border-red-100 flex items-center gap-2 dark:bg-red-950/50 dark:border-red-900 dark:text-red-400">
+                    <HelpCircle className="h-4 w-4 shrink-0" />
+                    {error}
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  className="w-full h-12 text-base font-semibold shadow-premium-sm rounded-[10px] transition-all"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      İşleniyor...
+                    </span>
+                  ) : (
+                    mode === 'login' ? 'Giriş Yap' : 'Hemen Başla'
+                  )}
+                </Button>
+              </form>
+
+              {/* Toggle mode */}
+              <div className="mt-6 pt-5 border-t text-center text-sm">
+                {mode === 'login' ? (
+                  <p className="text-muted-foreground">
+                    Hesabınız yok mu?{' '}
+                    <button onClick={() => setMode('register')} className="font-semibold text-primary hover:underline">
+                      Ücretsiz Kayıt Ol
+                    </button>
+                  </p>
+                ) : (
+                  <p className="text-muted-foreground">
+                    Zaten üye misiniz?{' '}
+                    <button onClick={() => setMode('login')} className="font-semibold text-primary hover:underline">
+                      Giriş Yap
+                    </button>
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Mobile Demo */}
-          <div className="mt-6 rounded-xl border bg-muted/50 p-4 text-center lg:hidden">
-            <p className="text-xs font-medium text-muted-foreground">Demo Hesap</p>
-            <p className="mt-1 text-xs text-muted-foreground">demo@demo.com / 123456</p>
+          {/* Demo link */}
+          <div className="text-center">
+            <Link
+              href="/demo"
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              <Zap className="h-3.5 w-3.5" />
+              Hesap oluşturmadan dene
+            </Link>
+          </div>
+        </div>
+
+        {/* Mobile context (below login on small screens) */}
+        <div className="lg:hidden w-full max-w-[420px] mt-10 space-y-6">
+
+          {/* Örnek Sonuç mini card */}
+          <div className="rounded-xl border bg-card/80 p-4 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Örnek Sonuç</span>
+              <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                Risk: Orta
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <p className="text-[10px] text-muted-foreground">Satış</p>
+                <p className="text-sm font-bold tabular-nums">₺349</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground">Maliyet</p>
+                <p className="text-sm font-bold tabular-nums">₺287</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground">Net Kâr</p>
+                <p className="text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400">₺62</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile testimonial */}
+          <div className="rounded-lg border bg-card/60 p-3.5 space-y-2">
+            <div className="flex gap-0.5">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
+              ))}
+            </div>
+            <p className="text-xs leading-relaxed text-foreground/90">&ldquo;Zarar ettiğimi fark etmem 2 dakika sürdü.&rdquo;</p>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-semibold">Emre K.</span>
+              <span className="text-[10px] text-muted-foreground">· Trendyol Satıcısı</span>
+            </div>
+          </div>
+
+          {/* Trust line */}
+          <div className="flex items-center justify-center gap-4 text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1"><CreditCard className="h-3 w-3" /> Kredi kartı gerekmez</span>
+            <span>•</span>
+            <span className="flex items-center gap-1"><LockIcon className="h-3 w-3" /> Veriler satılmaz</span>
           </div>
         </div>
       </div>

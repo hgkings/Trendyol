@@ -31,8 +31,8 @@ export function Hero() {
                         </h1>
 
                         <p className="mb-8 text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto lg:mx-0">
-                            Komisyon, kargo, reklam ve iade etkisini otomatik hesapla.
-                            Ürün başı net kârı 2 dakikada gör, Excel'e harcadığın saatleri azalt.
+                            Komisyon, kargo, reklam, iade, KDV dahil — net kâr ve risk puanı.
+                            Ürün başı gerçek kârını 2 dakikada gör.
                         </p>
 
                         {/* Trust Chips */}
@@ -53,15 +53,15 @@ export function Hero() {
                         </div>
 
                         <div className="flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
-                            <Link href={user ? '/analysis/new' : '/auth'}>
+                            <Link href="/demo">
                                 <Button size="lg" className="w-full sm:w-auto h-12 px-8 text-base gap-2 rounded-[10px] shadow-premium-md hover:shadow-premium-lg transition-all">
-                                    Ücretsiz Başla
+                                    Ücretsiz Demo
                                     <ArrowRight className="h-4 w-4" />
                                 </Button>
                             </Link>
-                            <Link href="/pricing">
+                            <Link href={user ? '/dashboard' : '/auth'}>
                                 <Button variant="outline" size="lg" className="w-full sm:w-auto h-12 px-8 text-base rounded-[10px] hover:bg-muted/50">
-                                    Fiyatlandırma
+                                    Panele Git
                                 </Button>
                             </Link>
                         </div>

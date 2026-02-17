@@ -9,8 +9,8 @@ import { Toaster } from 'sonner';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'PazarYeri Kar Kocu - Gercek Kar Hesaplama Araci',
-  description: 'Pazaryerinde gercekten kar ediyor musun? Komisyon, KDV, iade, reklam dahil gercek net kar hesapla.',
+  title: 'Kârnet - Pazaryeri Kâr Hesaplama Aracı',
+  description: 'Pazaryerinde gerçekten kâr ediyor musun? Komisyon, KDV, iade, reklam dahil gerçek net kârını gör.',
 };
 
 export default function RootLayout({

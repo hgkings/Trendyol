@@ -20,7 +20,7 @@ export function Navbar() {
             <TrendingUp className="h-5 w-5 text-primary-foreground" />
           </div>
           <span className="text-lg font-semibold tracking-tight">
-            Kar Koçu
+            Kârnet
           </span>
         </Link>
         <div className="flex flex-1" />
