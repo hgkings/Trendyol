@@ -2,6 +2,7 @@ import { ProductInput, CalculationResult, RiskResult, RiskLevel, RiskFactor } fr
 import { n } from './calculations';
 
 export function calculateRisk(input: ProductInput, result: CalculationResult): RiskResult {
+  console.debug('[Risk] Input:', input, 'Result:', result);
   const factors: RiskFactor[] = [];
 
   const margin_pct = n(result.margin_pct);

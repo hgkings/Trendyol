@@ -47,7 +47,7 @@ export function ProductsTable({ analyses, onDelete }: ProductsTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [marketplaceFilter, setMarketplaceFilter] = useState<string>('all');
   const [riskFilter, setRiskFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all'); // profitable, loss
+  const [statusFilter, setStatusFilter] = useState<string>('all'); // profitable, loss, pareto_80
 
   const [sortField, setSortField] = useState<SortField>('monthly_net_profit');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
@@ -76,11 +76,26 @@ export function ProductsTable({ analyses, onDelete }: ProductsTableProps) {
       data = data.filter(a => a.risk.level === riskFilter);
     }
     if (statusFilter !== 'all') {
-      data = data.filter(a => {
-        if (statusFilter === 'profitable') return a.result.monthly_net_profit > 0;
-        if (statusFilter === 'loss') return a.result.monthly_net_profit <= 0;
-        return true;
-      });
+      if (statusFilter === 'profitable') {
+        data = data.filter(a => a.result.monthly_net_profit > 0);
+      } else if (statusFilter === 'loss') {
+        data = data.filter(a => a.result.monthly_net_profit <= 0);
+      } else if (statusFilter === 'pareto_80') {
+        // Pareto Logic: Top 80% contributors
+        const profitable = [...analyses].filter(a => a.result.monthly_net_profit > 0)
+          .sort((a, b) => b.result.monthly_net_profit - a.result.monthly_net_profit);
+        const totalProfit = profitable.reduce((sum, a) => sum + a.result.monthly_net_profit, 0);
+        const threshold = totalProfit * 0.8;
+        let currentSum = 0;
+        const topIds = new Set<string>();
+
+        for (const p of profitable) {
+          currentSum += p.result.monthly_net_profit;
+          topIds.add(p.id);
+          if (currentSum >= threshold) break;
+        }
+        data = data.filter(a => topIds.has(a.id));
+      }
     }
 
     // 3. Sort
@@ -202,6 +217,18 @@ export function ProductsTable({ analyses, onDelete }: ProductsTableProps) {
               <SelectItem value="risky">Riskli</SelectItem>
             </SelectContent>
           </Select>
+
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-9 w-[130px] text-xs">
+              <SelectValue placeholder="Durum" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tümü</SelectItem>
+              <SelectItem value="profitable">Kârlı Ürünler</SelectItem>
+              <SelectItem value="loss">Zarar Edenler</SelectItem>
+              <SelectItem value="pareto_80">⭐ Kârın Omurgası (80/20)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -283,6 +310,25 @@ export function ProductsTable({ analyses, onDelete }: ProductsTableProps) {
                         <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-[10px] font-medium text-muted-foreground">
                           {getMarketplaceLabel(a.input.marketplace)}
                         </span>
+                      </div>
+
+                      {/* Health Tags */}
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {a.result.margin_pct >= 20 && (a.risk.level === 'safe' || a.risk.level === 'moderate') && (
+                          <span className="inline-flex items-center rounded-sm bg-indigo-100 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+                            ⭐ Yıldız
+                          </span>
+                        )}
+                        {a.result.monthly_net_profit > 0 && (a.result.margin_pct < 10 || a.risk.level === 'risky' || a.risk.level === 'dangerous') && (
+                          <span className="inline-flex items-center rounded-sm bg-orange-100 px-1.5 py-0.5 text-[10px] font-medium text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+                            ⚠️ İnce Çizgi
+                          </span>
+                        )}
+                        {a.result.monthly_net_profit <= 0 && (
+                          <span className="inline-flex items-center rounded-sm bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                            🩸 Zarar
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="hidden px-4 py-3.5 sm:table-cell">

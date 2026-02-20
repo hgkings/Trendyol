@@ -24,7 +24,7 @@ export function RiskChart({ analyses }: RiskChartProps) {
   const levels: RiskLevel[] = ['safe', 'moderate', 'risky', 'dangerous'];
 
   return (
-    <div className="h-full rounded-2xl border bg-card p-6 shadow-premium-sm transition-shadow hover:shadow-premium-md">
+    <div className="rounded-2xl border bg-card p-6 shadow-premium-sm transition-shadow hover:shadow-premium-md">
       <h3 className="text-base font-bold text-foreground mb-6">Risk Dağılımı</h3>
       <div className="space-y-5">
         {levels.map((level) => {

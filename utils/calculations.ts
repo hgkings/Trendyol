@@ -7,6 +7,7 @@ export const n = (v: any, fallback = 0) => {
 };
 
 export function calculateProfit(input: ProductInput): CalculationResult {
+  console.debug('[Calculation] Input:', input);
   const sale_price = n(input.sale_price);
   const product_cost = n(input.product_cost);
   const commission_pct = n(input.commission_pct);
@@ -177,6 +178,8 @@ export function generateSensitivityAnalysis(input: ProductInput) {
   });
 }
 
+// ... existing code ...
+
 export function calculateCashflow(input: ProductInput) {
   const unitCost = input.product_cost + input.shipping_cost + input.packaging_cost + input.other_cost;
   const monthlyOutflow = unitCost * input.monthly_sales_volume;
@@ -191,4 +194,23 @@ export function calculateCashflow(input: ProductInput) {
     monthlyCashGap: Math.max(0, monthlyCashGap),
     dailyCashBurn: dailyOutflow,
   };
+}
+
+export function calculateAdCeiling(input: ProductInput): number {
+  // 1. Create a copy of input with 0 ad cost
+  const tempInput = { ...input, ad_cost_per_sale: 0 };
+
+  // 2. Calculate profit with 0 ads
+  const result = calculateProfit(tempInput);
+
+  // 3. The ceiling is exactly the Net Profit (Ads=0).
+  // Why? Profit = Revenue - Costs.
+  // Costs = Fixed + Variable(no_ads) + AdCost.
+  // Profit = [Revenue - Fixed - Variable(no_ads)] - AdCost.
+  // Profit = Profit(Ads=0) - AdCost.
+  // To reach BreakEven (Profit=0): 0 = Profit(Ads=0) - AdCost => AdCost = Profit(Ads=0).
+
+  // Safety: If Profit(Ads=0) is negative, then even 0 ads result in loss.
+  // In that case, ceiling is effectively 0 (or negative to indicate impossibility).
+  return Math.max(0, result.unit_net_profit);
 }

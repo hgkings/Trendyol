@@ -9,8 +9,38 @@ import { Toaster } from 'sonner';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Kârnet - Pazaryeri Kâr Hesaplama Aracı',
-  description: 'Pazaryerinde gerçekten kâr ediyor musun? Komisyon, KDV, iade, reklam dahil gerçek net kârını gör.',
+  title: {
+    default: 'Kârnet',
+    template: '%s | Kârnet',
+  },
+  description: 'Ürün portföyünüzün anlık kârlılık ve risk durumu.',
+  icons: {
+    icon: '/favicon.svg',
+    apple: '/brand/apple-touch-icon.png',
+  },
+  manifest: '/manifest.json',
+  openGraph: {
+    type: 'website',
+    locale: 'tr_TR',
+    url: 'https://karnet.com',
+    title: 'Kârnet',
+    description: 'Ürün portföyünüzün anlık kârlılık ve risk durumu.',
+    siteName: 'Kârnet',
+    images: [
+      {
+        url: '/brand/og.png',
+        width: 1200,
+        height: 630,
+        alt: 'Kârnet Dashboard',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Kârnet',
+    description: 'Ürün portföyünüzün anlık kârlılık ve risk durumu.',
+    images: ['/brand/og.png'],
+  },
 };
 
 export default function RootLayout({

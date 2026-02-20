@@ -14,6 +14,8 @@ import { SensitivityTable } from '@/components/analysis/sensitivity-table';
 import { MarketplaceComparison } from '@/components/analysis/marketplace-comparison';
 import { CashflowEstimator } from '@/components/analysis/cashflow-estimator';
 import { VatImpactCard } from '@/components/analysis/vat-impact-card';
+import { SafePriceCard } from '@/components/analysis/safe-price-card';
+import { ScenarioSimulator } from '@/components/analysis/scenario-simulator';
 import { formatCurrency, formatPercent } from '@/components/shared/format';
 import { getMarketplaceLabel } from '@/lib/marketplace-data';
 import { Button } from '@/components/ui/button';
@@ -38,10 +40,11 @@ import {
   Save,
   Rocket,
   FileText,
-  Loader2
+  Loader2,
+  ChevronDown
 } from 'lucide-react';
 import { saveAnalysis } from '@/lib/storage';
-import { calculateProfit } from '@/utils/calculations';
+import { calculateProfit, calculateAdCeiling } from '@/utils/calculations';
 import { calculateProAccounting } from '@/utils/pro-accounting';
 import { calculateRisk } from '@/utils/risk-engine';
 import { toast } from 'sonner';
@@ -50,6 +53,7 @@ import { ProLockedSection } from '@/components/shared/pro-locked-section';
 import { UpgradeModal } from '@/components/shared/upgrade-modal';
 import { isProUser } from '@/utils/access';
 import { supabase } from '@/lib/supabaseClient';
+import { CollapsibleCard } from '@/components/shared/collapsible-card';
 
 export default function AnalysisResultPage() {
   const params = useParams();
@@ -209,7 +213,7 @@ export default function AnalysisResultPage() {
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}));
         console.error("PDF Error:", errJson);
-        toast.error('PDF oluşturulamadı: ' + (errJson.error || 'Bilinmeyen hata'));
+        toast.error(`PDF oluşturulamadı: ${errJson.error || 'Hata'} (${errJson.details || ''})`);
         return;
       }
 
@@ -316,195 +320,226 @@ export default function AnalysisResultPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-2xl border bg-card p-5">
-            <p className="text-xs font-medium text-muted-foreground">Birim Net Kar</p>
-            <p className={`mt-1 text-2xl font-bold ${result.unit_net_profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+        {/* Compact Key Metrics Grid */}
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+          <div className="rounded-xl border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
+            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Birim Net Kâr</p>
+            <p className={`mt-0.5 text-xl sm:text-2xl font-black tracking-tight ${result.unit_net_profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
               {formatCurrency(result.unit_net_profit)}
             </p>
           </div>
-          <div className="rounded-2xl border bg-card p-5">
-            <p className="text-xs font-medium text-muted-foreground">Kar Marji</p>
-            <p className={`mt-1 text-2xl font-bold ${result.margin_pct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+          <div className="rounded-xl border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
+            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Kâr Marjı</p>
+            <p className={`mt-0.5 text-xl sm:text-2xl font-black tracking-tight ${result.margin_pct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
               {formatPercent(result.margin_pct)}
             </p>
           </div>
-          <div className="rounded-2xl border bg-card p-5">
-            <p className="text-xs font-medium text-muted-foreground">Aylik Net Kar</p>
-            <p className={`mt-1 text-2xl font-bold ${result.monthly_net_profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+          <div className="rounded-xl border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
+            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Aylık Net Kâr</p>
+            <p className={`mt-0.5 text-xl sm:text-2xl font-black tracking-tight ${result.monthly_net_profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
               {formatCurrency(result.monthly_net_profit)}
             </p>
           </div>
-          <div className="rounded-2xl border bg-card p-5">
-            <p className="text-xs font-medium text-muted-foreground">Basabas Fiyati</p>
-            <p className="mt-1 text-2xl font-bold">
-              {result.breakeven_price === Infinity ? '---' : formatCurrency(result.breakeven_price)}
-            </p>
-          </div>
-        </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="flex flex-col items-center rounded-2xl border bg-card p-6">
-            <h3 className="mb-4 self-start text-sm font-semibold">Risk Puani</h3>
-            <RiskGauge score={risk.score} level={risk.level} />
-            {risk.factors.length > 0 && (
-              <div className="mt-6 w-full space-y-2">
-                {risk.factors.map((f) => (
-                  <div key={f.name} className="flex items-start gap-2 rounded-lg bg-muted/50 px-3 py-2">
-                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
-                    <div>
-                      <p className="text-xs font-medium">{f.name}</p>
-                      <p className="text-xs text-muted-foreground">{f.description}</p>
-                    </div>
+          {/* Integrated Ad Ceiling */}
+          <div className="rounded-xl border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
+            {(() => {
+              const adCeiling = calculateAdCeiling(input);
+              const isLoss = adCeiling <= 0;
+              const isRisk = input.ad_cost_per_sale > adCeiling;
+
+              return (
+                <>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Reklam Tavanı</p>
+                    {isRisk && <span className="animate-pulse h-2 w-2 rounded-full bg-red-500"></span>}
                   </div>
-                ))}
-              </div>
-            )}
+                  <p className={`mt-0.5 text-xl sm:text-2xl font-black tracking-tight ${isLoss || isRisk ? 'text-red-600 dark:text-red-400' : 'text-foreground'}`}>
+                    {isLoss ? 'Kâr Yok' : formatCurrency(adCeiling)}
+                  </p>
+                </>
+              );
+            })()}
           </div>
-
-          <CostBreakdown input={input} result={result} />
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-2xl border bg-card p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <User2 className="h-5 w-5 text-primary" />
-                <h3 className="font-bold">Rakip Takibi</h3>
-              </div>
-              <Button size="sm" variant="outline" onClick={handleSaveCompetitor} disabled={saving}>
-                <Save className="mr-1.5 h-4 w-4" /> Kaydet
-              </Button>
-            </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Rakip Adi</Label>
-                <Input placeholder="Orn: MegaSatici" value={compName} onChange={e => setCompName(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Rakip Fiyati</Label>
-                <div className="relative">
-                  <Input type="number" value={compPrice || ''} onChange={e => setCompPrice(parseFloat(e.target.value))} />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">₺</span>
-                </div>
+        {/* Main Content Grid (12 Columns on Desktop) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+          {/* LEFT COLUMN (8/12) */}
+          <div className="lg:col-span-8 space-y-6 min-w-0">
+
+            {/* Cost Breakdown & Safe Price */}
+            <div className="grid gap-6 md:grid-cols-2">
+              <CostBreakdown input={input} result={result} />
+              <div className="h-full">
+                <SafePriceCard input={input} breakevenPrice={result.breakeven_price} />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Hedef Pozisyon</Label>
-              <Select value={targetPos} onValueChange={(v: any) => setTargetPos(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cheaper">Daha Ucuz (%3 altı)</SelectItem>
-                  <SelectItem value="same">Ayni Fiyat</SelectItem>
-                  <SelectItem value="premium">Premium (+%5 ustu)</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* VAT Impact & Monthly Revenue */}
+            <div className="grid gap-6 md:grid-cols-2">
+              <VatImpactCard input={input} result={result} />
+              <div className="rounded-2xl border bg-card p-5">
+                <p className="text-xs font-medium text-muted-foreground">Aylik Ciro</p>
+                <p className="mt-1 text-2xl font-bold">{formatCurrency(result.monthly_revenue)}</p>
+                <p className="mt-1 text-xs text-muted-foreground break-all">{input.monthly_sales_volume} adet x {formatCurrency(input.sale_price)}</p>
+              </div>
             </div>
 
-            {compPrice > 0 && (
-              <div className="mt-4 p-4 rounded-xl bg-primary/5 border border-primary/10 space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Fiyat Farkı:</span>
-                  <span className={`font-semibold ${input.sale_price > compPrice ? 'text-red-500' : 'text-emerald-500'}`}>
-                    {formatCurrency(input.sale_price - compPrice)} ({formatPercent(((input.sale_price - compPrice) / compPrice) * 100)})
-                  </span>
-                </div>
+            {/* Scenario Simulator */}
+            <div className="min-w-0">
+              <ScenarioSimulator input={input} />
+            </div>
 
-                {(() => {
-                  let suggested = compPrice;
-                  if (targetPos === 'cheaper') suggested = compPrice * 0.97;
-                  if (targetPos === 'premium') suggested = compPrice * 1.05;
+            {/* Collapsible Heavy Data Sections */}
+            <CollapsibleCard title="Hassasiyet Analizi" description="Farklı senaryolarda kâr değişimi" defaultOpen={false}>
+              {isPro ? (
+                <SensitivityTable input={input} />
+              ) : (
+                <ProLockedSection title="Hassasiyet Analizi">
+                  <div className="blur-sm grayscale opacity-50 pointer-events-none select-none">
+                    <SensitivityTable input={input} />
+                  </div>
+                </ProLockedSection>
+              )}
+            </CollapsibleCard>
 
-                  return (
-                    <div className="flex items-center justify-between pt-2 border-t border-primary/20">
+            <CollapsibleCard title="Pazaryeri Karşılaştırması" description="Diğer pazaryerleri" defaultOpen={false}>
+              {isPro ? (
+                <MarketplaceComparison input={input} />
+              ) : (
+                <ProLockedSection title="Pazaryeri Karşılaştırması">
+                  <div className="blur-sm grayscale opacity-50 pointer-events-none select-none">
+                    <MarketplaceComparison input={input} />
+                  </div>
+                </ProLockedSection>
+              )}
+            </CollapsibleCard>
+
+            <CollapsibleCard title="Nakit Akışı Tahmini" description="Tahmini nakit durumu" defaultOpen={false}>
+              {isPro ? (
+                <CashflowEstimator input={input} />
+              ) : (
+                <ProLockedSection title="Nakit Akışı Tahmini">
+                  <div className="blur-sm grayscale opacity-50 pointer-events-none select-none">
+                    <CashflowEstimator input={input} />
+                  </div>
+                </ProLockedSection>
+              )}
+            </CollapsibleCard>
+
+          </div>
+
+          {/* RIGHT COLUMN (4/12) */}
+          <div className="lg:col-span-4 space-y-6 min-w-0">
+            {/* Risk Gauge */}
+            <div className="flex flex-col items-center rounded-xl border bg-card p-5 shadow-sm">
+              <h3 className="mb-4 self-start text-xs font-bold uppercase text-muted-foreground tracking-wider">Risk Skoru</h3>
+              <RiskGauge score={risk.score} level={risk.level} />
+              {risk.factors.length > 0 && (
+                <div className="mt-6 w-full space-y-2">
+                  {risk.factors.slice(0, 3).map((f) => (
+                    <div key={f.name} className="flex items-start gap-2 rounded-lg bg-red-50 dark:bg-red-900/10 px-3 py-2 border border-red-100 dark:border-red-900/20">
+                      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-600 dark:text-red-400" />
                       <div>
-                        <p className="text-xs text-muted-foreground">Onerilen Fiyat</p>
-                        <p className="text-lg font-bold text-primary">{formatCurrency(suggested)}</p>
+                        <p className="text-[10px] font-bold text-red-700 dark:text-red-300 break-words">{f.name}</p>
                       </div>
-                      <Button size="sm" onClick={() => handleApplySuggestedPrice(suggested)} disabled={saving}>
-                        <Rocket className="mr-1.5 h-3.5 w-3.5" /> Uygula
-                      </Button>
                     </div>
-                  );
-                })()}
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-2xl border bg-card p-6">
-            <div className="flex items-center gap-2 mb-4 text-emerald-600">
-              <TrendingUp className="h-5 w-5" />
-              <h3 className="font-bold">Akilli Oneriler</h3>
+                  ))}
+                </div>
+              )}
             </div>
-            <div className="space-y-4">
-              {result.margin_pct < 10 && (
-                <div className="flex gap-2">
-                  <div className="h-2 w-2 rounded-full bg-red-500 mt-1.5 shrink-0" />
-                  <p className="text-sm">Marjiniz cok dusuk. Maliyet kalemlerini veya satis fiyatini gozden gecirmelisiniz.</p>
+
+            {/* Smart Recommendations */}
+            <div className="rounded-xl border bg-card p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-md">
+                  <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 </div>
-              )}
-              {input.ad_cost_per_sale > result.unit_net_profit && (
-                <div className="flex gap-2">
-                  <div className="h-2 w-2 rounded-full bg-red-500 mt-1.5 shrink-0" />
-                  <p className="text-sm">Reklam maliyetiniz birim kardan yuksek! Zarar ediyorsunuz.</p>
+                <h3 className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Akıllı Öneriler</h3>
+              </div>
+              <div className="space-y-3">
+                {result.margin_pct < 10 && (
+                  <div className="text-xs p-3 rounded-lg bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/20 text-orange-800 dark:text-orange-200">
+                    ⚠️ Düşük Marj: Giderleri veya fiyatı gözden geçirin.
+                  </div>
+                )}
+                {input.ad_cost_per_sale > result.unit_net_profit && (
+                  <div className="text-xs p-3 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 text-red-800 dark:text-red-200">
+                    🛑 Reklam Zararı: Reklam maliyeti kârı aşıyor.
+                  </div>
+                )}
+                <div className="flex gap-2 text-xs text-muted-foreground p-2 rounded-lg bg-muted/30">
+                  <ChevronRight className="h-3 w-3 mt-0.5 shrink-0 text-primary" />
+                  <p>İadeyi %1 düşürmek aylık <b>{formatCurrency(result.monthly_revenue * 0.01)}</b> kazandırır.</p>
                 </div>
-              )}
-              {compPrice > 0 && input.sale_price < compPrice * 0.9 && (
-                <div className="flex gap-2">
-                  <div className="h-2 w-2 rounded-full bg-amber-500 mt-1.5 shrink-0" />
-                  <p className="text-sm">Piyasa fiyatindan %10 daha ucuzsunuz. Marj arttirmak icin fiyat yukseltebilirsiniz.</p>
-                </div>
-              )}
-              <div className="flex gap-2 text-muted-foreground">
-                <ChevronRight className="h-4 w-4 mt-0.5 shrink-0 font-bold text-primary" />
-                <p className="text-sm">Iade oranini %1 dusurmek size aylik <b>{formatCurrency(result.monthly_revenue * 0.01)}</b> ek kar saglar.</p>
               </div>
             </div>
+
+            {/* Competitor Analysis Link/Card - Keep it compact or move functionality inside? 
+                The user had it in a card before. Let's keep the Competitor logic here to avoid losing it.
+            */}
+            <div className="rounded-xl border bg-card p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <User2 className="h-4 w-4 text-primary" />
+                  <h3 className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Rakip Analizi</h3>
+                </div>
+                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={handleSaveCompetitor} disabled={saving}>
+                  <Save className="h-3 w-3" />
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Rakip Adı</Label>
+                  <Input className="h-8 text-xs" placeholder="Örn: MegaSatıcı" value={compName} onChange={e => setCompName(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Rakip Fiyatı</Label>
+                  <Input className="h-8 text-xs tabular-nums" type="number" value={compPrice || ''} onChange={e => setCompPrice(parseFloat(e.target.value))} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Konum</Label>
+                  <Select value={targetPos} onValueChange={(v: any) => setTargetPos(v)}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cheaper">Daha Ucuz</SelectItem>
+                      <SelectItem value="same">Aynı Fiyat</SelectItem>
+                      <SelectItem value="premium">Premium</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {compPrice > 0 && (
+                  <div className="pt-2 border-t mt-2">
+                    <div className="flex justify-between text-xs mb-2">
+                      <span className="text-muted-foreground">Fark:</span>
+                      <span className={input.sale_price > compPrice ? 'text-red-500' : 'text-emerald-500'}>
+                        {formatCurrency(input.sale_price - compPrice)}
+                      </span>
+                    </div>
+                    {(() => {
+                      let suggested = compPrice;
+                      if (targetPos === 'cheaper') suggested = compPrice * 0.97;
+                      if (targetPos === 'premium') suggested = compPrice * 1.05;
+                      return (
+                        <Button size="sm" variant="secondary" className="w-full text-xs h-7" onClick={() => handleApplySuggestedPrice(suggested)} disabled={saving}>
+                          <Rocket className="mr-1.5 h-3 w-3" /> {formatCurrency(suggested)} Uygula
+                        </Button>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            </div>
+
           </div>
         </div>
-
-        <div className="grid gap-6 lg:grid-cols-2">
-          <VatImpactCard input={input} result={result} />
-          <div className="rounded-2xl border bg-card p-5">
-            <p className="text-xs font-medium text-muted-foreground">Aylik Ciro</p>
-            <p className="mt-1 text-2xl font-bold">{formatCurrency(result.monthly_revenue)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{input.monthly_sales_volume} adet x {formatCurrency(input.sale_price)}</p>
-          </div>
-        </div>
-
-        {isPro ? (
-          <SensitivityTable input={input} />
-        ) : (
-          <ProLockedSection title="Hassasiyet Analizi">
-            <div className="blur-sm grayscale opacity-50 pointer-events-none select-none">
-              <SensitivityTable input={input} />
-            </div>
-          </ProLockedSection>
-        )}
-
-        {isPro ? (
-          <MarketplaceComparison input={input} />
-        ) : (
-          <ProLockedSection title="Pazaryeri Karşılaştırması">
-            <div className="blur-sm grayscale opacity-50 pointer-events-none select-none">
-              <MarketplaceComparison input={input} />
-            </div>
-          </ProLockedSection>
-        )}
-
-        {isPro ? (
-          <CashflowEstimator input={input} />
-        ) : (
-          <ProLockedSection title="Nakit Akışı Tahmini">
-            <div className="blur-sm grayscale opacity-50 pointer-events-none select-none">
-              <CashflowEstimator input={input} />
-            </div>
-          </ProLockedSection>
-        )}
 
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
           <p className="text-xs text-amber-800 dark:text-amber-300">

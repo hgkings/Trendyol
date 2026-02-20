@@ -34,10 +34,10 @@ export default function LandingPage() {
       <footer className="border-t py-12 bg-muted/30">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-4 sm:flex-row sm:px-6 lg:px-8">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <TrendingUp className="h-4 w-4 text-primary-foreground" />
+            <div className="relative h-8 w-auto">
+              <img src="/brand/logo.svg" alt="Kârnet" width="160" height="40" className="h-8 w-auto dark:hidden" />
+              <img src="/brand/logo-dark.svg" alt="Kârnet" width="160" height="40" className="h-8 w-auto hidden dark:block" />
             </div>
-            <span className="text-sm font-bold tracking-tight">Kârnet</span>
           </div>
 
           <p className="text-xs text-muted-foreground text-center sm:text-right">

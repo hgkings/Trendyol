@@ -36,6 +36,7 @@ export function CSVImportSection({ onImport }: CSVImportSectionProps) {
     const [pasteText, setPasteText] = useState('');
     const [data, setData] = useState<ProductInput[]>([]);
     const [errors, setErrors] = useState<string[]>([]);
+    const [warnings, setWarnings] = useState<string[]>([]);
     const [missingCols, setMissingCols] = useState<string[]>([]);
     const [importOnlyValid, setImportOnlyValid] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -45,6 +46,7 @@ export function CSVImportSection({ onImport }: CSVImportSectionProps) {
     const reset = () => {
         setData([]);
         setErrors([]);
+        setWarnings([]);
         setMissingCols([]);
         setPasteText('');
         setIsProcessing(false);
@@ -77,6 +79,20 @@ export function CSVImportSection({ onImport }: CSVImportSectionProps) {
         setData(result.data);
         setErrors(result.errors);
         setMissingCols(result.missingColumns);
+
+        // Generate warnings
+        const w: string[] = [];
+        if (result.data.length > 0) {
+            const lowPrice = result.data.filter(i => i.sale_price <= 0).length;
+            if (lowPrice > 0) w.push(`${lowPrice} ürünün satış fiyatı 0 veya geçersiz.`);
+
+            const lowCost = result.data.filter(i => i.product_cost <= 0).length;
+            if (lowCost > 0) w.push(`${lowCost} ürünün maliyeti 0. Kâr %100 görünebilir.`);
+
+            const noSales = result.data.filter(i => !i.monthly_sales_volume || i.monthly_sales_volume <= 0).length;
+            if (noSales > 0) w.push(`${noSales} ürünün satış adedi girilmemiş (Varsayılan: 0).`);
+        }
+        setWarnings(w);
     };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -238,6 +254,20 @@ export function CSVImportSection({ onImport }: CSVImportSectionProps) {
                                 <div className="space-y-1">
                                     {errors.map((err, i) => (
                                         <p key={i} className="text-[10px] text-amber-700 dark:text-amber-400 border-l-2 border-amber-200 pl-2">{err}</p>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {warnings.length > 0 && (
+                            <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 dark:bg-blue-950/20 dark:border-blue-900">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Info className="h-3.5 w-3.5 text-blue-600" />
+                                    <p className="text-xs font-bold text-blue-800 dark:text-blue-400">Dikkat Edilmesi Gerekenler</p>
+                                </div>
+                                <div className="space-y-1">
+                                    {warnings.map((w, i) => (
+                                        <p key={i} className="text-[10px] text-blue-700 dark:text-blue-400 border-l-2 border-blue-200 pl-2">{w}</p>
                                     ))}
                                 </div>
                             </div>

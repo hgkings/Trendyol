@@ -7,10 +7,12 @@ import { KPICard } from '@/components/shared/kpi-card';
 import { ProductsTable } from '@/components/dashboard/products-table';
 import { RiskChart } from '@/components/dashboard/risk-chart';
 import { ProfitTrendChart } from '@/components/dashboard/profit-trend-chart';
+import { ParetoChart } from '@/components/dashboard/pareto-chart';
 import { formatCurrency, formatPercent } from '@/components/shared/format';
 import { TrendingUp, Percent, AlertTriangle, Star, BarChart3, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { GeneralRiskCard } from '@/components/dashboard/general-risk-card';
+import { RecommendationsPanel } from '@/components/dashboard/recommendations-panel';
 
 export default function DashboardPage() {
   const { analyses, loading, refresh } = useAlerts();
@@ -65,6 +67,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Actionable Recommendations */}
+        <RecommendationsPanel analyses={analyses} />
+
         {/* Dashboard KPIs */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <KPICard
@@ -96,12 +101,14 @@ export default function DashboardPage() {
           />
         </div>
 
+
         {/* Charts Section */}
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <ProfitTrendChart analyses={analyses} />
           </div>
-          <div>
+          <div className="space-y-6">
+            <ParetoChart analyses={analyses} />
             <RiskChart analyses={analyses} />
           </div>
         </div>

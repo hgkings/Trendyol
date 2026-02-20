@@ -17,12 +17,10 @@ export function Navbar() {
     <nav className="border-b bg-card/80 backdrop-blur-xl shadow-premium-sm">
       <div className="mx-auto flex h-16 w-full items-center justify-between px-4 sm:px-6">
         <Link href={user ? '/dashboard' : '/'} className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
-            <TrendingUp className="h-5 w-5 text-primary-foreground" />
+          <div className="relative h-9 w-auto">
+            <img src="/brand/logo.svg" alt="Kârnet" className="h-9 w-auto dark:hidden" />
+            <img src="/brand/logo-dark.svg" alt="Kârnet" className="h-9 w-auto hidden dark:block" />
           </div>
-          <span className="text-lg font-semibold tracking-tight">
-            Kârnet
-          </span>
         </Link>
         <div className="flex flex-1" />
 

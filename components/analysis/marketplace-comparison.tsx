@@ -43,9 +43,8 @@ export function MarketplaceComparison({ input }: MarketplaceComparisonProps) {
           return (
             <div
               key={c.marketplace.key}
-              className={`rounded-xl border p-4 transition-colors ${
-                isBest ? 'border-primary/50 bg-primary/5' : 'bg-muted/30'
-              }`}
+              className={`rounded-xl border p-4 transition-colors ${isBest ? 'border-primary/50 bg-primary/5' : 'bg-muted/30'
+                }`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -59,25 +58,25 @@ export function MarketplaceComparison({ input }: MarketplaceComparisonProps) {
                 </div>
                 <RiskBadge level={c.risk.level} />
               </div>
-              <div className="mt-3 grid grid-cols-3 gap-4 text-sm">
-                <div>
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                <div className="flex justify-between sm:block">
                   <p className="text-xs text-muted-foreground">Birim Kar</p>
                   <p className={`font-semibold ${c.result.unit_net_profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                     {formatCurrency(c.result.unit_net_profit)}
                   </p>
                 </div>
-                <div>
+                <div className="flex justify-between sm:block">
                   <p className="text-xs text-muted-foreground">Marj</p>
                   <p className="font-semibold">{formatPercent(c.result.margin_pct)}</p>
                 </div>
-                <div>
+                <div className="flex justify-between sm:block">
                   <p className="text-xs text-muted-foreground">Aylik Kar</p>
                   <p className={`font-semibold ${c.result.monthly_net_profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                     {formatCurrency(c.result.monthly_net_profit)}
                   </p>
                 </div>
               </div>
-              <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
                 <span>Komisyon: %{c.marketplace.commission_pct}</span>
                 <span>Iade: %{c.marketplace.return_rate_pct}</span>
               </div>

@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { formatCurrency } from '@/components/shared/format';
 import { toast } from 'sonner';
-import { Target, ArrowRight, Lock, Calculator, ChevronDown, ChevronUp, Info } from 'lucide-react';
+import { Target, ArrowRight, Lock, Calculator, ChevronDown, ChevronUp, Info, AlertTriangle, AlertCircle } from 'lucide-react';
 import { isProUser } from '@/utils/access';
 
 const defaultInput: ProductInput = {
@@ -98,6 +98,8 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [isWarningConfirmed, setIsWarningConfirmed] = useState(false);
   const [showProAdvanced, setShowProAdvanced] = useState(false);
 
   const [targetMargin, setTargetMargin] = useState<number | undefined>();
@@ -153,21 +155,54 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
         return next;
       });
     }
+    // Reset warning confirmation on any change
+    if (isWarningConfirmed) {
+      setIsWarningConfirmed(false);
+      setWarnings([]);
+    }
   };
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
     if (!input.product_name.trim()) errs.product_name = 'Ürün adı gereklidir.';
-    if (input.sale_price <= 0) errs.sale_price = 'Satış fiyatı 0\'dan büyük olmalıdır.';
-    if (input.product_cost <= 0) errs.product_cost = 'Ürün maliyeti 0\'dan büyük olmalıdır.';
-    if (input.monthly_sales_volume <= 0) errs.monthly_sales_volume = 'Satış adedi 0\'dan büyük olmalıdır.';
+    // Semantic validations moved to warnings
     setErrors(errs);
     return Object.keys(errs).length === 0;
+  };
+
+  const checkWarnings = (): string[] => {
+    const w: string[] = [];
+    if (input.sale_price <= 0) w.push('Satış fiyatı 0 veya geçersiz. Gelir hesaplanamayabilir.');
+    if (input.product_cost < 0) w.push('Ürün maliyeti negatif olamaz.');
+    if (input.monthly_sales_volume <= 0) w.push('Aylık satış adedi 0 veya boş. Toplam kâr hesaplanamaz.');
+    if (input.commission_pct > 35) w.push(`Komisyon oranı %${input.commission_pct} çok yüksek görünüyor.`);
+    if (input.commission_pct < 0) w.push('Komisyon oranı negatif olamaz.');
+    if (input.return_rate_pct > 30) w.push('İade oranı %30 üzerinde. Bu sektör ortalamasının üzerinde olabilir.');
+
+    // Pro specific warnings
+    if (input.pro_mode) {
+      const vat = input.vat_pct ?? 0;
+      const saleVat = input.sale_vat_pct ?? 0;
+      if (vat > 30 || saleVat > 30) w.push('KDV oranı %30 üzerinde. Doğru mu?');
+    }
+
+    return w;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+
+    // Warning check
+    if (!isWarningConfirmed) {
+      const currentWarnings = checkWarnings();
+      if (currentWarnings.length > 0) {
+        setWarnings(currentWarnings);
+        setIsWarningConfirmed(true);
+        toast.warning('Girdiğiniz verilerde uyumsuzluklar olabilir. Lütfen kontrol edip tekrar "Kaydet"e basın.');
+        return;
+      }
+    }
 
     // Auth check skipped in demo mode
     if (!isDemo && !user) return;
@@ -577,10 +612,33 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
           </div>
         </div>
 
+        {/* Warnings Display */}
+        {warnings.length > 0 && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 animate-in fade-in slide-in-from-top-2 dark:bg-amber-900/10 dark:border-amber-900/30">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              <h4 className="font-semibold text-amber-800 dark:text-amber-400 text-sm">Dikkat Edilmesi Gerekenler</h4>
+            </div>
+            <ul className="list-disc list-inside space-y-1">
+              {warnings.map((w, i) => (
+                <li key={i} className="text-xs text-amber-700 dark:text-amber-500">{w}</li>
+              ))}
+            </ul>
+            <p className="text-[10px] text-amber-600/80 mt-2 font-medium">Bu uyarılarla devam etmek için butona tekrar tıklayın.</p>
+          </div>
+        )}
+
         {/* Submit */}
         <div className="pt-2">
-          <Button type="submit" size="lg" className="w-full sm:w-auto h-12 px-8 text-base rounded-[10px] shadow-premium-sm" disabled={loading}>
-            {loading ? 'Hesaplanıyor...' : (analysisId ? 'Güncelle' : 'Analiz Et')}
+          <Button
+            type="submit"
+            size="lg"
+            className={`w-full sm:w-auto h-12 px-8 text-base rounded-[10px] shadow-premium-sm transition-all ${isWarningConfirmed && warnings.length > 0 ? 'bg-amber-600 hover:bg-amber-700 ring-2 ring-amber-500/20' : ''}`}
+            disabled={loading}
+          >
+            {loading ? 'Hesaplanıyor...' : (
+              isWarningConfirmed && warnings.length > 0 ? 'Yine de Kaydet / Hesapla' : (analysisId ? 'Güncelle' : 'Analiz Et')
+            )}
           </Button>
         </div>
       </form>

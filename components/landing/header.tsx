@@ -44,10 +44,10 @@ export function Header() {
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-2.5 group">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary transition-transform group-hover:scale-105">
-                        <TrendingUp className="h-5 w-5 text-primary-foreground" />
+                    <div className="relative h-9 w-auto">
+                        <img src="/brand/logo.svg" alt="Kârnet" width="160" height="40" className="h-9 w-auto dark:hidden" />
+                        <img src="/brand/logo-dark.svg" alt="Kârnet" width="160" height="40" className="h-9 w-auto hidden dark:block" />
                     </div>
-                    <span className="text-lg font-semibold tracking-tight">Kârnet</span>
                 </Link>
 
                 {/* Desktop Nav */}
@@ -99,12 +99,10 @@ export function Header() {
                         </SheetTrigger>
                         <SheetContent side="right" className="w-[300px] sm:w-[380px]">
                             <SheetHeader>
-                                <SheetTitle className="flex items-center gap-2.5">
-                                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                                        <TrendingUp className="h-4 w-4 text-primary-foreground" />
-                                    </div>
-                                    Kârnet
-                                </SheetTitle>
+                                <div className="relative h-8 w-auto">
+                                    <img src="/brand/logo.svg" alt="Kârnet" width="160" height="40" className="h-8 w-auto dark:hidden" />
+                                    <img src="/brand/logo-dark.svg" alt="Kârnet" width="160" height="40" className="h-8 w-auto hidden dark:block" />
+                                </div>
                             </SheetHeader>
                             <div className="mt-8 flex flex-col gap-1">
                                 {navLinks.map((link) => (
