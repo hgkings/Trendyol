@@ -1,17 +1,22 @@
 import { Resend } from 'resend';
-import { supabaseAdmin } from '../supabase-server-client';
 
-// Ensure Resend is instantiated only if the key exists to prevent silent failures during init
-if (!process.env.RESEND_API_KEY) {
-    console.warn('⚠️ RESEND_API_KEY is not defined in environment variables.');
+// Lazy Resend instantiation — only create when actually needed
+let _resend: Resend | null = null;
+function getResend(): Resend {
+    if (!_resend) {
+        _resend = new Resend(process.env.RESEND_API_KEY || 'missing_key');
+    }
+    return _resend;
 }
 
-// We instantiate it, but calls will fail later if key is missing, which we catch.
-const resend = new Resend(process.env.RESEND_API_KEY || 'missing_key');
+// Lazy Supabase admin — only import when actually needed
+async function getSupabaseAdmin() {
+    const { supabaseAdmin } = await import('../supabase-server-client');
+    return supabaseAdmin;
+}
 
-// strict env check
-const MAIL_FROM = process.env.MAIL_FROM || 'Kârnet <no-reply@karnet.com>';
-const MAIL_REPLY_TO = process.env.MAIL_REPLY_TO || 'destek@karnet.com';
+const MAIL_FROM = () => process.env.MAIL_FROM || 'Kârnet <no-reply@karnet.com>';
+const MAIL_REPLY_TO = () => process.env.MAIL_REPLY_TO || 'destek@karnet.com';
 
 export interface SendEmailOptions {
     to: string;
@@ -19,17 +24,13 @@ export interface SendEmailOptions {
     html: string;
     text?: string;
     tags?: { name: string; value: string }[];
-    templateName: string; // Used for logging
-    userId?: string;      // Used for logging
+    templateName: string;
+    userId?: string;
 }
 
 export const emailService = {
-    /**
-     * Sends an email using Resend and logs the result to Supabase.
-     */
     async sendEmail({ to, subject, html, text, tags = [], templateName, userId }: SendEmailOptions) {
 
-        // 1. Validate Environment
         if (!process.env.RESEND_API_KEY) {
             const errorMsg = 'RESEND_API_KEY is missing. Cannot send email.';
             console.error(errorMsg);
@@ -37,19 +38,18 @@ export const emailService = {
             throw new Error(errorMsg);
         }
 
-        // 2. Add default tags for Resend metrics
         const defaultTags = [{ name: 'template', value: templateName }];
         const mergedTags = [...defaultTags, ...tags];
 
         try {
-            // 3. Send via Resend
+            const resend = getResend();
             const { data, error } = await resend.emails.send({
-                from: MAIL_FROM,
+                from: MAIL_FROM(),
                 to,
-                replyTo: MAIL_REPLY_TO,
+                replyTo: MAIL_REPLY_TO(),
                 subject,
                 html,
-                text: text || '', // Optional fallback
+                text: text || '',
                 tags: mergedTags
             });
 
@@ -59,7 +59,6 @@ export const emailService = {
                 throw new Error(`Resend Error: ${error.message}`);
             }
 
-            // 4. Log Success
             if (data && data.id) {
                 console.log(`[Email Sent] Successfully sent ${templateName} to ${to} (ID: ${data.id})`);
                 await this.logEmailAttempt(userId, to, templateName, subject, 'sent', data.id, null);
@@ -75,10 +74,6 @@ export const emailService = {
         }
     },
 
-    /**
-     * Logs the email attempt to Supabase email_logs table.
-     * Uses supabaseAdmin (Service Role) to bypass RLS since this runs on the server.
-     */
     async logEmailAttempt(
         userId: string | undefined,
         toEmail: string,
@@ -89,7 +84,7 @@ export const emailService = {
         errorMsg: string | null
     ) {
         try {
-            // Basic Supabase call. If supabaseAdmin fails (e.g., config error), we don't want it to crash the email flow completely, so we wrap it.
+            const supabaseAdmin = await getSupabaseAdmin();
             const { error } = await supabaseAdmin
                 .from('email_logs')
                 .insert({
