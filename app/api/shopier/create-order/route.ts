@@ -5,6 +5,11 @@ import { getPlanAmount, PlanId } from '@/config/pricing';
 
 export const dynamic = 'force-dynamic';
 
+// If browser navigates here with GET (e.g. link/bookmark), redirect to pricing
+export async function GET() {
+    return NextResponse.redirect(new URL('/pricing', process.env.NEXT_PUBLIC_APP_URL || 'https://xn--krnet-3qa.com'));
+}
+
 export async function POST(req: Request) {
     try {
         // 1. Auth check
