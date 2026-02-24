@@ -58,9 +58,24 @@ export function createAdminClient() {
     )
 }
 
-// Ensure backward compatibility or easy imports for typical backend tasks
-export const supabaseAdmin = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { cookies: { getAll: () => [], setAll: () => { } } } // Minimal cookie handling for pure backend tasks
-);
+// Lazy singleton — only created on first access, never at build time
+let _supabaseAdmin: ReturnType<typeof createServerClient> | null = null;
+
+export function getSupabaseAdmin() {
+    if (!_supabaseAdmin) {
+        _supabaseAdmin = createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            { cookies: { getAll: () => [], setAll: () => { } } }
+        );
+    }
+    return _supabaseAdmin;
+}
+
+// Backward-compat: proxy object that lazily gets the real client
+export const supabaseAdmin = new Proxy({} as ReturnType<typeof createServerClient>, {
+    get(_target, prop) {
+        const real = getSupabaseAdmin();
+        return (real as any)[prop];
+    }
+});

@@ -1,41 +1,53 @@
-
 import { type NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase-server-client';
-import { sendEmail } from '@/lib/notification-service';
-import { getTestEmailTemplate } from '@/lib/email-templates';
+
+// Prevent static evaluation at build time
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+    // Block in production — debug-only endpoint
+    if (process.env.VERCEL_ENV === 'production') {
+        return NextResponse.json({ error: 'Bu endpoint production ortamında devre dışıdır.' }, { status: 404 });
+    }
+
+    // Safe env guard — return 500, never throw
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        return NextResponse.json({ error: 'Supabase URL veya Anon Key eksik.' }, { status: 500 });
+    }
+
+    // Lazy imports — only after env is confirmed present
+    const { createClient } = await import('@/lib/supabase-server-client');
+    const { sendEmail } = await import('@/lib/notification-service');
+    const { getTestEmailTemplate } = await import('@/lib/email-templates');
+
     const supabase = createClient();
 
     const { data: { user }, error } = await supabase.auth.getUser();
 
     if (error || !user) {
-        console.error('Test Email Auth Error:', error);
-        // Fallback: Try getSession if getUser fails (sometimes useful for debugging, though less secure for sensitive data)
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         if (sessionError || !session) {
-            console.error('Test Email Session Error:', sessionError);
             return NextResponse.json({ error: 'Unauthorized', details: error?.message || sessionError?.message }, { status: 401 });
         }
-        // If session exists but getUser failed, we might use session.user (with caution)
-        console.warn('getUser failed but getSession succeeded. Using session user.');
-        return handleEmailSending(req, session.user);
+        return handleEmailSending(session.user, createClient, sendEmail, getTestEmailTemplate);
     }
 
-    return handleEmailSending(req, user);
+    return handleEmailSending(user, createClient, sendEmail, getTestEmailTemplate);
 }
 
-async function handleEmailSending(req: NextRequest, user: any) {
+async function handleEmailSending(
+    user: any,
+    createClient: any,
+    sendEmail: any,
+    getTestEmailTemplate: any
+) {
     const supabase = createClient();
 
-    // Check user preference
     const { data: profile } = await supabase
         .from('profiles')
         .select('email_notifications_enabled')
         .eq('id', user.id)
         .single();
 
-    // If no profile found, assume true (default) but check error
     const enabled = profile ? profile.email_notifications_enabled !== false : true;
 
     if (!enabled) {
