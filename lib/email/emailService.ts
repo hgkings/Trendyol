@@ -46,7 +46,7 @@ export const emailService = {
             const { data, error } = await resend.emails.send({
                 from: MAIL_FROM,
                 to,
-                reply_to: MAIL_REPLY_TO,
+                replyTo: MAIL_REPLY_TO,
                 subject,
                 html,
                 text: text || '', // Optional fallback
