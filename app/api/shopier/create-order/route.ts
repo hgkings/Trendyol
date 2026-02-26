@@ -10,6 +10,12 @@ export async function GET() {
 
 export async function POST(req: Request) {
     try {
+        // 0. Log Shopier env keys (just names) as requested by the user
+        console.log('[create-order] Checking Shopier env:', {
+            has_SHOPIER_ACCESS_TOKEN: !!process.env.SHOPIER_ACCESS_TOKEN,
+            has_SHOPIER_API_KEY: !!process.env.SHOPIER_API_KEY
+        });
+
         // 1. Safe env guard — return 500, never throw
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
         const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;

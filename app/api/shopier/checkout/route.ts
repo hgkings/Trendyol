@@ -23,25 +23,35 @@ export async function GET(req: NextRequest) {
         return new Response('Eksik parametreler.', { status: 400 });
     }
 
-    const formHtml = generateShopierForm({
-        platformOrderId: orderId,
-        productName: product,
-        totalAmount: amount,
-        currency: 0, // TRY
-        buyer: {
-            name,
-            surname,
-            email,
-            phone: '05000000000',
-            address: 'Türkiye',
-            city: 'İstanbul',
-            country: 'TR',
-            postcode: '34000',
-        },
-    });
+    try {
+        console.log('[checkout] Checking Shopier env before generating form:', {
+            has_SHOPIER_ACCESS_TOKEN: !!process.env.SHOPIER_ACCESS_TOKEN,
+            has_SHOPIER_API_KEY: !!process.env.SHOPIER_API_KEY
+        });
 
-    return new Response(formHtml, {
-        status: 200,
-        headers: { 'Content-Type': 'text/html; charset=utf-8' },
-    });
+        const formHtml = generateShopierForm({
+            platformOrderId: orderId,
+            productName: product,
+            totalAmount: amount,
+            currency: 0, // TRY
+            buyer: {
+                name,
+                surname,
+                email,
+                phone: '05000000000',
+                address: 'Türkiye',
+                city: 'İstanbul',
+                country: 'TR',
+                postcode: '34000',
+            },
+        });
+
+        return new Response(formHtml, {
+            status: 200,
+            headers: { 'Content-Type': 'text/html; charset=utf-8' },
+        });
+    } catch (error: any) {
+        console.error('[checkout] generateShopierForm error:', error.message);
+        return new Response(`Sistem Hatasi: ${error.message}`, { status: 500 });
+    }
 }

@@ -17,15 +17,29 @@ import crypto from 'crypto';
 const SHOPIER_CHECKOUT_URL = 'https://www.shopier.com/ShowProduct/api_pay4.php';
 
 function getCredentials() {
-    // Support both formats: single token "key:secret" or separate env vars
-    const token = process.env.SHOPIER_ACCESS_TOKEN;
-    if (token && token.includes(':')) {
-        const [key, secret] = token.split(':');
-        return { apiKey: key, apiSecret: secret };
+    // 1. Log which env vars are present (only names, not values!)
+    console.log('[Shopier] Checking env vars:', {
+        has_SHOPIER_ACCESS_TOKEN: !!process.env.SHOPIER_ACCESS_TOKEN,
+        has_SHOPIER_API_KEY: !!process.env.SHOPIER_API_KEY,
+        has_SHOPIER_API_SECRET: !!process.env.SHOPIER_API_SECRET
+    });
+
+    // 2. Read exactly process.env.SHOPIER_ACCESS_TOKEN (fallback to SHOPIER_API_KEY)
+    const token = process.env.SHOPIER_ACCESS_TOKEN || process.env.SHOPIER_API_KEY;
+    const secret = process.env.SHOPIER_API_SECRET || '';
+
+    if (!token) {
+        throw new Error("Missing SHOPIER_ACCESS_TOKEN or SHOPIER_API_KEY in environment");
     }
+
+    if (token && token.includes(':')) {
+        const [key, secretPart] = token.split(':');
+        return { apiKey: key, apiSecret: secretPart };
+    }
+
     return {
-        apiKey: token || process.env.SHOPIER_API_KEY || '',
-        apiSecret: process.env.SHOPIER_API_SECRET || '',
+        apiKey: token,
+        apiSecret: secret,
     };
 }
 
@@ -54,10 +68,6 @@ export interface ShopierOrderParams {
  */
 export function generateShopierForm(params: ShopierOrderParams): string {
     const { apiKey, apiSecret } = getCredentials();
-
-    if (!apiKey) {
-        throw new Error('SHOPIER_ACCESS_TOKEN veya SHOPIER_API_KEY ayarlanmamış.');
-    }
 
     const randomNr = crypto.randomInt(100000, 999999).toString();
 
