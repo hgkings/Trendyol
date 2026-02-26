@@ -10,13 +10,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
     try {
-        // 0. Log Shopier env keys (just names) as requested by the user
-        console.log('[create-order] Checking Shopier env:', {
-            has_SHOPIER_ACCESS_TOKEN: !!process.env.SHOPIER_ACCESS_TOKEN,
-            has_SHOPIER_API_KEY: !!process.env.SHOPIER_API_KEY
-        });
-
-        // 1. Safe env guard — return 500, never throw
+        // 1. Env guards
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
         const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
         const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -26,7 +20,16 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Sunucu yapılandırması eksik (Supabase).' }, { status: 500 });
         }
 
-        // 2. Lazy import — create clients inside handler, not at module level
+        // 2. Read Shopier product URLs from env
+        const shopierMonthlyUrl = process.env.SHOPIER_PRO_MONTHLY_URL;
+        const shopierYearlyUrl = process.env.SHOPIER_PRO_YEARLY_URL;
+
+        if (!shopierMonthlyUrl || !shopierYearlyUrl) {
+            console.error('[create-order] Missing SHOPIER_PRO_MONTHLY_URL or SHOPIER_PRO_YEARLY_URL');
+            return NextResponse.json({ error: 'Ödeme yapılandırması eksik.' }, { status: 500 });
+        }
+
+        // 3. Auth check (lazy import)
         const { createServerClient } = await import('@supabase/ssr');
         const { cookies } = await import('next/headers');
 
@@ -40,7 +43,6 @@ export async function POST(req: Request) {
             },
         });
 
-        // 3. Auth check
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
         if (authError || !user || !user.email) {
@@ -55,11 +57,10 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Geçersiz plan türü.' }, { status: 400 });
         }
 
-        // 5. Generate unique order ID
+        // 5. Create payment record
         const providerOrderId = crypto.randomUUID();
         const amount = getPlanAmount(plan);
 
-        // 6. Insert payment record via admin client
         if (!supabaseServiceKey) {
             console.error('[create-order] Missing SUPABASE_SERVICE_ROLE_KEY');
             return NextResponse.json({ error: 'Sunucu yapılandırması eksik (Service Key).' }, { status: 500 });
@@ -85,24 +86,10 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Sipariş oluşturulamadı.' }, { status: 500 });
         }
 
-        // 7. Get buyer info
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('email')
-            .eq('id', user.id)
-            .single();
+        // 6. Return the fixed Shopier product URL
+        const redirectUrl = plan === 'pro_monthly' ? shopierMonthlyUrl : shopierYearlyUrl;
 
-        const buyerEmail = profile?.email || user.email;
-        const nameParts = buyerEmail.split('@')[0].split('.');
-        const firstName = nameParts[0] || 'Müşteri';
-        const lastName = nameParts[1] || 'Karnet';
-
-        const productName = plan === 'pro_monthly'
-            ? 'Kârnet Pro - Aylık Abonelik'
-            : 'Kârnet Pro - Yıllık Abonelik';
-
-        // 8. Return JSON with redirectUrl
-        const redirectUrl = `/api/shopier/checkout?orderId=${providerOrderId}&plan=${plan}&amount=${amount}&product=${encodeURIComponent(productName)}&name=${encodeURIComponent(firstName)}&surname=${encodeURIComponent(lastName)}&email=${encodeURIComponent(buyerEmail)}`;
+        console.log(`[create-order] Created payment ${providerOrderId} for ${plan}, redirecting to Shopier product page`);
 
         return NextResponse.json({ redirectUrl });
 

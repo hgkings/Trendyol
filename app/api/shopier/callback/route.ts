@@ -9,6 +9,11 @@ export const dynamic = 'force-dynamic';
  * Shopier OSB (Otomatik Sipariş Bildirimi) webhook.
  * Incoming: res (base64 JSON) + hash
  * Verify: HMAC_SHA256(res + OSB_USERNAME, OSB_KEY)
+ * 
+ * With fixed product URLs, Shopier generates its own order IDs.
+ * We match payments by finding the latest "created" payment for the buyer email,
+ * or by matching provider_order_id if the OSB includes our platform_order_id.
+ * 
  * Respond: "success"
  */
 export async function POST(req: Request) {
@@ -60,19 +65,16 @@ export async function POST(req: Request) {
 
         console.log('[Shopier OSB] Verified callback data:', JSON.stringify(data, null, 2));
 
-        const orderId = data.orderid || data.order_id || '';
+        const shopierOrderId = data.orderid || data.order_id || data.platform_order_id || '';
+        const buyerEmail = data.buyer_email || data.email || '';
         const isTest = data.istest === 1 || data.istest === '1' || data.istest === true;
-
-        if (!orderId) {
-            console.error('[Shopier OSB] Missing orderid');
-            return new Response('MISSING_ORDER_ID', { status: 400 });
-        }
+        const paymentTotal = parseFloat(data.total_order_value || data.payment_amount || '0');
 
         if (isTest) {
-            console.log('[Shopier OSB] 🧪 Test order:', orderId);
+            console.log('[Shopier OSB] 🧪 Test order:', shopierOrderId);
         }
 
-        // 4. Safe env guard for Supabase
+        // 4. Supabase env guard
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
         const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -81,43 +83,72 @@ export async function POST(req: Request) {
             return new Response('SERVER_CONFIG_ERROR', { status: 500 });
         }
 
-        // 5. Create admin client inside handler
         const { createServerClient } = await import('@supabase/ssr');
         const adminClient = createServerClient(supabaseUrl, supabaseServiceKey, {
             cookies: { getAll: () => [], setAll: () => { } },
         });
 
-        // 6. Fetch payment record
-        const { data: payment, error: fetchError } = await adminClient
-            .from('payments')
-            .select('*')
-            .eq('provider_order_id', orderId)
-            .single();
+        // 5. Try to find matching payment:
+        //    a) First try by provider_order_id (if our UUID was passed through)
+        //    b) Then try by buyer email (latest "created" payment)
+        let payment: any = null;
 
-        if (fetchError || !payment) {
-            console.error('[Shopier OSB] Payment not found:', orderId);
+        if (shopierOrderId) {
+            const { data: byOrder } = await adminClient
+                .from('payments')
+                .select('*')
+                .eq('provider_order_id', shopierOrderId)
+                .eq('status', 'created')
+                .single();
+            if (byOrder) payment = byOrder;
+        }
+
+        if (!payment && buyerEmail) {
+            // Find user by email, then their latest created payment
+            const { data: profile } = await adminClient
+                .from('profiles')
+                .select('id')
+                .eq('email', buyerEmail)
+                .single();
+
+            if (profile) {
+                const { data: byUser } = await adminClient
+                    .from('payments')
+                    .select('*')
+                    .eq('user_id', profile.id)
+                    .eq('status', 'created')
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .single();
+                if (byUser) payment = byUser;
+            }
+        }
+
+        if (!payment) {
+            console.warn('[Shopier OSB] No matching payment found. Order:', shopierOrderId, 'Email:', buyerEmail);
+            // Still return success so Shopier doesn't keep retrying
             return new Response('success', { status: 200 });
         }
 
-        // 7. Idempotency
+        // 6. Idempotency
         if (payment.status === 'paid') {
-            console.log('[Shopier OSB] Already paid:', orderId);
+            console.log('[Shopier OSB] Already paid:', payment.id);
             return new Response('success', { status: 200 });
         }
 
-        // 8. Mark paid
+        // 7. Mark paid
         const now = new Date().toISOString();
         await adminClient
             .from('payments')
             .update({
                 status: 'paid',
                 paid_at: now,
-                provider_tx_id: data.id || data.transaction_id || orderId,
+                provider_tx_id: shopierOrderId || payment.provider_order_id,
                 raw_payload: data,
             })
             .eq('id', payment.id);
 
-        // 9. Activate Pro
+        // 8. Activate Pro
         const planDays = getPlanDays(payment.plan);
         const proUntil = new Date();
         proUntil.setDate(proUntil.getDate() + planDays);
