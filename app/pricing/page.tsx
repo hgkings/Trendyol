@@ -354,6 +354,10 @@ export default function PricingPage() {
                         }
                         const data = await res.json();
                         if (!data.redirectUrl) throw new Error('redirectUrl eksik');
+                        // Store paymentId for success/fail pages
+                        if (data.paymentId) {
+                          try { localStorage.setItem('karnet_paymentId', data.paymentId); } catch { }
+                        }
                         window.location.href = data.redirectUrl;
                       } catch (err: any) {
                         console.error('[PRICING] Error:', err);

@@ -1,83 +1,115 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/auth-context';
-import { useRouter } from 'next/navigation';
-import { CheckCircle2, Loader2 } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Navbar } from '@/components/layout/navbar';
+import { Button } from '@/components/ui/button';
+import { CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
 
 export default function PaymentSuccessPage() {
-    const { refreshUser, user } = useAuth();
-    const router = useRouter();
-    const [activated, setActivated] = useState(false);
-    const [countdown, setCountdown] = useState(5);
+    const searchParams = useSearchParams();
+    const paymentId = searchParams.get('paymentId');
 
-    useEffect(() => {
-        let attempts = 0;
-        const maxAttempts = 10;
+    const [status, setStatus] = useState<'checking' | 'active' | 'pending'>('checking');
+    const [pollCount, setPollCount] = useState(0);
 
-        const poll = setInterval(async () => {
-            attempts++;
-            await refreshUser();
-
-            // Check if plan was activated (context will update)
-            if (attempts >= maxAttempts) {
-                clearInterval(poll);
-                setActivated(true);
-            }
-        }, 2000);
-
-        return () => clearInterval(poll);
-    }, [refreshUser]);
-
-    // Watch for user plan change
-    useEffect(() => {
-        if (user?.plan === 'pro') {
-            setActivated(true);
+    const checkProfile = useCallback(async (): Promise<boolean> => {
+        try {
+            const res = await fetch('/api/user/profile', { credentials: 'same-origin', cache: 'no-store' });
+            if (!res.ok) return false;
+            const data = await res.json();
+            return data?.plan === 'pro' || String(data?.plan || '').startsWith('pro_');
+        } catch {
+            return false;
         }
-    }, [user]);
+    }, []);
 
-    // Countdown redirect after activation
     useEffect(() => {
-        if (!activated) return;
+        let attempt = 0;
+        const maxAttempts = 6;
 
-        const timer = setInterval(() => {
-            setCountdown(prev => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    router.push('/dashboard');
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
+        const poll = async () => {
+            attempt++;
+            setPollCount(attempt);
+            const isPro = await checkProfile();
 
-        return () => clearInterval(timer);
-    }, [activated, router]);
+            if (isPro) {
+                setStatus('active');
+                return;
+            }
+
+            if (attempt < maxAttempts) {
+                setTimeout(poll, 5000);
+            } else {
+                setStatus('pending');
+            }
+        };
+
+        setTimeout(poll, 2000);
+    }, [checkProfile]);
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-background">
-            <div className="text-center space-y-6 max-w-md px-6">
-                {activated ? (
+        <div className="min-h-screen bg-background">
+            <Navbar />
+            <div className="mx-auto max-w-lg px-4 py-24 text-center space-y-6">
+
+                {status === 'checking' && (
                     <>
-                        <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                            <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+                        <Loader2 className="h-16 w-16 text-primary animate-spin mx-auto" />
+                        <h1 className="text-2xl font-bold">Ödeme Başarılı ✅</h1>
+                        <p className="text-muted-foreground">
+                            Planınız kontrol ediliyor... ({pollCount}/6)
+                        </p>
+                    </>
+                )}
+
+                {status === 'active' && (
+                    <>
+                        <CheckCircle2 className="h-16 w-16 text-emerald-500 mx-auto" />
+                        <h1 className="text-2xl font-bold text-emerald-600">Pro Plan Aktif! 🎉</h1>
+                        <p className="text-muted-foreground">
+                            Tebrikler! Pro planınız başarıyla aktif edildi.
+                        </p>
+                        <Button
+                            className="mt-4"
+                            onClick={() => window.location.href = '/dashboard'}
+                        >
+                            Dashboard'a Git
+                        </Button>
+                    </>
+                )}
+
+                {status === 'pending' && (
+                    <>
+                        <Loader2 className="h-16 w-16 text-amber-500 mx-auto" />
+                        <h1 className="text-2xl font-bold text-amber-600">Ödeme Alındı ⏳</h1>
+                        <p className="text-muted-foreground">
+                            Ödeme alındı ancak plan henüz aktif değil. Genellikle 30 saniye içinde aktif olur.
+                        </p>
+                        <div className="flex gap-3 justify-center mt-4">
+                            <Button
+                                variant="outline"
+                                onClick={async () => {
+                                    setStatus('checking');
+                                    setPollCount(0);
+                                    const isPro = await checkProfile();
+                                    setStatus(isPro ? 'active' : 'pending');
+                                }}
+                            >
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                                Yenile
+                            </Button>
+                            <Button onClick={() => window.location.href = '/dashboard'}>
+                                Dashboard'a Git
+                            </Button>
                         </div>
-                        <h1 className="text-2xl font-bold">Ödeme Başarılı! 🎉</h1>
-                        <p className="text-muted-foreground">
-                            Hesabınız Pro plana yükseltildi. Tüm premium özelliklere erişebilirsiniz.
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                            {countdown} saniye içinde panele yönlendirileceksiniz…
-                        </p>
                     </>
-                ) : (
-                    <>
-                        <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
-                        <h1 className="text-2xl font-bold">Ödeme Alındı</h1>
-                        <p className="text-muted-foreground">
-                            Hesabınız Pro&apos;ya geçiriliyor, lütfen bekleyin…
-                        </p>
-                    </>
+                )}
+
+                {paymentId && (
+                    <p className="text-xs text-muted-foreground mt-8">
+                        Sipariş No: {paymentId.substring(0, 8)}...
+                    </p>
                 )}
             </div>
         </div>
