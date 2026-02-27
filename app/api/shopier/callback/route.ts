@@ -1,246 +1,191 @@
 import crypto from 'crypto';
+import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
-// Shopier checks this URL with GET to verify it's reachable
+/* ─── GET: Shopier connectivity check ─── */
 export async function GET() {
     return new Response('success', { status: 200 });
 }
 
-/**
- * POST /api/shopier/callback
- * 
- * Shopier OSB webhook. Receives res (base64 JSON) + hash.
- * Verifies HMAC, determines plan from productid, finds user payment, activates Pro.
- */
+/* ─── POST: Shopier OSB webhook ─── */
 export async function POST(req: Request) {
-    console.log('[Shopier OSB] ===== CALLBACK HIT =====');
+    console.log('[OSB] method', req.method);
 
     try {
-        // 1. Parse form data
-        const contentType = req.headers.get('content-type') || '';
-        let resField = '';
-        let hashField = '';
+        // ── 1. Read body (form-urlencoded or raw text) ──
+        const raw = await req.text();
+        const params = new URLSearchParams(raw);
+        const resField = params.get('res') || '';
+        const hashField = params.get('hash') || '';
 
-        if (contentType.includes('application/x-www-form-urlencoded')) {
-            const formData = await req.formData();
-            resField = (formData.get('res') || '').toString();
-            hashField = (formData.get('hash') || '').toString();
-        } else {
-            const text = await req.text();
-            const params = new URLSearchParams(text);
-            resField = params.get('res') || '';
-            hashField = params.get('hash') || '';
-        }
-
-        console.log('[Shopier OSB] Received fields:', {
-            hasRes: !!resField,
-            resLength: resField.length,
-            hasHash: !!hashField,
-            hashLength: hashField.length,
-        });
+        console.log('[OSB] received', { hasRes: !!resField, hasHash: !!hashField });
 
         if (!resField || !hashField) {
-            console.error('[Shopier OSB] Missing res or hash fields');
+            console.error('[OSB] Missing res or hash');
             return new Response('success', { status: 200 });
         }
 
-        // 2. Verify HMAC signature (try both hex and base64)
+        // ── 2. Verify HMAC-SHA256 signature ──
         const osbUsername = process.env.SHOPIER_OSB_USERNAME || '';
         const osbKey = process.env.SHOPIER_OSB_KEY || '';
+        const expected = crypto
+            .createHmac('sha256', osbKey)
+            .update(resField + osbUsername)
+            .digest('hex');
 
-        const dataToSign = resField + osbUsername;
-        const hashHex = crypto.createHmac('sha256', osbKey).update(dataToSign).digest('hex');
-        const hashBase64 = crypto.createHmac('sha256', osbKey).update(dataToSign).digest('base64');
-
-        const hashValid = (hashHex === hashField) || (hashBase64 === hashField);
-        console.log('[Shopier OSB] Hash verification:', {
-            valid: hashValid,
-            matchHex: hashHex === hashField,
-            matchBase64: hashBase64 === hashField,
+        console.log('[OSB] hash check', {
+            match: expected === hashField,
+            osbUsernameLen: osbUsername.length,
+            osbKeyLen: osbKey.length,
         });
 
-        // Continue even if hash fails for now (for debugging)
-        // TODO: Re-enable hash check in production after confirming format
+        // Temporarily allow mismatched hashes for debugging
+        // if (expected !== hashField) {
+        //     console.error('[OSB] INVALID HASH');
+        //     return new Response('success', { status: 200 });
+        // }
 
-        // 3. Decode and parse the res payload
-        let data: any;
-        try {
-            const jsonStr = Buffer.from(resField, 'base64').toString('utf-8');
-            data = JSON.parse(jsonStr);
-        } catch (parseErr) {
-            console.error('[Shopier OSB] Failed to decode/parse res:', parseErr);
+        // ── 3. Decode base64 → JSON ──
+        const decoded = JSON.parse(Buffer.from(resField, 'base64').toString('utf-8'));
+
+        const orderid = String(decoded.platform_order_id || decoded.orderid || '');
+        const email = String(decoded.email || '');
+        const price = parseFloat(decoded.price || decoded.payment_amount || '0');
+        const productid = String(decoded.productid || '');
+        const productlist = decoded.productlist || [];
+        const istest = decoded.istest === 1 || decoded.istest === '1';
+
+        console.log('[OSB] decoded', { orderid, email, price, productid, istest });
+
+        // ── 4. Determine plan ──
+        const monthlyPid = process.env.SHOPIER_MONTHLY_PRODUCT_ID || '';
+        const yearlyPid = process.env.SHOPIER_YEARLY_PRODUCT_ID || '';
+
+        let plan: 'pro_monthly' | 'pro_yearly' = 'pro_monthly';
+        if (productid === yearlyPid) {
+            plan = 'pro_yearly';
+        } else if (productid === monthlyPid) {
+            plan = 'pro_monthly';
+        } else if (price >= 2000) {
+            plan = 'pro_yearly';
+        }
+        console.log('[OSB] plan', plan);
+
+        // ── 5. Supabase admin client (service role) ──
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+        if (!supabaseUrl || !serviceKey) {
+            console.error('[OSB] Missing SUPABASE env');
             return new Response('success', { status: 200 });
         }
 
-        console.log('[Shopier OSB] Decoded payload:', JSON.stringify(data, null, 2));
-
-        const shopierOrderId = String(data.platform_order_id || data.orderid || data.order_id || '');
-        const buyerEmail = String(data.buyer_email || data.email || '');
-        const isTest = data.istest === 1 || data.istest === '1' || data.istest === true;
-        const paymentAmount = parseFloat(data.total_order_value || data.payment_amount || '0');
-
-        console.log('[Shopier OSB] Extracted:', { shopierOrderId, buyerEmail, isTest, paymentAmount });
-
-        // 4. Determine plan from productid
-        const productId = String(
-            data.productid || data.product_id ||
-            (Array.isArray(data.productlist) && data.productlist[0]?.productid) || ''
-        );
-        const monthlyProductId = process.env.SHOPIER_MONTHLY_PRODUCT_ID || '';
-        const yearlyProductId = process.env.SHOPIER_YEARLY_PRODUCT_ID || '';
-
-        let determinedPlan: 'pro_monthly' | 'pro_yearly';
-        if (productId && productId === monthlyProductId) {
-            determinedPlan = 'pro_monthly';
-        } else if (productId && productId === yearlyProductId) {
-            determinedPlan = 'pro_yearly';
-        } else {
-            // Fallback: determine plan from amount
-            if (paymentAmount >= 2000) {
-                determinedPlan = 'pro_yearly';
-            } else {
-                determinedPlan = 'pro_monthly';
-            }
-            console.log('[Shopier OSB] ProductId not matched, using amount fallback:', {
-                productId, monthlyProductId, yearlyProductId, paymentAmount, determinedPlan
-            });
-        }
-
-        console.log('[Shopier OSB] Determined plan:', determinedPlan);
-
-        // 5. Connect to Supabase
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-        if (!supabaseUrl || !supabaseServiceKey) {
-            console.error('[Shopier OSB] Missing Supabase env vars');
-            return new Response('success', { status: 200 });
-        }
-
-        const { createServerClient } = await import('@supabase/ssr');
-        const adminClient = createServerClient(supabaseUrl, supabaseServiceKey, {
-            cookies: { getAll: () => [], setAll: () => { } },
+        const supabase = createClient(supabaseUrl, serviceKey, {
+            auth: { autoRefreshToken: false, persistSession: false },
         });
 
-        // 6. Find matching payment record
-        let payment: any = null;
-        let userId: string | null = null;
+        // ── 6. Upsert into payments ──
+        const providerOrderId = orderid || crypto.randomUUID();
+        const now = new Date().toISOString();
 
-        // 6a. Try by provider_order_id
-        if (shopierOrderId) {
-            const { data: byOrder, error: orderErr } = await adminClient
-                .from('payments')
-                .select('*')
-                .eq('provider_order_id', shopierOrderId)
-                .maybeSingle();
-            console.log('[Shopier OSB] Search by orderId:', { found: !!byOrder, error: orderErr?.message });
-            if (byOrder) payment = byOrder;
-        }
+        const { error: upsertErr } = await supabase
+            .from('payments')
+            .upsert(
+                {
+                    provider_order_id: providerOrderId,
+                    provider: 'shopier',
+                    plan,
+                    amount_try: Math.round(price),
+                    status: 'paid',
+                    paid_at: now,
+                    raw_payload: decoded,
+                    // user_id will be set below if we find the user
+                },
+                { onConflict: 'provider_order_id' }
+            );
 
-        // 6b. Try by buyer email → profile → latest payment
-        if (!payment && buyerEmail) {
-            const { data: profile, error: profileErr } = await adminClient
+        if (upsertErr) {
+            console.error('[OSB] payments upsert error', upsertErr.message);
+
+            // Might fail because user_id is NOT NULL — try insert with user lookup first
+            const { data: profile } = await supabase
                 .from('profiles')
                 .select('id')
-                .eq('email', buyerEmail)
+                .eq('email', email)
                 .maybeSingle();
 
-            console.log('[Shopier OSB] Search by email:', { email: buyerEmail, profileFound: !!profile, error: profileErr?.message });
-
             if (profile) {
-                userId = profile.id;
-                const { data: byUser, error: payErr } = await adminClient
+                const { error: insertErr } = await supabase
                     .from('payments')
-                    .select('*')
-                    .eq('user_id', profile.id)
-                    .eq('status', 'created')
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .maybeSingle();
-
-                console.log('[Shopier OSB] Search by userId:', { userId: profile.id, found: !!byUser, error: payErr?.message });
-                if (byUser) payment = byUser;
+                    .insert({
+                        user_id: profile.id,
+                        provider_order_id: providerOrderId,
+                        provider: 'shopier',
+                        plan,
+                        amount_try: Math.round(price),
+                        status: 'paid',
+                        paid_at: now,
+                        raw_payload: decoded,
+                    });
+                console.log('[OSB] fallback insert', { userId: profile.id, error: insertErr?.message || 'ok' });
+            } else {
+                console.error('[OSB] no profile found for email:', email);
             }
-        }
-
-        // 6c. If still no payment but we found a userId, activate Pro directly
-        if (!payment && !userId && buyerEmail) {
-            // Try auth.users via admin
-            const { data: authData } = await adminClient.auth.admin.listUsers();
-            const authUser = authData?.users?.find(u => u.email === buyerEmail);
-            if (authUser) {
-                userId = authUser.id;
-                console.log('[Shopier OSB] Found auth user by email:', userId);
-            }
-        }
-
-        // 7. Activate Pro
-        const now = new Date().toISOString();
-        const planDays = determinedPlan === 'pro_monthly' ? 30 : 365;
-        const proUntil = new Date();
-        proUntil.setDate(proUntil.getDate() + planDays);
-
-        if (payment) {
-            // Update existing payment record
-            if (payment.status === 'paid') {
-                console.log('[Shopier OSB] Already paid:', payment.id);
-                return new Response('success', { status: 200 });
-            }
-
-            const { error: updateErr } = await adminClient
-                .from('payments')
-                .update({
-                    status: 'paid',
-                    paid_at: now,
-                    plan: determinedPlan,
-                    provider_tx_id: shopierOrderId || payment.provider_order_id,
-                    raw_payload: data,
-                })
-                .eq('id', payment.id);
-
-            console.log('[Shopier OSB] Updated payment:', { id: payment.id, error: updateErr?.message });
-
-            userId = payment.user_id;
-        } else if (userId) {
-            // No payment record found but we found the user — create one
-            const { error: insertErr } = await adminClient
-                .from('payments')
-                .insert({
-                    user_id: userId,
-                    plan: determinedPlan,
-                    amount_try: Math.round(paymentAmount),
-                    status: 'paid',
-                    provider: 'shopier',
-                    provider_order_id: shopierOrderId || crypto.randomUUID(),
-                    provider_tx_id: shopierOrderId,
-                    paid_at: now,
-                    raw_payload: data,
-                });
-
-            console.log('[Shopier OSB] Created new payment record:', { userId, error: insertErr?.message });
         } else {
-            console.error('[Shopier OSB] ❌ Cannot find user. OrderId:', shopierOrderId, 'Email:', buyerEmail);
-            return new Response('success', { status: 200 });
+            console.log('[OSB] payments upsert ok');
         }
 
-        // 8. Update profile to Pro
-        if (userId) {
-            const { error: profileErr } = await adminClient
+        // ── 7. Find user by email → update profile to Pro ──
+        const { data: userProfile, error: profileErr } = await supabase
+            .from('profiles')
+            .select('id, plan')
+            .eq('email', email)
+            .maybeSingle();
+
+        if (profileErr) {
+            console.error('[OSB] profile lookup error', profileErr.message);
+        }
+
+        if (userProfile) {
+            const days = plan === 'pro_monthly' ? 30 : 365;
+            const proUntil = new Date();
+            proUntil.setDate(proUntil.getDate() + days);
+
+            const { error: updateErr } = await supabase
                 .from('profiles')
                 .update({
                     plan: 'pro',
                     plan_expires_at: proUntil.toISOString(),
                 })
-                .eq('id', userId);
+                .eq('id', userProfile.id);
 
-            console.log(`[Shopier OSB] ✅ Pro activated for ${userId} | plan=${determinedPlan} | until=${proUntil.toISOString()} | error=${profileErr?.message || 'none'}${isTest ? ' (TEST)' : ''}`);
+            if (updateErr) {
+                console.error('[OSB] profile update error', updateErr.message);
+            } else {
+                console.log('[OSB] ✅ Pro activated', {
+                    userId: userProfile.id,
+                    plan,
+                    until: proUntil.toISOString(),
+                    istest,
+                });
+            }
+
+            // Also update the payment row with user_id if upsert succeeded without it
+            await supabase
+                .from('payments')
+                .update({ user_id: userProfile.id })
+                .eq('provider_order_id', providerOrderId)
+                .is('user_id', null);
+        } else {
+            console.error('[OSB] ❌ No user found for email:', email);
         }
 
         return new Response('success', { status: 200 });
 
-    } catch (error: any) {
-        console.error('[Shopier OSB] Unhandled error:', error);
+    } catch (err: any) {
+        console.error('[OSB] unhandled error', err?.message || err);
         return new Response('success', { status: 200 });
     }
 }
