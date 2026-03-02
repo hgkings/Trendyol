@@ -26,7 +26,7 @@ export default function PaymentSuccessPage() {
 
     useEffect(() => {
         let attempt = 0;
-        const maxAttempts = 6;
+        const maxAttempts = 120;
 
         const poll = async () => {
             attempt++;
@@ -56,9 +56,10 @@ export default function PaymentSuccessPage() {
                 {status === 'checking' && (
                     <>
                         <Loader2 className="h-16 w-16 text-primary animate-spin mx-auto" />
-                        <h1 className="text-2xl font-bold">Ödeme Başarılı ✅</h1>
+                        <h1 className="text-2xl font-bold">Ödemenizi Tamamlayın 💳</h1>
                         <p className="text-muted-foreground">
-                            Planınız kontrol ediliyor... ({pollCount}/6)
+                            Ödeme sayfası güvenli bir şekilde yeni sekmede açıldı.<br /><br />
+                            Lütfen işlemi orada tamamlayın. Ödemeniz bittiğinde bu sayfa <b>otomatik</b> olarak onaylanacaktır...
                         </p>
                     </>
                 )}
@@ -81,10 +82,10 @@ export default function PaymentSuccessPage() {
 
                 {status === 'pending' && (
                     <>
-                        <Loader2 className="h-16 w-16 text-amber-500 mx-auto" />
-                        <h1 className="text-2xl font-bold text-amber-600">Ödeme Alındı ⏳</h1>
+                        <Loader2 className="h-16 w-16 text-amber-500 animate-spin mx-auto" />
+                        <h1 className="text-2xl font-bold text-amber-600">Ödeme Bekleniyor ⏳</h1>
                         <p className="text-muted-foreground">
-                            Ödeme alındı ancak plan henüz aktif değil. Genellikle 30 saniye içinde aktif olur.
+                            Ödeme işleminiz henüz bize ulaşmadı. Eğer ödemeyi tamamladıysanız biraz daha bekleyip tekrar kontrol edebilirsiniz.
                         </p>
                         <div className="flex gap-3 justify-center mt-4">
                             <Button
@@ -97,7 +98,7 @@ export default function PaymentSuccessPage() {
                                 }}
                             >
                                 <RefreshCw className="h-4 w-4 mr-2" />
-                                Yenile
+                                Tekrar Kontrol Et
                             </Button>
                             <Button onClick={() => window.location.href = '/dashboard'}>
                                 Dashboard'a Git

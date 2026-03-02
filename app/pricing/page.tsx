@@ -340,6 +340,10 @@ export default function PricingPage() {
                     onClick={async () => {
                       const selectedPlan = isAnnual ? 'pro_yearly' : 'pro_monthly';
                       if (!user) { window.location.href = '/auth'; return; }
+
+                      // Open window synchronously to avoid popup blockers
+                      const paymentWindow = window.open('about:blank', '_blank');
+
                       setLoading(true);
                       try {
                         const res = await fetch('/api/shopier/create-order', {
@@ -359,11 +363,20 @@ export default function PricingPage() {
                         }
 
                         if (data.redirectUrl) {
-                          window.location.href = data.redirectUrl;
+                          // Tab 2: Shopier checkout opens via pre-opened window
+                          if (paymentWindow) {
+                            paymentWindow.location.href = data.redirectUrl;
+                          } else {
+                            // Fallback if blocked
+                            window.open(data.redirectUrl, '_blank');
+                          }
+                          // Tab 1: Kârnet goes to the polling success page
+                          window.location.href = `/payment/success?paymentId=${data.paymentId || ''}`;
                         } else {
                           throw new Error('Ödeme başlatılamadı (redirectUrl eksik)');
                         }
                       } catch (err: any) {
+                        if (paymentWindow) paymentWindow.close();
                         console.error('[PRICING] Error:', err);
                         toast.error(err.message || 'Ödeme başlatılamadı.');
                         setLoading(false);
