@@ -22,28 +22,12 @@ import {
   Landmark
 } from 'lucide-react';
 import { NAV_ITEMS, BOTTOM_NAV_ITEMS } from '@/config/navigation';
-import { getSidebarStats } from '@/lib/storage';
-import { useEffect, useState } from 'react';
 import { isProUser } from '@/utils/access';
+import { ProStatusCard } from '@/components/shared/pro-status-card';
 
 export function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const [stats, setStats] = useState<{ total: number; profitable: number; risky: number; lastUpdated: string | null }>({ total: 0, profitable: 0, risky: 0, lastUpdated: null });
-  const [dateStr, setDateStr] = useState('');
-
-  useEffect(() => {
-    if (user?.id) {
-      getSidebarStats(user.id).then(data => {
-        setStats(data);
-        if (data.lastUpdated) {
-          setDateStr(new Date(data.lastUpdated).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' }));
-        } else {
-          setDateStr('-');
-        }
-      });
-    }
-  }, [user?.id]);
 
   const isPro = isProUser(user);
 
@@ -51,52 +35,10 @@ export function Sidebar() {
     <aside className="flex h-full w-full flex-col bg-card border-r overflow-y-auto scrollbar-thin scrollbar-thumb-muted/50">
       <div className="flex h-full flex-col px-3 py-4 space-y-6">
 
-        {/* --- 1. Mini Summary Card (Premium Look) --- */}
-        {user && (
-          <Link href="/analysis/new" className="block rounded-xl border border-primary/10 bg-gradient-to-br from-primary/[0.04] via-zinc-900/[0.02] to-transparent dark:from-primary/[0.08] dark:via-zinc-900/[0.2] p-3.5 shadow-sm relative overflow-hidden group hover:border-primary/30 hover:shadow-md transition-all">
-            {/* Glow Effect */}
-            <div className="absolute -top-6 -right-6 w-24 h-24 bg-primary/10 blur-[30px] rounded-full group-hover:bg-primary/20 transition-colors" />
-
-            {/* Row 1: Badge */}
-            <div className="relative z-10 mb-3">
-              <div className={cn(
-                "flex w-full justify-center items-center gap-1.5 px-2 py-1 rounded-lg border shadow-sm",
-                isPro
-                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                  : "bg-muted text-muted-foreground border-border/50"
-              )}>
-                {isPro && <Crown className="h-3.5 w-3.5 fill-current shrink-0" />}
-                <span className="text-[11px] font-bold uppercase tracking-wide whitespace-nowrap leading-none">
-                  {isPro ? 'Pro Aktif' : 'Ücretsiz'}
-                </span>
-              </div>
-            </div>
-
-            {/* Row 2: Stats Display */}
-            <div className="flex flex-col gap-0.5 relative z-10 mt-1">
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-black text-foreground tracking-tighter tabular-nums drop-shadow-sm">{stats.total}</span>
-                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Analiz</span>
-              </div>
-
-              <div className="flex items-center gap-1.5 mt-0.5">
-                {stats.profitable > 0 ? (
-                  <>
-                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
-                    <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-500 tracking-wide">{stats.profitable} Kârlı</span>
-                  </>
-                ) : (
-                  <span className="text-[10px] font-medium text-muted-foreground tracking-wide">Henüz kâr yok</span>
-                )}
-              </div>
-            </div>
-
-            {/* Subtle Action Hint */}
-            <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-x-1 group-hover:translate-x-0">
-              <PlusCircle className="h-5 w-5 text-primary/50 dark:text-primary/70" />
-            </div>
-          </Link>
-        )}
+        {/* --- 1. PRO Status Card --- */}
+        <div className="mb-2 w-full mt-2">
+          <ProStatusCard />
+        </div>
 
         {/* --- Main Navigation --- */}
         <div>
@@ -152,14 +94,6 @@ export function Sidebar() {
 
                   <div className="flex flex-1 items-center justify-between min-w-0">
                     <span className="truncate">{item.label}</span>
-                    {isProducts && stats.total > 0 && (
-                      <span className={cn(
-                        "text-[10px] font-bold px-1.5 py-0.5 rounded",
-                        isActive ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
-                      )}>
-                        {stats.total}
-                      </span>
-                    )}
                   </div>
                 </Link>
               );
@@ -216,30 +150,6 @@ export function Sidebar() {
 
         {/* Spacer */}
         <div className="flex-1" />
-
-        {/* --- 3. Status Footer --- */}
-        <div className="px-1 py-3 border-t border-dashed">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-              <Calendar className="h-3 w-3 opacity-70" />
-              <span className="font-medium">Son Güncelleme:</span>
-              <span>{dateStr || '...'}</span>
-            </div>
-            {stats.risky > 0 && (
-              <div className="flex items-center gap-2 text-[10px] text-amber-600 dark:text-amber-400">
-                <AlertTriangle className="h-3 w-3" />
-                <span className="font-medium">Riskli Ürün:</span>
-                <span className="font-bold">{stats.risky}</span>
-              </div>
-            )}
-            {stats.risky === 0 && (
-              <div className="flex items-center gap-2 text-[10px] text-emerald-600 dark:text-emerald-400">
-                <Box className="h-3 w-3" />
-                <span className="font-medium">Tüm Ürünler Güvenli</span>
-              </div>
-            )}
-          </div>
-        </div>
 
         {/* Bottom Navigation */}
         <div className="space-y-1">

@@ -10,5 +10,17 @@ import { User } from '@/types';
  */
 export function isProUser(user: User | null | undefined): boolean {
     if (!user) return false;
-    return user.plan === 'pro';
+
+    // Check traditional plan
+    if (user.plan === 'pro') return true;
+
+    // Check time-based expiration (if plan is free but pro_until exists and is future)
+    if (user.pro_until) {
+        const expirationDate = new Date(user.pro_until);
+        if (!isNaN(expirationDate.getTime()) && expirationDate > new Date()) {
+            return true;
+        }
+    }
+
+    return false;
 }

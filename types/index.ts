@@ -6,6 +6,7 @@ export interface User {
   id: string;
   email: string;
   plan: PlanType;
+  pro_until?: string | null;
   email_alerts_enabled?: boolean;
   email_notifications_enabled?: boolean;
   // Account preferences

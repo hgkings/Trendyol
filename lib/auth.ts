@@ -1,8 +1,8 @@
 import { User, PlanType, Marketplace } from '@/types';
 import { supabase } from './supabaseClient';
 
-const PROFILE_SELECT_FULL = 'id, email, plan, email_notifications_enabled, target_margin, margin_alert, default_marketplace, default_commission, default_vat, monthly_profit_target, default_return_rate, default_ads_cost, fixed_cost_monthly, target_profit_monthly';
-const PROFILE_SELECT_CORE = 'id, email, plan, email_notifications_enabled';
+const PROFILE_SELECT_FULL = 'id, email, plan, pro_until, email_notifications_enabled, target_margin, margin_alert, default_marketplace, default_commission, default_vat, monthly_profit_target, default_return_rate, default_ads_cost, fixed_cost_monthly, target_profit_monthly';
+const PROFILE_SELECT_CORE = 'id, email, plan, pro_until, email_notifications_enabled';
 
 // Preference keys that may not exist as DB columns yet
 const PREF_KEYS: (keyof User)[] = [
@@ -15,6 +15,7 @@ function mapProfileRow(data: any): User {
     id: data.id,
     email: data.email,
     plan: (data.plan as PlanType) || 'free',
+    pro_until: data.pro_until ?? null,
     email_notifications_enabled: data.email_notifications_enabled !== false,
     target_margin: data.target_margin ?? undefined,
     margin_alert: data.margin_alert ?? undefined,
