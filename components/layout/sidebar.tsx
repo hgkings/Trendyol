@@ -5,25 +5,15 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/auth-context';
 import {
-  LayoutDashboard,
-  PlusCircle,
-  Package,
-  User,
   Crown,
-  Settings,
-  Box,
   FileText,
   Upload,
   CreditCard,
-  Calendar,
-  AlertTriangle,
   ArrowRight,
-  Target,
-  Landmark
 } from 'lucide-react';
 import { NAV_ITEMS, BOTTOM_NAV_ITEMS } from '@/config/navigation';
 import { isProUser } from '@/utils/access';
-import { ProStatusCard } from '@/components/shared/pro-status-card';
+import { ProStatusCard } from '@/components/ProStatusCard';
 
 export function Sidebar() {
   const pathname = usePathname();
