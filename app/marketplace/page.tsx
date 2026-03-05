@@ -106,14 +106,23 @@ export default function MarketplacePage() {
 
             const data = await res.json();
             if (res.ok && data.success) {
-                toast.success('Trendyol bağlantısı başarıyla kaydedildi! ✅');
+                if (data.secrets_saved) {
+                    toast.success('Trendyol bağlantısı ve güvenli anahtarlar başarıyla kaydedildi! ✅');
+                } else {
+                    toast.warning('Bağlantı kaydedildi ancak güvenli anahtar kaydı doğrulanamadı.');
+                }
                 setApiKey('');
                 setApiSecret('');
                 setSellerId('');
                 setStoreName('');
                 fetchStatus();
             } else {
-                toast.error(data.error || 'Bağlantı kaydedilemedi.');
+                const errorMsg = data.error_code === 'secrets_write_failed'
+                    ? 'Güvenli anahtar kaydı başarısız. Lütfen tekrar deneyin.'
+                    : data.error_code === 'encryption_key_missing'
+                        ? 'Sunucu şifreleme yapılandırması eksik. Yöneticinize başvurun.'
+                        : data.error || 'Bağlantı kaydedilemedi.';
+                toast.error(errorMsg);
             }
         } catch {
             toast.error('Sunucu hatası oluştu.');

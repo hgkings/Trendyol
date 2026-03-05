@@ -58,6 +58,15 @@ export async function POST(req: Request) {
             );
         }
 
+        // Check encryption key availability BEFORE doing anything
+        if (!process.env.MARKETPLACE_SECRET_KEY) {
+            console.error('[marketplace/trendyol POST] MARKETPLACE_SECRET_KEY env variable is not set!');
+            return NextResponse.json(
+                { error: 'Sunucu yapılandırma hatası: şifreleme anahtarı bulunamadı.', error_code: 'encryption_key_missing' },
+                { status: 500 }
+            );
+        }
+
         const admin = getSupabaseAdmin();
 
         // 1) Upsert marketplace_connections
@@ -77,16 +86,28 @@ export async function POST(req: Request) {
             .single();
 
         if (connErr || !connection) {
-            console.error('[marketplace/trendyol POST] Connection upsert error:', connErr?.message);
-            return NextResponse.json({ error: 'Bağlantı oluşturulamadı.' }, { status: 500 });
+            console.error('[marketplace/trendyol POST] Connection upsert failed:', connErr?.message);
+            return NextResponse.json(
+                { error: 'Bağlantı oluşturulamadı.', error_code: 'connection_upsert_failed' },
+                { status: 500 }
+            );
         }
 
         // 2) Encrypt credentials (NEVER log the plaintext!)
-        const encryptedBlob = encryptCredentials({
-            apiKey,
-            apiSecret,
-            ...(sellerId ? { sellerId } : {}),
-        });
+        let encryptedBlob: string;
+        try {
+            encryptedBlob = encryptCredentials({
+                apiKey,
+                apiSecret,
+                ...(sellerId ? { sellerId } : {}),
+            });
+        } catch (encErr: any) {
+            console.error('[marketplace/trendyol POST] Encryption failed:', encErr?.message);
+            return NextResponse.json(
+                { error: 'Kimlik bilgileri şifrelenemedi.', error_code: 'encryption_failed' },
+                { status: 500 }
+            );
+        }
 
         // 3) Upsert marketplace_secrets via service role
         const { error: secretErr } = await admin
@@ -101,16 +122,36 @@ export async function POST(req: Request) {
             );
 
         if (secretErr) {
-            console.error('[marketplace/trendyol POST] Secret upsert error:', secretErr?.message);
-            return NextResponse.json({ error: 'Kimlik bilgileri kaydedilemedi.' }, { status: 500 });
+            console.error('[marketplace/trendyol POST] Secrets upsert error:', secretErr.message, 'code:', secretErr.code);
+            return NextResponse.json(
+                { error: 'Güvenli anahtar kaydı başarısız.', error_code: 'secrets_write_failed', secrets_saved: false },
+                { status: 500 }
+            );
         }
 
-        // 4) Log the save event (no secrets in message!)
+        // 4) Verify the secret was actually written
+        const { data: verifySecret } = await admin
+            .from('marketplace_secrets')
+            .select('id')
+            .eq('connection_id', connection.id)
+            .maybeSingle();
+
+        const secretsSaved = !!verifySecret;
+
+        if (!secretsSaved) {
+            console.error('[marketplace/trendyol POST] Secret verification failed — row not found after upsert');
+            return NextResponse.json(
+                { error: 'Güvenli anahtar kaydı doğrulanamadı.', error_code: 'secrets_verify_failed', secrets_saved: false },
+                { status: 500 }
+            );
+        }
+
+        // 5) Log the save event (no secrets in message!)
         await admin.from('marketplace_sync_logs').insert({
             connection_id: connection.id,
             sync_type: 'test',
             status: 'success',
-            message: 'Trendyol bağlantı bilgileri kaydedildi.',
+            message: 'Trendyol bağlantı bilgileri kaydedildi ve doğrulandı.',
             started_at: new Date().toISOString(),
             finished_at: new Date().toISOString(),
         });
@@ -120,10 +161,14 @@ export async function POST(req: Request) {
             connection_id: connection.id,
             status: connection.status,
             store_name: connection.store_name,
+            secrets_saved: true,
         });
     } catch (err: any) {
-        console.error('[marketplace/trendyol POST] Error:', err?.message);
-        return NextResponse.json({ error: 'Server error' }, { status: 500 });
+        console.error('[marketplace/trendyol POST] Unexpected error:', err?.message);
+        return NextResponse.json(
+            { error: 'Beklenmeyen sunucu hatası.', error_code: 'unexpected_error' },
+            { status: 500 }
+        );
     }
 }
 
