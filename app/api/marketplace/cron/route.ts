@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server-client';
 import { decryptCredentials } from '@/lib/marketplace-crypto';
 import { fetchProducts, fetchOrders } from '@/lib/trendyol-api';
-import { normalizeProducts, normalizeOrders } from '@/lib/marketplace-normalizer';
+import { normalizeProducts, normalizeOrderMetrics } from '@/lib/marketplace-normalizer';
 
 export const dynamic = 'force-dynamic';
 
@@ -121,7 +121,7 @@ export async function GET(req: Request) {
 
                 // Normalize
                 const normProducts = await normalizeProducts(conn.user_id, conn.id);
-                const normOrders = await normalizeOrders(conn.user_id, conn.id);
+                const normOrders = await normalizeOrderMetrics(conn.user_id, conn.id);
 
                 // Update last_sync_at
                 await admin.from('marketplace_connections')
@@ -133,7 +133,7 @@ export async function GET(req: Request) {
                     connection_id: conn.id,
                     sync_type: 'products',
                     status: 'success',
-                    message: `Cron: ${productCount} ürün, ${orderCount} sipariş sync. ${normProducts.matched} eşleşti, ${normProducts.created} yeni, ${normOrders.updated} satış güncellendi.`,
+                    message: `Cron: ${productCount} ürün, ${orderCount} sipariş sync. ${normProducts.matched} eşleşti, ${normProducts.created} yeni, ${normOrders.metricsUpdated} metrik güncellendi.`,
                     started_at: new Date().toISOString(),
                     finished_at: new Date().toISOString(),
                 });

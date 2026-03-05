@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prepareSyncContext, writeSyncLog } from '@/lib/marketplace-sync-helpers';
-import { normalizeProducts, normalizeOrders } from '@/lib/marketplace-normalizer';
+import { normalizeProducts, normalizeOrderMetrics } from '@/lib/marketplace-normalizer';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,10 +16,10 @@ export async function POST() {
         // Normalize products
         const productResult = await normalizeProducts(ctx.userId, ctx.connectionId);
 
-        // Normalize orders → update monthly_sales_volume
-        const orderResult = await normalizeOrders(ctx.userId, ctx.connectionId);
+        // Normalize orders → metrics
+        const orderResult = await normalizeOrderMetrics(ctx.userId, ctx.connectionId);
 
-        const message = `Eşleştirme: ${productResult.matched} eşleşti, ${productResult.created} yeni oluşturuldu, ${productResult.manual} manuel gerekli. Satış adedi: ${orderResult.updated} ürün güncellendi.`;
+        const message = `Eşleştirme: ${productResult.matched} eşleşti, ${productResult.created} yeni oluşturuldu, ${productResult.manual} manuel gerekli. Sipariş metrikleri: ${orderResult.metricsUpdated} güncellendi, bu ay: ${orderResult.currentMonthSales} adet.`;
 
         await writeSyncLog(
             ctx.admin,

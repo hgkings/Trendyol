@@ -197,12 +197,32 @@ async function createAnalysisFromTrendyol(admin: Admin, userId: string, raw: any
 }
 
 /**
- * Normalize Trendyol orders → update monthly_sales_volume in analyses inputs.
- * Counts orders for each product in the last 30 days.
+ * Normalize Trendyol orders → product_sales_metrics (monthly aggregation)
+ * + auto_sales_qty suggestion on analyses.
+ * 
+ * Handles returns/cancels by checking order status.
+ * Does NOT override user-set monthly_sales_volume.
  */
-export async function normalizeOrders(userId: string, connectionId: string): Promise<{ updated: number }> {
+
+const RETURN_STATUSES = new Set(['Cancelled', 'Returned', 'ReturnAccepted', 'ReturnedAndRefunded', 'UnDelivered']);
+const SOLD_STATUSES = new Set(['Created', 'Picking', 'Shipped', 'Delivered', 'InvoiceWaiting']);
+
+interface OrderMetricsResult {
+    metricsUpdated: number;
+    unmatchedOrders: number;
+    monthsCovered: number;
+    currentMonthSales: number;
+}
+
+export async function normalizeOrderMetrics(
+    userId: string,
+    connectionId: string
+): Promise<OrderMetricsResult> {
     const admin = getSupabaseAdmin();
-    let updated = 0;
+    let metricsUpdated = 0;
+    let unmatchedOrders = 0;
+    const monthsSet = new Set<string>();
+    let currentMonthSales = 0;
 
     // 1. Get all mappings for this user
     const { data: mappings } = await admin
@@ -212,62 +232,109 @@ export async function normalizeOrders(userId: string, connectionId: string): Pro
         .eq('marketplace', 'trendyol')
         .not('internal_product_id', 'is', null);
 
-    if (!mappings || mappings.length === 0) return { updated };
+    const mapLookup = new Map<string, string>();
+    for (const m of mappings || []) {
+        if (m.internal_product_id) {
+            mapLookup.set(m.external_product_id, m.internal_product_id);
+        }
+    }
 
-    // 2. Get orders from last 30 days
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    // 2. Fetch all raw orders
     const { data: orders } = await admin
         .from('trendyol_orders_raw')
-        .select('raw_json')
+        .select('order_number, order_date, status, raw_json')
         .eq('connection_id', connectionId)
-        .eq('user_id', userId)
-        .gte('order_date', thirtyDaysAgo);
+        .eq('user_id', userId);
 
-    if (!orders || orders.length === 0) return { updated };
+    if (!orders || orders.length === 0) {
+        return { metricsUpdated: 0, unmatchedOrders: 0, monthsCovered: 0, currentMonthSales: 0 };
+    }
 
-    // 3. Count orders per product (by matching Trendyol product ID in order lines)
-    const productSalesCount = new Map<string, number>();
+    // 3. Aggregate by (internal_product_id, month)
+    type MonthKey = string; // "product_id|YYYY-MM-01"
+    const agg = new Map<MonthKey, { sold: number; returned: number; grossRev: number; netRev: number; productId: string; month: string }>();
 
     for (const order of orders) {
         const raw = order.raw_json;
         const lines = raw?.lines || raw?.orderItems || [];
+        const orderStatus = (order.status || raw?.status || '').trim();
+        const isReturn = RETURN_STATUSES.has(orderStatus);
+
+        const orderDate = order.order_date ? new Date(order.order_date) : new Date();
+        const monthStr = `${orderDate.getFullYear()}-${String(orderDate.getMonth() + 1).padStart(2, '0')}-01`;
+
         for (const line of lines) {
-            const productId = String(line.productId || line.id || '');
+            const extProductId = String(line.productId || line.id || '');
             const qty = line.quantity || 1;
-            if (productId) {
-                productSalesCount.set(productId, (productSalesCount.get(productId) || 0) + qty);
+            const price = line.price || line.amount || 0;
+            const lineTotal = price * qty;
+
+            const internalId = mapLookup.get(extProductId);
+            if (!internalId) {
+                unmatchedOrders++;
+                continue;
             }
+
+            const key = `${internalId}|${monthStr}`;
+            const existing = agg.get(key) || { sold: 0, returned: 0, grossRev: 0, netRev: 0, productId: internalId, month: monthStr };
+
+            if (isReturn) {
+                existing.returned += qty;
+                existing.netRev -= lineTotal;
+            } else {
+                existing.sold += qty;
+                existing.grossRev += lineTotal;
+                existing.netRev += lineTotal;
+            }
+
+            agg.set(key, existing);
+            monthsSet.add(monthStr);
         }
     }
 
-    // 4. Update analyses with monthly_sales_volume
-    for (const mapping of mappings) {
-        const salesQty = productSalesCount.get(mapping.external_product_id);
-        if (salesQty == null || !mapping.internal_product_id) continue;
+    // 4. Upsert product_sales_metrics
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    const productCurrentSales = new Map<string, number>();
 
-        const { data: analysis } = await admin
+    for (const [, data] of Array.from(agg)) {
+        await admin
+            .from('product_sales_metrics')
+            .upsert(
+                {
+                    user_id: userId,
+                    internal_product_id: data.productId,
+                    marketplace: 'trendyol',
+                    period_month: data.month,
+                    sold_qty: data.sold,
+                    returned_qty: data.returned,
+                    gross_revenue: data.grossRev,
+                    net_revenue: data.netRev,
+                },
+                { onConflict: 'user_id,internal_product_id,marketplace,period_month' }
+            );
+        metricsUpdated++;
+
+        // Track current month
+        if (data.month === currentMonth) {
+            const prev = productCurrentSales.get(data.productId) || 0;
+            productCurrentSales.set(data.productId, prev + data.sold - data.returned);
+            currentMonthSales += data.sold - data.returned;
+        }
+    }
+
+    // 5. Update auto_sales_qty on analyses (suggestion only — does not override monthly_sales_volume)
+    for (const [productId, netQty] of Array.from(productCurrentSales)) {
+        await admin
             .from('analyses')
-            .select('inputs')
-            .eq('id', mapping.internal_product_id)
-            .single();
-
-        if (!analysis) continue;
-
-        const inputs = (analysis.inputs || {}) as Record<string, unknown>;
-
-        // Only update if auto_synced or current value is 0
-        const currentVolume = (inputs.monthly_sales_volume as number) || 0;
-        if (currentVolume === 0 || true) { // always update from order data
-            await admin
-                .from('analyses')
-                .update({
-                    inputs: { ...inputs, monthly_sales_volume: salesQty },
-                    auto_synced: true,
-                })
-                .eq('id', mapping.internal_product_id);
-            updated++;
-        }
+            .update({ auto_sales_qty: Math.max(0, netQty) })
+            .eq('id', productId);
     }
 
-    return { updated };
+    return {
+        metricsUpdated,
+        unmatchedOrders,
+        monthsCovered: monthsSet.size,
+        currentMonthSales,
+    };
 }

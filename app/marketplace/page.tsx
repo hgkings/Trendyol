@@ -24,6 +24,7 @@ import {
     Wand2,
     Link2,
     FlaskConical,
+    BarChart3,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -49,6 +50,8 @@ export default function MarketplacePage() {
     const [syncingProducts, setSyncingProducts] = useState(false);
     const [syncingOrders, setSyncingOrders] = useState(false);
     const [lastLog, setLastLog] = useState<string | null>(null);
+    const [normalizingOrders, setNormalizingOrders] = useState(false);
+    const [orderMetrics, setOrderMetrics] = useState<{ currentMonthSales: number; unmatchedOrders: number; metricsUpdated: number } | null>(null);
 
     // Form fields
     const [apiKey, setApiKey] = useState('');
@@ -209,7 +212,29 @@ export default function MarketplacePage() {
     const isConnected = connection?.status === 'connected' || connection?.status === 'connected_demo';
     const isDemo = connection?.status === 'connected_demo';
     const [normalizing, setNormalizing] = useState(false);
-    const isSyncing = syncingProducts || syncingOrders || testing || normalizing || demoTesting;
+    const isSyncing = syncingProducts || syncingOrders || testing || normalizing || demoTesting || normalizingOrders;
+
+    const handleNormalizeOrders = async () => {
+        setNormalizingOrders(true);
+        setLastLog(null);
+        try {
+            const res = await fetch('/api/marketplace/trendyol/normalize-orders', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                toast.success(data.message || 'Sipariş metrikleri güncellendi!');
+                setLastLog(data.message);
+                setOrderMetrics({ currentMonthSales: data.currentMonthSales, unmatchedOrders: data.unmatchedOrders, metricsUpdated: data.metricsUpdated });
+            } else {
+                toast.error(data.error || 'Sipariş normalizasyonu başarısız.');
+                setLastLog(data.error);
+            }
+            fetchStatus();
+        } catch {
+            toast.error('Sipariş normalizasyonu sırasında hata oluştu.');
+        } finally {
+            setNormalizingOrders(false);
+        }
+    };
 
     const handleDemoTest = async () => {
         setDemoTesting(true);
@@ -403,6 +428,37 @@ export default function MarketplacePage() {
                                         </Button>
                                     </Link>
                                 </div>
+
+                                {/* Order Metrics Actions */}
+                                <div className="grid grid-cols-1 gap-3">
+                                    <Button
+                                        variant="outline"
+                                        onClick={handleNormalizeOrders}
+                                        disabled={isSyncing}
+                                        className="gap-2 h-12"
+                                    >
+                                        {normalizingOrders ? <Loader2 className="h-4 w-4 animate-spin" /> : <BarChart3 className="h-4 w-4" />}
+                                        Siparişleri İşle (Metrik Üret)
+                                    </Button>
+                                </div>
+
+                                {/* Metrics Panel */}
+                                {orderMetrics && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <div className="rounded-lg border bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 p-4 space-y-1">
+                                            <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Bu Ay Satış</p>
+                                            <p className="text-xl font-bold text-emerald-700 dark:text-emerald-300">{orderMetrics.currentMonthSales}</p>
+                                        </div>
+                                        <div className="rounded-lg border bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 p-4 space-y-1">
+                                            <p className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider">Eşleşmeyen Sipariş</p>
+                                            <p className="text-xl font-bold text-amber-700 dark:text-amber-300">{orderMetrics.unmatchedOrders}</p>
+                                        </div>
+                                        <div className="rounded-lg border p-4 space-y-1">
+                                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Metrik Güncelleme</p>
+                                            <p className="text-xl font-bold">{orderMetrics.metricsUpdated}</p>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Demo Mode Notice */}
                                 {isDemo && (
