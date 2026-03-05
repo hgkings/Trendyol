@@ -23,10 +23,11 @@ import {
     Plug,
     Wand2,
     Link2,
+    FlaskConical,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-type ConnectionStatus = 'disconnected' | 'connected' | 'pending_test' | 'error';
+type ConnectionStatus = 'disconnected' | 'connected' | 'connected_demo' | 'pending_test' | 'error';
 
 interface ConnectionState {
     connected: boolean;
@@ -58,6 +59,10 @@ export default function MarketplacePage() {
     // Show/hide password fields
     const [showApiKey, setShowApiKey] = useState(false);
     const [showApiSecret, setShowApiSecret] = useState(false);
+
+    // Demo mode
+    const [demoMode, setDemoMode] = useState(false);
+    const [demoTesting, setDemoTesting] = useState(false);
 
     const fetchStatus = useCallback(async () => {
         try {
@@ -201,9 +206,31 @@ export default function MarketplacePage() {
         }
     };
 
-    const isConnected = connection?.status === 'connected';
+    const isConnected = connection?.status === 'connected' || connection?.status === 'connected_demo';
+    const isDemo = connection?.status === 'connected_demo';
     const [normalizing, setNormalizing] = useState(false);
-    const isSyncing = syncingProducts || syncingOrders || testing || normalizing;
+    const isSyncing = syncingProducts || syncingOrders || testing || normalizing || demoTesting;
+
+    const handleDemoTest = async () => {
+        setDemoTesting(true);
+        setLastLog(null);
+        try {
+            const res = await fetch('/api/marketplace/trendyol/demo-test', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                toast.success(data.message || 'Demo bağlantı kuruldu!');
+                setLastLog(data.message);
+            } else {
+                toast.error(data.error || 'Demo test başarısız.');
+                setLastLog(data.error);
+            }
+            fetchStatus();
+        } catch {
+            toast.error('Demo test sırasında hata oluştu.');
+        } finally {
+            setDemoTesting(false);
+        }
+    };
 
     const handleNormalize = async () => {
         setNormalizing(true);
@@ -246,6 +273,11 @@ export default function MarketplacePage() {
             icon: <AlertTriangle className="h-5 w-5" />,
             label: 'Hata',
             color: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800',
+        },
+        connected_demo: {
+            icon: <FlaskConical className="h-5 w-5" />,
+            label: 'Bağlı (Demo)',
+            color: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800',
         },
     };
 
@@ -297,7 +329,7 @@ export default function MarketplacePage() {
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                     <div className="rounded-lg border p-4 space-y-1">
                                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Mağaza Adı</p>
-                                        <p className="text-sm font-semibold truncate">{connection?.store_name || '—'}</p>
+                                        <p className="text-sm font-semibold truncate">{connection?.store_name || '—'}{isDemo && <span className="ml-1 text-xs text-purple-500">(Demo)</span>}</p>
                                     </div>
                                     <div className="rounded-lg border p-4 space-y-1">
                                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Satıcı ID</p>
@@ -372,6 +404,16 @@ export default function MarketplacePage() {
                                     </Link>
                                 </div>
 
+                                {/* Demo Mode Notice */}
+                                {isDemo && (
+                                    <div className="flex items-start gap-3 rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20 p-4">
+                                        <FlaskConical className="h-5 w-5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                                        <div className="text-xs text-purple-700 dark:text-purple-300">
+                                            <p className="font-semibold">Demo Modu Aktif</p>
+                                            <p className="mt-0.5 opacity-80">Bu bağlantı örnek verilerle çalışıyor. Gerçek Trendyol API'si kullanılmamaktadır. Gerçek hesabınızı bağlamak için bağlantıyı kaldırıp API bilgilerinizle tekrar bağlanın.</p>
+                                        </div>
+                                    </div>
+                                )}
                                 {/* Last Log */}
                                 {lastLog && (
                                     <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-3">
@@ -495,12 +537,40 @@ export default function MarketplacePage() {
                                     </p>
                                 </div>
 
-                                {/* Save Button */}
+                                {/* Demo Mode Toggle */}
+                                <div className="flex items-start gap-3 rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20 p-4">
+                                    <div className="flex items-center gap-3 w-full">
+                                        <input
+                                            id="demoMode"
+                                            type="checkbox"
+                                            checked={demoMode}
+                                            onChange={(e) => setDemoMode(e.target.checked)}
+                                            className="h-4 w-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
+                                        />
+                                        <div>
+                                            <label htmlFor="demoMode" className="text-sm font-medium text-purple-700 dark:text-purple-300 cursor-pointer">
+                                                Demo modunda test et (Trendyol hesabım yok)
+                                            </label>
+                                            <p className="text-xs text-purple-600/70 dark:text-purple-400/70 mt-0.5">
+                                                Demo modunda sistem bağlantı akışını ve senkronizasyonu örnek verilerle test eder.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Save / Demo Test Button */}
                                 <div className="flex justify-end">
-                                    <Button onClick={handleSave} disabled={saving || !apiKey || !apiSecret} className="gap-2 min-w-[200px]">
-                                        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Store className="h-4 w-4" />}
-                                        Kaydet & Bağlantıyı Test Et
-                                    </Button>
+                                    {demoMode ? (
+                                        <Button onClick={handleDemoTest} disabled={demoTesting} className="gap-2 min-w-[200px] bg-purple-600 hover:bg-purple-700">
+                                            {demoTesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlaskConical className="h-4 w-4" />}
+                                            Demo Bağlantıyı Kur
+                                        </Button>
+                                    ) : (
+                                        <Button onClick={handleSave} disabled={saving || !apiKey || !apiSecret} className="gap-2 min-w-[200px]">
+                                            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Store className="h-4 w-4" />}
+                                            Kaydet & Bağlantıyı Test Et
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
                         )}
