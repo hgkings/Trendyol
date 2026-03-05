@@ -394,7 +394,7 @@ export default function MarketplacePage() {
                                         className="gap-2 h-12"
                                     >
                                         {normalizing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                                        Verileri Normalize Et
+                                        Ürünleri Kârnet'e Aktar
                                     </Button>
                                     <Link href="/marketplace/matching">
                                         <Button variant="outline" className="gap-2 h-12 w-full">

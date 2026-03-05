@@ -76,13 +76,11 @@ export async function normalizeProducts(userId: string, connectionId: string): P
             internalId = await createAnalysisFromTrendyol(admin, userId, raw, salePrice);
             if (internalId) {
                 created++;
-                confidence = 'high'; // we just created it
+                confidence = 'manual_required'; // cost unknown, user must fill
             } else {
                 manual++;
             }
         }
-
-        if (confidence === 'manual_required') manual++;
 
         // Upsert mapping
         await admin
@@ -91,6 +89,7 @@ export async function normalizeProducts(userId: string, connectionId: string): P
                 {
                     user_id: userId,
                     marketplace: 'trendyol',
+                    connection_id: connectionId,
                     external_product_id: externalId,
                     merchant_sku: sku || null,
                     barcode: barcode || null,
