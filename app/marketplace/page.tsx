@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,6 +21,8 @@ import {
     Package,
     ShoppingCart,
     Plug,
+    Wand2,
+    Link2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -199,7 +202,29 @@ export default function MarketplacePage() {
     };
 
     const isConnected = connection?.status === 'connected';
-    const isSyncing = syncingProducts || syncingOrders || testing;
+    const [normalizing, setNormalizing] = useState(false);
+    const isSyncing = syncingProducts || syncingOrders || testing || normalizing;
+
+    const handleNormalize = async () => {
+        setNormalizing(true);
+        setLastLog(null);
+        try {
+            const res = await fetch('/api/marketplace/trendyol/normalize', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                toast.success(data.message || 'Veriler normalize edildi!');
+                setLastLog(data.message);
+            } else {
+                toast.error(data.error || 'Normalizasyon başarısız.');
+                setLastLog(data.error);
+            }
+            fetchStatus();
+        } catch {
+            toast.error('Normalizasyon sırasında hata oluştu.');
+        } finally {
+            setNormalizing(false);
+        }
+    };
 
     const statusConfig: Record<ConnectionStatus, { icon: React.ReactNode; label: string; color: string }> = {
         connected: {
@@ -326,6 +351,25 @@ export default function MarketplacePage() {
                                         {syncingOrders ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShoppingCart className="h-4 w-4" />}
                                         Siparişleri Senkronla
                                     </Button>
+                                </div>
+
+                                {/* Normalize & Match Actions */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <Button
+                                        variant="outline"
+                                        onClick={handleNormalize}
+                                        disabled={isSyncing}
+                                        className="gap-2 h-12"
+                                    >
+                                        {normalizing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                                        Verileri Normalize Et
+                                    </Button>
+                                    <Link href="/marketplace/matching">
+                                        <Button variant="outline" className="gap-2 h-12 w-full">
+                                            <Link2 className="h-4 w-4" />
+                                            Eşleştirme Merkezi
+                                        </Button>
+                                    </Link>
                                 </div>
 
                                 {/* Last Log */}
