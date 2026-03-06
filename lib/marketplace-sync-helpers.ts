@@ -126,3 +126,45 @@ export async function writeSyncLog(
         finished_at: finishedAt || null,
     });
 }
+
+/**
+ * Lightweight context for normalize endpoints.
+ * Authenticates user and finds connection but does NOT read marketplace_secrets.
+ * Use this for endpoints that only work with local DB data (normalization, matching).
+ */
+export interface NormalizeContext {
+    userId: string;
+    connectionId: string;
+    admin: any;
+}
+
+export async function prepareNormalizeContext(): Promise<{
+    ctx: NormalizeContext | null;
+    error: string | null;
+    status: number;
+}> {
+    const supabase = createClient();
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) {
+        return { ctx: null, error: 'Not authenticated', status: 401 };
+    }
+
+    const admin = getDirectAdmin();
+
+    const { data: conn } = await admin
+        .from('marketplace_connections')
+        .select('id, user_id')
+        .eq('user_id', user.id)
+        .eq('marketplace', 'trendyol')
+        .maybeSingle();
+
+    if (!conn) {
+        return { ctx: null, error: 'Trendyol bağlantısı bulunamadı.', status: 404 };
+    }
+
+    return {
+        ctx: { userId: user.id, connectionId: conn.id, admin },
+        error: null,
+        status: 200,
+    };
+}

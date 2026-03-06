@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prepareSyncContext, writeSyncLog } from '@/lib/marketplace-sync-helpers';
+import { prepareNormalizeContext, writeSyncLog } from '@/lib/marketplace-sync-helpers';
 import { normalizeProducts, normalizeOrderMetrics } from '@/lib/marketplace-normalizer';
 
 export const dynamic = 'force-dynamic';
@@ -8,7 +8,7 @@ export async function POST() {
     const startedAt = new Date().toISOString();
 
     try {
-        const { ctx, error, status } = await prepareSyncContext();
+        const { ctx, error, status } = await prepareNormalizeContext();
         if (!ctx) {
             return NextResponse.json({ error }, { status });
         }
