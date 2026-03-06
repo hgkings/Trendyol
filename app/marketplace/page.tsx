@@ -24,10 +24,38 @@ import {
     Wand2,
     Link2,
     BarChart3,
+    ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+type MarketplaceKey = 'trendyol' | 'hepsiburada';
 type ConnectionStatus = 'disconnected' | 'connected' | 'pending_test' | 'error';
+
+const MARKETPLACE_CONFIG: Record<MarketplaceKey, {
+    label: string;
+    color: string;
+    gradient: string;
+    iconBg: string;
+    sellerIdLabel: string;
+    helpText: string;
+}> = {
+    trendyol: {
+        label: 'Trendyol',
+        color: 'orange',
+        gradient: 'from-orange-50/50 to-transparent dark:from-orange-950/20',
+        iconBg: 'bg-orange-500 shadow-orange-500/20',
+        sellerIdLabel: 'Satıcı ID',
+        helpText: 'Trendyol Satıcı Paneli → Entegrasyon → API Bilgileri sayfasından API Key, API Secret ve Satıcı ID bilgilerinizi alabilirsiniz.',
+    },
+    hepsiburada: {
+        label: 'Hepsiburada',
+        color: 'purple',
+        gradient: 'from-purple-50/50 to-transparent dark:from-purple-950/20',
+        iconBg: 'bg-purple-600 shadow-purple-600/20',
+        sellerIdLabel: 'Merchant ID',
+        helpText: 'Hepsiburada Satıcı Paneli → Hesap Bilgileri → Entegrasyon Bilgileri sayfasından API Key, API Secret ve Merchant ID bilgilerinizi alabilirsiniz.',
+    },
+};
 
 interface ConnectionState {
     connected: boolean;
@@ -39,6 +67,7 @@ interface ConnectionState {
 }
 
 export default function MarketplacePage() {
+    const [selectedMarketplace, setSelectedMarketplace] = useState<MarketplaceKey>('trendyol');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [disconnecting, setDisconnecting] = useState(false);
@@ -62,23 +91,30 @@ export default function MarketplacePage() {
     const [showApiKey, setShowApiKey] = useState(false);
     const [showApiSecret, setShowApiSecret] = useState(false);
 
-
+    const mpConfig = MARKETPLACE_CONFIG[selectedMarketplace];
+    const apiBase = `/api/marketplace/${selectedMarketplace}`;
 
     const fetchStatus = useCallback(async () => {
         try {
-            const res = await fetch('/api/marketplace/trendyol');
+            const res = await fetch(`/api/marketplace/${selectedMarketplace}`);
             if (res.ok) {
                 const data = await res.json();
                 setConnection(data);
+            } else {
+                setConnection(null);
             }
         } catch {
-            // silent
+            setConnection(null);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [selectedMarketplace]);
 
     useEffect(() => {
+        setLoading(true);
+        setConnection(null);
+        setLastLog(null);
+        setOrderMetrics(null);
         fetchStatus();
     }, [fetchStatus]);
 
@@ -91,7 +127,7 @@ export default function MarketplacePage() {
         setSaving(true);
         setLastLog(null);
         try {
-            const res = await fetch('/api/marketplace/trendyol', {
+            const res = await fetch(apiBase, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -105,7 +141,7 @@ export default function MarketplacePage() {
             const data = await res.json();
 
             if (res.ok && data.success && data.secrets_saved) {
-                toast.success('Trendyol bağlantısı ve güvenli anahtarlar başarıyla kaydedildi! ✅');
+                toast.success(`${mpConfig.label} bağlantısı ve güvenli anahtarlar başarıyla kaydedildi! ✅`);
                 setLastLog('Bağlantı ve anahtarlar kaydedildi.');
                 setApiKey('');
                 setApiSecret('');
@@ -138,14 +174,14 @@ export default function MarketplacePage() {
     };
 
     const handleDisconnect = async () => {
-        if (!confirm('Trendyol bağlantısını kaldırmak istediğinize emin misiniz? Tüm API bilgileri silinecektir.')) return;
+        if (!confirm(`${mpConfig.label} bağlantısını kaldırmak istediğinize emin misiniz? Tüm API bilgileri silinecektir.`)) return;
 
         setDisconnecting(true);
         try {
-            const res = await fetch('/api/marketplace/trendyol', { method: 'DELETE' });
+            const res = await fetch(apiBase, { method: 'DELETE' });
             const data = await res.json();
             if (res.ok && data.success) {
-                toast.success('Trendyol bağlantısı kaldırıldı.');
+                toast.success(`${mpConfig.label} bağlantısı kaldırıldı.`);
                 fetchStatus();
             } else {
                 toast.error(data.error || 'Bağlantı kaldırılamadı.');
@@ -161,7 +197,7 @@ export default function MarketplacePage() {
         setTesting(true);
         setLastLog(null);
         try {
-            const res = await fetch('/api/marketplace/trendyol/test', { method: 'POST' });
+            const res = await fetch(`${apiBase}/test`, { method: 'POST' });
             const data = await res.json();
             if (data.success) {
                 toast.success(data.message || 'Bağlantı başarılı!');
@@ -182,7 +218,7 @@ export default function MarketplacePage() {
         setSyncingProducts(true);
         setLastLog(null);
         try {
-            const res = await fetch('/api/marketplace/trendyol/sync-products', { method: 'POST' });
+            const res = await fetch(`${apiBase}/sync-products`, { method: 'POST' });
             const data = await res.json();
             if (data.success) {
                 toast.success(data.message || 'Ürünler senkronize edildi!');
@@ -203,7 +239,7 @@ export default function MarketplacePage() {
         setSyncingOrders(true);
         setLastLog(null);
         try {
-            const res = await fetch('/api/marketplace/trendyol/sync-orders', {
+            const res = await fetch(`${apiBase}/sync-orders`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({}),
@@ -232,7 +268,7 @@ export default function MarketplacePage() {
         setNormalizingOrders(true);
         setLastLog(null);
         try {
-            const res = await fetch('/api/marketplace/trendyol/normalize-orders', { method: 'POST' });
+            const res = await fetch(`${apiBase}/normalize-orders`, { method: 'POST' });
             const data = await res.json();
             if (data.success) {
                 toast.success(data.message || 'Sipariş metrikleri güncellendi!');
@@ -256,7 +292,7 @@ export default function MarketplacePage() {
         setNormalizing(true);
         setLastLog(null);
         try {
-            const res = await fetch('/api/marketplace/trendyol/normalize', { method: 'POST' });
+            const res = await fetch(`${apiBase}/normalize`, { method: 'POST' });
             const data = await res.json();
             if (data.success) {
                 toast.success(data.message || 'Veriler normalize edildi!');
@@ -310,17 +346,27 @@ export default function MarketplacePage() {
                     </p>
                 </div>
 
-                {/* Trendyol Card */}
+                {/* Marketplace Card */}
                 <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
                     {/* Card Header */}
-                    <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-orange-50/50 to-transparent dark:from-orange-950/20">
+                    <div className={`flex items-center justify-between p-6 border-b bg-gradient-to-r ${mpConfig.gradient}`}>
                         <div className="flex items-center gap-4">
-                            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-orange-500 text-white shadow-lg shadow-orange-500/20">
+                            <div className={`flex items-center justify-center w-12 h-12 rounded-xl text-white shadow-lg ${mpConfig.iconBg}`}>
                                 <Store className="h-6 w-6" />
                             </div>
                             <div>
-                                <h2 className="text-lg font-bold">Trendyol</h2>
-                                <p className="text-xs text-muted-foreground mt-0.5">Türkiye'nin en büyük pazaryeri</p>
+                                <div className="relative inline-block">
+                                    <select
+                                        value={selectedMarketplace}
+                                        onChange={(e) => setSelectedMarketplace(e.target.value as MarketplaceKey)}
+                                        className="text-lg font-bold appearance-none bg-transparent pr-7 cursor-pointer focus:outline-none"
+                                    >
+                                        <option value="trendyol">Trendyol</option>
+                                        <option value="hepsiburada">Hepsiburada</option>
+                                    </select>
+                                    <ChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-0.5">Pazaryeri entegrasyonu</p>
                             </div>
                         </div>
 
@@ -452,8 +498,7 @@ export default function MarketplacePage() {
                                     <div className="text-xs text-blue-700 dark:text-blue-300">
                                         <p className="font-semibold">API bilgilerinizi nereden bulabilirsiniz?</p>
                                         <p className="mt-0.5 opacity-80">
-                                            Trendyol Satıcı Paneli → Entegrasyon → API Bilgileri sayfasından API Key, API Secret ve Satıcı ID
-                                            bilgilerinizi alabilirsiniz.
+                                            {mpConfig.helpText}
                                         </p>
                                     </div>
                                 </div>
@@ -510,15 +555,15 @@ export default function MarketplacePage() {
                                         </div>
                                     </div>
 
-                                    {/* Seller ID */}
+                                    {/* Seller / Merchant ID */}
                                     <div className="space-y-2">
                                         <Label htmlFor="sellerId" className="text-sm font-medium">
-                                            Satıcı ID <span className="text-muted-foreground text-xs">(opsiyonel)</span>
+                                            {mpConfig.sellerIdLabel} <span className="text-muted-foreground text-xs">(opsiyonel)</span>
                                         </Label>
                                         <Input
                                             id="sellerId"
                                             type="text"
-                                            placeholder="Satıcı ID giriniz"
+                                            placeholder={`${mpConfig.sellerIdLabel} giriniz`}
                                             value={sellerId}
                                             onChange={(e) => setSellerId(e.target.value)}
                                             autoComplete="off"

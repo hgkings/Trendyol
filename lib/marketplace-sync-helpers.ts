@@ -8,7 +8,6 @@
 
 import { createClient } from '@/lib/supabase-server-client';
 import { decryptCredentials } from '@/lib/marketplace-crypto';
-import type { TrendyolCredentials } from '@/lib/trendyol-api';
 import { createClient as createDirectClient } from '@supabase/supabase-js';
 
 /** Create a direct admin client that guarantees RLS bypass */
@@ -24,7 +23,8 @@ export interface SyncContext {
     userId: string;
     connectionId: string;
     sellerId: string;
-    credentials: TrendyolCredentials;
+    marketplace: string;
+    credentials: { apiKey: string; apiSecret: string; sellerId: string };
     admin: ReturnType<typeof getDirectAdmin>;
 }
 
@@ -33,7 +33,8 @@ export interface SyncContext {
  * Returns null + error string if any step fails.
  */
 export async function prepareSyncContext(
-    connectionId?: string
+    connectionId?: string,
+    marketplace: string = 'trendyol'
 ): Promise<{ ctx: SyncContext | null; error: string | null; status: number }> {
     const supabase = createClient();
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
@@ -43,20 +44,21 @@ export async function prepareSyncContext(
 
     const admin = getDirectAdmin();
 
-    // If no connectionId, find user's Trendyol connection
+    // If no connectionId, find user's connection for this marketplace
     let connId = connectionId;
     if (!connId) {
         const { data: conn } = await admin
             .from('marketplace_connections')
             .select('id')
             .eq('user_id', user.id)
-            .eq('marketplace', 'trendyol')
+            .eq('marketplace', marketplace)
             .maybeSingle();
         connId = conn?.id;
     }
 
     if (!connId) {
-        return { ctx: null, error: 'Trendyol bağlantısı bulunamadı.', status: 404 };
+        const label = marketplace === 'hepsiburada' ? 'Hepsiburada' : 'Trendyol';
+        return { ctx: null, error: `${label} bağlantısı bulunamadı.`, status: 404 };
     }
 
     // Verify ownership
@@ -93,6 +95,7 @@ export async function prepareSyncContext(
             userId: user.id,
             connectionId: connId,
             sellerId,
+            marketplace,
             credentials: {
                 apiKey: decrypted.apiKey,
                 apiSecret: decrypted.apiSecret,
@@ -138,7 +141,7 @@ export interface NormalizeContext {
     admin: any;
 }
 
-export async function prepareNormalizeContext(): Promise<{
+export async function prepareNormalizeContext(marketplace: string = 'trendyol'): Promise<{
     ctx: NormalizeContext | null;
     error: string | null;
     status: number;
@@ -155,11 +158,12 @@ export async function prepareNormalizeContext(): Promise<{
         .from('marketplace_connections')
         .select('id, user_id')
         .eq('user_id', user.id)
-        .eq('marketplace', 'trendyol')
+        .eq('marketplace', marketplace)
         .maybeSingle();
 
     if (!conn) {
-        return { ctx: null, error: 'Trendyol bağlantısı bulunamadı.', status: 404 };
+        const label = marketplace === 'hepsiburada' ? 'Hepsiburada' : 'Trendyol';
+        return { ctx: null, error: `${label} bağlantısı bulunamadı.`, status: 404 };
     }
 
     return {

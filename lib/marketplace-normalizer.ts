@@ -1,7 +1,8 @@
 /**
  * Marketplace Normalizer — Server-only
  * 
- * Maps Trendyol raw data → Kârnet analyses table.
+ * Maps marketplace raw data → Kârnet analyses table.
+ * Supports: trendyol, hepsiburada
  * Does NOT touch calculation formulas — only fills input fields.
  */
 
@@ -9,17 +10,41 @@ import { getSupabaseAdmin } from '@/lib/supabase-server-client';
 
 type Admin = ReturnType<typeof getSupabaseAdmin>;
 
+/** Resolve the raw products table name for a marketplace */
+function rawProductsTable(marketplace: string): string {
+    if (marketplace === 'hepsiburada') return 'hepsiburada_products_raw';
+    return 'trendyol_products_raw';
+}
+
+/** Resolve the raw orders table name for a marketplace */
+function rawOrdersTable(marketplace: string): string {
+    if (marketplace === 'hepsiburada') return 'hepsiburada_orders_raw';
+    return 'trendyol_orders_raw';
+}
+
+/** Marketplace-specific defaults */
+function marketplaceDefaults(marketplace: string) {
+    if (marketplace === 'hepsiburada') {
+        return { commission_pct: 18, payout_delay_days: 14, return_rate_pct: 3 };
+    }
+    return { commission_pct: 21, payout_delay_days: 14, return_rate_pct: 3 };
+}
+
 /**
- * Normalize Trendyol products into Kârnet analyses + product_marketplace_map.
+ * Normalize raw products into Kârnet analyses + product_marketplace_map.
  * Matching priority: barcode → merchant_sku → product_name → new entry
  */
-export async function normalizeProducts(userId: string, connectionId: string): Promise<{ matched: number; created: number; manual: number }> {
+export async function normalizeProducts(
+    userId: string,
+    connectionId: string,
+    marketplace: string = 'trendyol'
+): Promise<{ matched: number; created: number; manual: number }> {
     const admin = getSupabaseAdmin();
     let matched = 0, created = 0, manual = 0;
 
-    // 1. Fetch all raw Trendyol products for this connection
+    // 1. Fetch all raw products for this connection
     const { data: rawProducts } = await admin
-        .from('trendyol_products_raw')
+        .from(rawProductsTable(marketplace))
         .select('*')
         .eq('connection_id', connectionId)
         .eq('user_id', userId);
@@ -68,12 +93,12 @@ export async function normalizeProducts(userId: string, connectionId: string): P
         }
 
         if (internalId) {
-            // Update the existing analysis with Trendyol data
-            await updateAnalysisFromTrendyol(admin, internalId, raw, salePrice);
+            // Update the existing analysis with marketplace data
+            await updateAnalysisFromMarketplace(admin, internalId, raw, salePrice, marketplace);
             matched++;
         } else {
             // Create a new analysis entry
-            internalId = await createAnalysisFromTrendyol(admin, userId, raw, salePrice);
+            internalId = await createAnalysisFromMarketplace(admin, userId, raw, salePrice, marketplace);
             if (internalId) {
                 created++;
                 confidence = 'manual_required'; // cost unknown, user must fill
@@ -88,7 +113,7 @@ export async function normalizeProducts(userId: string, connectionId: string): P
             .upsert(
                 {
                     user_id: userId,
-                    marketplace: 'trendyol',
+                    marketplace: marketplace,
                     connection_id: connectionId,
                     external_product_id: externalId,
                     merchant_sku: sku || null,
@@ -104,7 +129,7 @@ export async function normalizeProducts(userId: string, connectionId: string): P
     return { matched, created, manual };
 }
 
-async function updateAnalysisFromTrendyol(admin: Admin, analysisId: string, raw: any, salePrice: number) {
+async function updateAnalysisFromMarketplace(admin: Admin, analysisId: string, raw: any, salePrice: number, marketplace: string) {
     // Fetch current inputs
     const { data: analysis } = await admin
         .from('analyses')
@@ -127,28 +152,29 @@ async function updateAnalysisFromTrendyol(admin: Admin, analysisId: string, raw:
         .update({
             barcode: raw.barcode || undefined,
             merchant_sku: raw.merchant_sku || undefined,
-            marketplace_source: 'trendyol',
+            marketplace_source: marketplace,
             auto_synced: true,
             ...updates,
         })
         .eq('id', analysisId);
 }
 
-async function createAnalysisFromTrendyol(admin: Admin, userId: string, raw: any, salePrice: number): Promise<string | null> {
+async function createAnalysisFromMarketplace(admin: Admin, userId: string, raw: any, salePrice: number, marketplace: string): Promise<string | null> {
+    const defaults = marketplaceDefaults(marketplace);
     const inputs = {
-        marketplace: 'trendyol',
+        marketplace,
         product_name: raw.title || 'İsimsiz Ürün',
         sale_price: salePrice || 0,
         monthly_sales_volume: 0,
         product_cost: 0,
-        commission_pct: 21, // Trendyol default
+        commission_pct: defaults.commission_pct,
         shipping_cost: 0,
         packaging_cost: 0,
         ad_cost_per_sale: 0,
-        return_rate_pct: 3,
+        return_rate_pct: defaults.return_rate_pct,
         vat_pct: 20,
         other_cost: 0,
-        payout_delay_days: 14,
+        payout_delay_days: defaults.payout_delay_days,
     };
 
     const outputs = {
@@ -175,7 +201,7 @@ async function createAnalysisFromTrendyol(admin: Admin, userId: string, raw: any
         .from('analyses')
         .insert({
             user_id: userId,
-            marketplace: 'trendyol',
+            marketplace: marketplace,
             product_name: raw.title || 'İsimsiz Ürün',
             inputs,
             outputs,
@@ -183,7 +209,7 @@ async function createAnalysisFromTrendyol(admin: Admin, userId: string, raw: any
             risk_level: 'moderate',
             barcode: raw.barcode || null,
             merchant_sku: raw.merchant_sku || null,
-            marketplace_source: 'trendyol',
+            marketplace_source: marketplace,
             auto_synced: true,
         })
         .select('id')
@@ -216,7 +242,8 @@ interface OrderMetricsResult {
 
 export async function normalizeOrderMetrics(
     userId: string,
-    connectionId: string
+    connectionId: string,
+    marketplace: string = 'trendyol'
 ): Promise<OrderMetricsResult> {
     const admin = getSupabaseAdmin();
     let metricsUpdated = 0;
@@ -229,7 +256,7 @@ export async function normalizeOrderMetrics(
         .from('product_marketplace_map')
         .select('external_product_id, internal_product_id')
         .eq('user_id', userId)
-        .eq('marketplace', 'trendyol')
+        .eq('marketplace', marketplace)
         .not('internal_product_id', 'is', null);
 
     const mapLookup = new Map<string, string>();
@@ -241,7 +268,7 @@ export async function normalizeOrderMetrics(
 
     // 2. Fetch all raw orders
     const { data: orders } = await admin
-        .from('trendyol_orders_raw')
+        .from(rawOrdersTable(marketplace))
         .select('order_number, order_date, status, raw_json')
         .eq('connection_id', connectionId)
         .eq('user_id', userId);
@@ -304,7 +331,7 @@ export async function normalizeOrderMetrics(
                 {
                     user_id: userId,
                     internal_product_id: data.productId,
-                    marketplace: 'trendyol',
+                    marketplace: marketplace,
                     period_month: data.month,
                     sold_qty: data.sold,
                     returned_qty: data.returned,
