@@ -25,8 +25,12 @@ import {
     Link2,
     BarChart3,
     ChevronDown,
+    ChevronsUpDown,
+    Check,
+    Search,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 type MarketplaceKey = 'trendyol' | 'hepsiburada';
 type ConnectionStatus = 'disconnected' | 'connected' | 'pending_test' | 'error';
@@ -38,6 +42,7 @@ const MARKETPLACE_CONFIG: Record<MarketplaceKey, {
     iconBg: string;
     sellerIdLabel: string;
     helpText: string;
+    description: string;
 }> = {
     trendyol: {
         label: 'Trendyol',
@@ -46,6 +51,7 @@ const MARKETPLACE_CONFIG: Record<MarketplaceKey, {
         iconBg: 'bg-orange-500 shadow-orange-500/20',
         sellerIdLabel: 'Satıcı ID',
         helpText: 'Trendyol Satıcı Paneli → Entegrasyon → API Bilgileri sayfasından API Key, API Secret ve Satıcı ID bilgilerinizi alabilirsiniz.',
+        description: "Türkiye'nin en büyük pazaryeri",
     },
     hepsiburada: {
         label: 'Hepsiburada',
@@ -54,6 +60,7 @@ const MARKETPLACE_CONFIG: Record<MarketplaceKey, {
         iconBg: 'bg-purple-600 shadow-purple-600/20',
         sellerIdLabel: 'Merchant ID',
         helpText: 'Hepsiburada Satıcı Paneli → Hesap Bilgileri → Entegrasyon Bilgileri sayfasından API Key, API Secret ve Merchant ID bilgilerinizi alabilirsiniz.',
+        description: "Yüksek hacimli satıcı pazaryeri",
     },
 };
 
@@ -68,6 +75,8 @@ interface ConnectionState {
 
 export default function MarketplacePage() {
     const [selectedMarketplace, setSelectedMarketplace] = useState<MarketplaceKey>('trendyol');
+    const [marketplaceOpen, setMarketplaceOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [disconnecting, setDisconnecting] = useState(false);
@@ -355,18 +364,61 @@ export default function MarketplacePage() {
                                 <Store className="h-6 w-6" />
                             </div>
                             <div>
-                                <div className="relative inline-block">
-                                    <select
-                                        value={selectedMarketplace}
-                                        onChange={(e) => setSelectedMarketplace(e.target.value as MarketplaceKey)}
-                                        className="text-lg font-bold appearance-none bg-transparent pr-7 cursor-pointer focus:outline-none"
-                                    >
-                                        <option value="trendyol">Trendyol</option>
-                                        <option value="hepsiburada">Hepsiburada</option>
-                                    </select>
-                                    <ChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                                </div>
-                                <p className="text-xs text-muted-foreground mt-0.5">Pazaryeri entegrasyonu</p>
+                                <Popover open={marketplaceOpen} onOpenChange={setMarketplaceOpen}>
+                                    <PopoverTrigger asChild>
+                                        <button className="flex items-center gap-2 group text-left focus:outline-none">
+                                            <h2 className="text-xl font-bold">{mpConfig.label}</h2>
+                                            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-muted/50 group-hover:bg-muted transition-colors">
+                                                <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                                            </div>
+                                        </button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-80 p-0" align="start">
+                                        <div className="p-2 border-b border-border/50">
+                                            <div className="relative">
+                                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    placeholder="Pazaryeri ara..."
+                                                    className="pl-9 bg-muted/50 border-none focus-visible:ring-1"
+                                                    value={searchQuery}
+                                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="p-2 max-h-[300px] overflow-y-auto">
+                                            {Object.entries(MARKETPLACE_CONFIG)
+                                                .filter(([k, v]) => v.label.toLowerCase().includes(searchQuery.toLowerCase()))
+                                                .map(([key, config]) => {
+                                                    const isSelected = selectedMarketplace === key;
+                                                    return (
+                                                        <button
+                                                            key={key}
+                                                            className={`flex items-start w-full gap-3 p-2.5 rounded-lg text-left transition-all hover:bg-muted/50 ${isSelected ? 'bg-muted/30' : ''}`}
+                                                            onClick={() => {
+                                                                setSelectedMarketplace(key as MarketplaceKey);
+                                                                setMarketplaceOpen(false);
+                                                                setSearchQuery('');
+                                                            }}
+                                                        >
+                                                            <div className={`flex items-center justify-center w-10 h-10 rounded-lg text-white shadow-sm shrink-0 ${config.iconBg}`}>
+                                                                <Store className="h-5 w-5" />
+                                                            </div>
+                                                            <div className="flex-1 overflow-hidden">
+                                                                <div className="flex items-center justify-between">
+                                                                    <p className="font-semibold">{config.label}</p>
+                                                                    {isSelected && <Check className="h-4 w-4 text-primary" />}
+                                                                </div>
+                                                                <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5 whitespace-normal">
+                                                                    {config.description}
+                                                                </p>
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })}
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+                                <p className="text-xs text-muted-foreground mt-0.5">{mpConfig.description}</p>
                             </div>
                         </div>
 
