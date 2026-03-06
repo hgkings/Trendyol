@@ -25,7 +25,7 @@ export async function GET() {
         }
 
         return NextResponse.json({
-            connected: connection.status === 'connected' || connection.status === 'connected_demo',
+            connected: connection.status === 'connected',
             connection_id: connection.id,
             status: connection.status,
             store_name: connection.store_name,

@@ -23,12 +23,11 @@ import {
     Plug,
     Wand2,
     Link2,
-    FlaskConical,
     BarChart3,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-type ConnectionStatus = 'disconnected' | 'connected' | 'connected_demo' | 'pending_test' | 'error';
+type ConnectionStatus = 'disconnected' | 'connected' | 'pending_test' | 'error';
 
 interface ConnectionState {
     connected: boolean;
@@ -63,9 +62,7 @@ export default function MarketplacePage() {
     const [showApiKey, setShowApiKey] = useState(false);
     const [showApiSecret, setShowApiSecret] = useState(false);
 
-    // Demo mode
-    const [demoMode, setDemoMode] = useState(false);
-    const [demoTesting, setDemoTesting] = useState(false);
+
 
     const fetchStatus = useCallback(async () => {
         try {
@@ -227,10 +224,9 @@ export default function MarketplacePage() {
         }
     };
 
-    const isConnected = connection?.status === 'connected' || connection?.status === 'connected_demo';
-    const isDemo = connection?.status === 'connected_demo';
+    const isConnected = connection?.status === 'connected';
     const [normalizing, setNormalizing] = useState(false);
-    const isSyncing = syncingProducts || syncingOrders || testing || normalizing || demoTesting || normalizingOrders;
+    const isSyncing = syncingProducts || syncingOrders || testing || normalizing || normalizingOrders;
 
     const handleNormalizeOrders = async () => {
         setNormalizingOrders(true);
@@ -254,26 +250,7 @@ export default function MarketplacePage() {
         }
     };
 
-    const handleDemoTest = async () => {
-        setDemoTesting(true);
-        setLastLog(null);
-        try {
-            const res = await fetch('/api/marketplace/trendyol/demo-test', { method: 'POST' });
-            const data = await res.json();
-            if (data.success) {
-                toast.success(data.message || 'Demo bağlantı kuruldu!');
-                setLastLog(data.message);
-            } else {
-                toast.error(data.error || 'Demo test başarısız.');
-                setLastLog(data.error);
-            }
-            fetchStatus();
-        } catch {
-            toast.error('Demo test sırasında hata oluştu.');
-        } finally {
-            setDemoTesting(false);
-        }
-    };
+
 
     const handleNormalize = async () => {
         setNormalizing(true);
@@ -317,11 +294,7 @@ export default function MarketplacePage() {
             label: 'Hata',
             color: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800',
         },
-        connected_demo: {
-            icon: <FlaskConical className="h-5 w-5" />,
-            label: 'Bağlı (Demo)',
-            color: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800',
-        },
+
     };
 
     const currentStatus = statusConfig[connection?.status || 'disconnected'];
@@ -372,7 +345,7 @@ export default function MarketplacePage() {
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                     <div className="rounded-lg border p-4 space-y-1">
                                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Mağaza Adı</p>
-                                        <p className="text-sm font-semibold truncate">{connection?.store_name || '—'}{isDemo && <span className="ml-1 text-xs text-purple-500">(Demo)</span>}</p>
+                                        <p className="text-sm font-semibold truncate">{connection?.store_name || '—'}</p>
                                     </div>
                                     <div className="rounded-lg border p-4 space-y-1">
                                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Satıcı ID</p>
@@ -388,74 +361,52 @@ export default function MarketplacePage() {
                                     </div>
                                 </div>
 
-                                {/* Security Notice — only for real connections */}
-                                {!isDemo && (
-                                    <div className="flex items-start gap-3 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 p-4">
-                                        <ShieldCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                                        <div className="text-xs text-emerald-700 dark:text-emerald-300">
-                                            <p className="font-semibold">API bilgileriniz güvende</p>
-                                            <p className="mt-0.5 opacity-80">Tüm kimlik bilgileri AES-256-GCM ile şifreli olarak saklanır. Hiçbir zaman düz metin olarak depolanmaz.</p>
-                                        </div>
+                                {/* Security Notice */}
+                                <div className="flex items-start gap-3 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 p-4">
+                                    <ShieldCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                                    <div className="text-xs text-emerald-700 dark:text-emerald-300">
+                                        <p className="font-semibold">API bilgileriniz güvende</p>
+                                        <p className="mt-0.5 opacity-80">Tüm kimlik bilgileri AES-256-GCM ile şifreli olarak saklanır. Hiçbir zaman düz metin olarak depolanmaz.</p>
                                     </div>
-                                )}
+                                </div>
 
-                                {/* Sync/Test/Normalize — ONLY for real connections, not demo */}
-                                {!isDemo ? (
-                                    <>
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                            <Button variant="outline" onClick={handleTestConnection} disabled={isSyncing} className="gap-2 h-12">
-                                                {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plug className="h-4 w-4" />}
-                                                Bağlantıyı Test Et
-                                            </Button>
-                                            <Button variant="outline" onClick={handleSyncProducts} disabled={isSyncing} className="gap-2 h-12">
-                                                {syncingProducts ? <Loader2 className="h-4 w-4 animate-spin" /> : <Package className="h-4 w-4" />}
-                                                Ürünleri Senkronla
-                                            </Button>
-                                            <Button variant="outline" onClick={handleSyncOrders} disabled={isSyncing} className="gap-2 h-12">
-                                                {syncingOrders ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShoppingCart className="h-4 w-4" />}
-                                                Siparişleri Senkronla
-                                            </Button>
-                                        </div>
+                                {/* Sync Actions */}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <Button variant="outline" onClick={handleTestConnection} disabled={isSyncing} className="gap-2 h-12">
+                                        {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plug className="h-4 w-4" />}
+                                        Bağlantıyı Test Et
+                                    </Button>
+                                    <Button variant="outline" onClick={handleSyncProducts} disabled={isSyncing} className="gap-2 h-12">
+                                        {syncingProducts ? <Loader2 className="h-4 w-4 animate-spin" /> : <Package className="h-4 w-4" />}
+                                        Ürünleri Senkronla
+                                    </Button>
+                                    <Button variant="outline" onClick={handleSyncOrders} disabled={isSyncing} className="gap-2 h-12">
+                                        {syncingOrders ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShoppingCart className="h-4 w-4" />}
+                                        Siparişleri Senkronla
+                                    </Button>
+                                </div>
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                            <Button variant="outline" onClick={handleNormalize} disabled={isSyncing} className="gap-2 h-12">
-                                                {normalizing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                                                Ürünleri Kârnet'e Aktar
-                                            </Button>
-                                            <Link href="/marketplace/matching">
-                                                <Button variant="outline" className="gap-2 h-12 w-full">
-                                                    <Link2 className="h-4 w-4" />
-                                                    Eşleştirme Merkezi
-                                                </Button>
-                                            </Link>
-                                        </div>
+                                {/* Normalize & Match Actions */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <Button variant="outline" onClick={handleNormalize} disabled={isSyncing} className="gap-2 h-12">
+                                        {normalizing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                                        Ürünleri Kârnet'e Aktar
+                                    </Button>
+                                    <Link href="/marketplace/matching">
+                                        <Button variant="outline" className="gap-2 h-12 w-full">
+                                            <Link2 className="h-4 w-4" />
+                                            Eşleştirme Merkezi
+                                        </Button>
+                                    </Link>
+                                </div>
 
-                                        <div className="grid grid-cols-1 gap-3">
-                                            <Button variant="outline" onClick={handleNormalizeOrders} disabled={isSyncing} className="gap-2 h-12">
-                                                {normalizingOrders ? <Loader2 className="h-4 w-4 animate-spin" /> : <BarChart3 className="h-4 w-4" />}
-                                                Siparişleri İşle (Metrik Üret)
-                                            </Button>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="flex items-start gap-3 rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20 p-4">
-                                        <FlaskConical className="h-5 w-5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
-                                        <div className="text-xs text-purple-700 dark:text-purple-300">
-                                            <p className="font-semibold">Demo veriler hazır</p>
-                                            <p className="mt-0.5 opacity-80">5 demo ürün ve 10 demo sipariş oluşturuldu. Normalizasyon ve eşleştirme işlemleri için Ürünleri Kârnet'e Aktar ve Eşleştirme Merkezi'ni kullanabilirsiniz.</p>
-                                            <div className="mt-3 flex gap-2">
-                                                <Button variant="outline" size="sm" onClick={handleNormalize} disabled={isSyncing} className="gap-1.5">
-                                                    {normalizing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
-                                                    Ürünleri Aktar
-                                                </Button>
-                                                <Button variant="outline" size="sm" onClick={handleNormalizeOrders} disabled={isSyncing} className="gap-1.5">
-                                                    {normalizingOrders ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BarChart3 className="h-3.5 w-3.5" />}
-                                                    Metrikleri Üret
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
+                                {/* Order Metrics Actions */}
+                                <div className="grid grid-cols-1 gap-3">
+                                    <Button variant="outline" onClick={handleNormalizeOrders} disabled={isSyncing} className="gap-2 h-12">
+                                        {normalizingOrders ? <Loader2 className="h-4 w-4 animate-spin" /> : <BarChart3 className="h-4 w-4" />}
+                                        Siparişleri İşle (Metrik Üret)
+                                    </Button>
+                                </div>
 
                                 {/* Metrics Panel */}
                                 {orderMetrics && (
@@ -475,16 +426,7 @@ export default function MarketplacePage() {
                                     </div>
                                 )}
 
-                                {/* Demo Mode Notice */}
-                                {isDemo && (
-                                    <div className="flex items-start gap-3 rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20 p-4">
-                                        <FlaskConical className="h-5 w-5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
-                                        <div className="text-xs text-purple-700 dark:text-purple-300">
-                                            <p className="font-semibold">Demo Modu Aktif</p>
-                                            <p className="mt-0.5 opacity-80">Bu bağlantı örnek verilerle çalışıyor. Gerçek Trendyol API'si kullanılmamaktadır. Gerçek hesabınızı bağlamak için bağlantıyı kaldırıp API bilgilerinizle tekrar bağlanın.</p>
-                                        </div>
-                                    </div>
-                                )}
+
                                 {/* Last Log */}
                                 {lastLog && (
                                     <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-3">
@@ -503,168 +445,123 @@ export default function MarketplacePage() {
                             </div>
                         ) : (
                             /* ─── Disconnected State — Show Form ─── */
-                            <form onSubmit={(e) => { e.preventDefault(); if (demoMode) { handleDemoTest(); } else { handleSave(); } }} className="space-y-6">
-                                {!demoMode && (
-                                    <>
-                                        {/* Info Banner */}
-                                        <div className="flex items-start gap-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 p-4">
-                                            <ExternalLink className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-                                            <div className="text-xs text-blue-700 dark:text-blue-300">
-                                                <p className="font-semibold">API bilgilerinizi nereden bulabilirsiniz?</p>
-                                                <p className="mt-0.5 opacity-80">
-                                                    Trendyol Satıcı Paneli → Entegrasyon → API Bilgileri sayfasından API Key, API Secret ve Satıcı ID
-                                                    bilgilerinizi alabilirsiniz.
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Form */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                            {/* API Key */}
-                                            <div className="space-y-2">
-                                                <Label htmlFor="apiKey" className="text-sm font-medium">
-                                                    API Key <span className="text-red-500">*</span>
-                                                </Label>
-                                                <div className="relative">
-                                                    <Input
-                                                        id="apiKey"
-                                                        type={showApiKey ? 'text' : 'password'}
-                                                        placeholder="API Key giriniz"
-                                                        value={apiKey}
-                                                        onChange={(e) => setApiKey(e.target.value)}
-                                                        className="pr-10"
-                                                        autoComplete="off"
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                                                        onClick={() => setShowApiKey(!showApiKey)}
-                                                    >
-                                                        {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {/* API Secret */}
-                                            <div className="space-y-2">
-                                                <Label htmlFor="apiSecret" className="text-sm font-medium">
-                                                    API Secret <span className="text-red-500">*</span>
-                                                </Label>
-                                                <div className="relative">
-                                                    <Input
-                                                        id="apiSecret"
-                                                        type={showApiSecret ? 'text' : 'password'}
-                                                        placeholder="API Secret giriniz"
-                                                        value={apiSecret}
-                                                        onChange={(e) => setApiSecret(e.target.value)}
-                                                        className="pr-10"
-                                                        autoComplete="off"
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                                                        onClick={() => setShowApiSecret(!showApiSecret)}
-                                                    >
-                                                        {showApiSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {/* Seller ID */}
-                                            <div className="space-y-2">
-                                                <Label htmlFor="sellerId" className="text-sm font-medium">
-                                                    Satıcı ID <span className="text-muted-foreground text-xs">(opsiyonel)</span>
-                                                </Label>
-                                                <Input
-                                                    id="sellerId"
-                                                    type="text"
-                                                    placeholder="Satıcı ID giriniz"
-                                                    value={sellerId}
-                                                    onChange={(e) => setSellerId(e.target.value)}
-                                                    autoComplete="off"
-                                                />
-                                            </div>
-
-                                            {/* Store Name */}
-                                            <div className="space-y-2">
-                                                <Label htmlFor="storeName" className="text-sm font-medium">
-                                                    Mağaza Adı <span className="text-muted-foreground text-xs">(opsiyonel)</span>
-                                                </Label>
-                                                <Input
-                                                    id="storeName"
-                                                    type="text"
-                                                    placeholder="Ör: Mağazam"
-                                                    value={storeName}
-                                                    onChange={(e) => setStoreName(e.target.value)}
-                                                    autoComplete="off"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* Security Notice */}
-                                        <div className="flex items-start gap-3 rounded-lg border bg-muted/30 p-4">
-                                            <ShieldCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                                            <p className="text-xs text-muted-foreground">
-                                                API bilgileriniz AES-256-GCM ile şifrelenerek güvenli sunucularımızda saklanır.
-                                                Bilgileriniz hiçbir zaman tarayıcınızda depolanmaz veya loglara yazılmaz.
-                                            </p>
-                                        </div>
-                                    </>
-                                )}
-
-                                {demoMode && (
-                                    <div className="flex items-start gap-3 rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20 p-4">
-                                        <FlaskConical className="h-5 w-5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
-                                        <div className="text-xs text-purple-700 dark:text-purple-300">
-                                            <p className="font-semibold">Demo Modu</p>
-                                            <p className="mt-0.5 opacity-80">
-                                                API bilgisi gerekmez. Sistem örnek ürün ve sipariş verileriyle bir demo bağlantı oluşturacak.
-                                                Tüm senkronizasyon ve analiz akışlarını test edebilirsiniz.
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Demo Mode Toggle */}
-                                <div className="flex items-start gap-3 rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20 p-4">
-                                    <div className="flex items-center gap-3 w-full">
-                                        <input
-                                            id="demoMode"
-                                            type="checkbox"
-                                            checked={demoMode}
-                                            onChange={(e) => setDemoMode(e.target.checked)}
-                                            className="h-4 w-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
-                                        />
-                                        <div>
-                                            <label htmlFor="demoMode" className="text-sm font-medium text-purple-700 dark:text-purple-300 cursor-pointer">
-                                                Demo modunda test et (Trendyol hesabım yok)
-                                            </label>
-                                            <p className="text-xs text-purple-600/70 dark:text-purple-400/70 mt-0.5">
-                                                Demo modunda sistem bağlantı akışını ve senkronizasyonu örnek verilerle test eder.
-                                            </p>
-                                        </div>
+                            <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-6">
+                                {/* Info Banner */}
+                                <div className="flex items-start gap-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 p-4">
+                                    <ExternalLink className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                                    <div className="text-xs text-blue-700 dark:text-blue-300">
+                                        <p className="font-semibold">API bilgilerinizi nereden bulabilirsiniz?</p>
+                                        <p className="mt-0.5 opacity-80">
+                                            Trendyol Satıcı Paneli → Entegrasyon → API Bilgileri sayfasından API Key, API Secret ve Satıcı ID
+                                            bilgilerinizi alabilirsiniz.
+                                        </p>
                                     </div>
                                 </div>
 
-                                {/* Save / Demo Test Button */}
+                                {/* Form */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                    {/* API Key */}
+                                    <div className="space-y-2">
+                                        <Label htmlFor="apiKey" className="text-sm font-medium">
+                                            API Key <span className="text-red-500">*</span>
+                                        </Label>
+                                        <div className="relative">
+                                            <Input
+                                                id="apiKey"
+                                                type={showApiKey ? 'text' : 'password'}
+                                                placeholder="API Key giriniz"
+                                                value={apiKey}
+                                                onChange={(e) => setApiKey(e.target.value)}
+                                                className="pr-10"
+                                                autoComplete="off"
+                                            />
+                                            <button
+                                                type="button"
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                                onClick={() => setShowApiKey(!showApiKey)}
+                                            >
+                                                {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* API Secret */}
+                                    <div className="space-y-2">
+                                        <Label htmlFor="apiSecret" className="text-sm font-medium">
+                                            API Secret <span className="text-red-500">*</span>
+                                        </Label>
+                                        <div className="relative">
+                                            <Input
+                                                id="apiSecret"
+                                                type={showApiSecret ? 'text' : 'password'}
+                                                placeholder="API Secret giriniz"
+                                                value={apiSecret}
+                                                onChange={(e) => setApiSecret(e.target.value)}
+                                                className="pr-10"
+                                                autoComplete="off"
+                                            />
+                                            <button
+                                                type="button"
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                                onClick={() => setShowApiSecret(!showApiSecret)}
+                                            >
+                                                {showApiSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Seller ID */}
+                                    <div className="space-y-2">
+                                        <Label htmlFor="sellerId" className="text-sm font-medium">
+                                            Satıcı ID <span className="text-muted-foreground text-xs">(opsiyonel)</span>
+                                        </Label>
+                                        <Input
+                                            id="sellerId"
+                                            type="text"
+                                            placeholder="Satıcı ID giriniz"
+                                            value={sellerId}
+                                            onChange={(e) => setSellerId(e.target.value)}
+                                            autoComplete="off"
+                                        />
+                                    </div>
+
+                                    {/* Store Name */}
+                                    <div className="space-y-2">
+                                        <Label htmlFor="storeName" className="text-sm font-medium">
+                                            Mağaza Adı <span className="text-muted-foreground text-xs">(opsiyonel)</span>
+                                        </Label>
+                                        <Input
+                                            id="storeName"
+                                            type="text"
+                                            placeholder="Ör: Mağazam"
+                                            value={storeName}
+                                            onChange={(e) => setStoreName(e.target.value)}
+                                            autoComplete="off"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Security Notice */}
+                                <div className="flex items-start gap-3 rounded-lg border bg-muted/30 p-4">
+                                    <ShieldCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                                    <p className="text-xs text-muted-foreground">
+                                        API bilgileriniz AES-256-GCM ile şifrelenerek güvenli sunucularımızda saklanır.
+                                        Bilgileriniz hiçbir zaman tarayıcınızda depolanmaz veya loglara yazılmaz.
+                                    </p>
+                                </div>
+
+                                {/* Save Button */}
                                 <div className="flex justify-end">
-                                    {demoMode ? (
-                                        <Button type="submit" disabled={demoTesting} className="gap-2 min-w-[200px] bg-purple-600 hover:bg-purple-700">
-                                            {demoTesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlaskConical className="h-4 w-4" />}
-                                            Demo Bağlantıyı Kur
-                                        </Button>
-                                    ) : (
-                                        <Button type="submit" disabled={saving || !apiKey || !apiSecret} className="gap-2 min-w-[200px]">
-                                            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Store className="h-4 w-4" />}
-                                            Kaydet & Bağlantıyı Test Et
-                                        </Button>
-                                    )}
+                                    <Button type="submit" disabled={saving || !apiKey || !apiSecret} className="gap-2 min-w-[200px]">
+                                        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Store className="h-4 w-4" />}
+                                        Kaydet & Bağlantıyı Test Et
+                                    </Button>
                                 </div>
                             </form>
                         )}
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </DashboardLayout >
     );
 }
