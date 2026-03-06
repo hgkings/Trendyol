@@ -297,7 +297,7 @@ export default function MarketplacePage() {
 
     };
 
-    const currentStatus = statusConfig[connection?.status || 'disconnected'];
+    const currentStatus = statusConfig[connection?.status || 'disconnected'] || statusConfig.disconnected;
 
     return (
         <DashboardLayout>
