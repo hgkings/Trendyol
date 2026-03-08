@@ -353,7 +353,16 @@ export default function PricingPage() {
                           credentials: 'same-origin',
                         });
                         if (!res.ok) {
-                          const errData = await res.json().catch(() => ({}));
+                          let errData;
+                          try {
+                            errData = await res.json();
+                          } catch {
+                            errData = {};
+                          }
+
+                          if (errData.error_code === 'server_config_missing' && errData.missing_keys) {
+                            throw new Error(`Sunucu yapılandırması eksik: ${errData.missing_keys.join(', ')}`);
+                          }
                           throw new Error(errData.error || `HTTP ${res.status}`);
                         }
                         const data = await res.json();
