@@ -11,6 +11,9 @@ export async function GET() {
         ok: true,
         timestamp: new Date().toISOString(),
         env: {
+            has_SHOPIER_API_KEY: !!process.env.SHOPIER_API_KEY,
+            has_SHOPIER_API_SECRET: !!process.env.SHOPIER_API_SECRET,
+            has_SHOPIER_API_TOKEN: !!process.env.SHOPIER_API_TOKEN,
             has_SHOPIER_PRO_MONTHLY_URL: !!process.env.SHOPIER_PRO_MONTHLY_URL,
             has_SHOPIER_PRO_YEARLY_URL: !!process.env.SHOPIER_PRO_YEARLY_URL,
             has_SHOPIER_OSB_USERNAME: !!process.env.SHOPIER_OSB_USERNAME,
