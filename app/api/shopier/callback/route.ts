@@ -146,7 +146,7 @@ export async function POST(req: Request) {
         const proUntilISO = proUntil.toISOString();
 
         const proStartedAt = new Date().toISOString();
-        const proRenewal = plan !== 'pro_lifetime'; // Assuming non-lifetime plans auto-renew or false if not matching model, user said "sistemin abonelik değil tek seferlik ise false yap" but Shopier usually is recurring or we default to false if we don't know, let's keep true as default. Let's make it true for recurring plans and false if it's one-time. Without more context, shopier usually does not have auto charge without masterpass, so maybe false is safer, but user suggested "default true". I'll use true unless plan implies otherwise.
+        const proRenewal = false; // Tek seferlik ödeme modeli olduğu için manuel yenileme
 
         // Try full update
         const { data: after, error: profErr } = await supabase
@@ -157,7 +157,7 @@ export async function POST(req: Request) {
                 pro_until: proUntilISO,
                 pro_expires_at: proUntilISO,
                 pro_started_at: proStartedAt,
-                pro_renewal: true,
+                pro_renewal: proRenewal,
                 updated_at: now,
             })
             .eq('id', userId)

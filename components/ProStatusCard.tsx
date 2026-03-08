@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Crown, Info, Calendar, Clock, CreditCard, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { isProUser } from '@/utils/access';
@@ -12,7 +13,30 @@ import {
 import { Button } from '@/components/ui/button';
 
 export function ProStatusCard() {
-    const { user } = useAuth();
+    const { user, refreshUser } = useAuth();
+    const [backfillLoading, setBackfillLoading] = useState(false);
+
+    useEffect(() => {
+        // Backfill check: If user is Pro but missing pro_expires_at, hit our API
+        if (user && isProUser(user) && !user.pro_expires_at && !backfillLoading) {
+            const attemptBackfill = async () => {
+                setBackfillLoading(true);
+                try {
+                    const res = await fetch('/api/billing/backfill-pro-dates', { method: 'POST' });
+                    const data = await res.json();
+                    if (data.ok) {
+                        // Refresh the user context so the updated dates reflect instantly
+                        await refreshUser();
+                    }
+                } catch (e) {
+                    console.error('Failed to backfill pro dates:', e);
+                } finally {
+                    setBackfillLoading(false);
+                }
+            };
+            attemptBackfill();
+        }
+    }, [user, backfillLoading, refreshUser]);
 
     if (!user) return null;
 
@@ -49,7 +73,7 @@ export function ProStatusCard() {
     // Bitiş tarihi ve Kalan Gün hesapla
     let expireLabel = 'Ayarlanmadı';
     let daysRemaining: number | null = null;
-    let renewalLabel = user.pro_renewal === false ? 'Kapalı' : (user.pro_expires_at ? 'Açık' : '—');
+    let renewalLabel = user.pro_renewal === true ? 'Otomatik' : 'Manuel';
 
     // Prefer pro_expires_at, but fallback to pro_until if it exists just to not lose existing precision, 
     // although user requested fallback to "Ayarlanmadı" if pro_expires_at is missing. 
@@ -71,6 +95,7 @@ export function ProStatusCard() {
         } catch { /* null-safe */ }
     } else {
         expireLabel = 'Ayarlanmadı';
+        daysRemaining = null;
     }
 
     return (
@@ -134,14 +159,21 @@ export function ProStatusCard() {
                     </span>
                 </div>
 
-                <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1.5 text-emerald-800/70 dark:text-emerald-300/70">
-                        <CreditCard className="w-3.5 h-3.5" />
-                        <span>Yenileme:</span>
+                <div className="flex flex-col text-xs">
+                    <div className="flex items-center justify-between mb-0.5">
+                        <div className="flex items-center gap-1.5 text-emerald-800/70 dark:text-emerald-300/70">
+                            <CreditCard className="w-3.5 h-3.5" />
+                            <span>Yenileme:</span>
+                        </div>
+                        <span className="font-medium text-emerald-900 dark:text-emerald-100">
+                            {renewalLabel}
+                        </span>
                     </div>
-                    <span className="font-medium text-emerald-900 dark:text-emerald-100">
-                        {renewalLabel}
-                    </span>
+                    {renewalLabel === 'Manuel' && (
+                        <p className="text-[9px] text-emerald-700/60 dark:text-emerald-400/50 italic text-right">
+                            Süre bitince tekrar satın almanız gerekir.
+                        </p>
+                    )}
                 </div>
             </div>
 
