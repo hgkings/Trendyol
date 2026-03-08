@@ -185,6 +185,9 @@ importers:
       resend:
         specifier: ^6.9.2
         version: 6.9.2(@react-email/render@2.0.4(react-dom@18.2.0(react@18.2.0))(react@18.2.0))
+      shopier:
+        specifier: ^1.0.4
+        version: 1.0.4
       sonner:
         specifier: ^1.5.0
         version: 1.7.4(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -2685,6 +2688,10 @@ packages:
   shebang-regex@3.0.0:
     resolution: {integrity: sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==}
     engines: {node: '>=8'}
+
+  shopier@1.0.4:
+    resolution: {integrity: sha512-dRSqYFbyvN24fUwi+exP75qJ90OFiSlIeMeG1c45jmu+n4P56h124P0FvSJ/T1P7AkVy3DjDCoM1FJmQUWFBDg==}
+    engines: {node: '>=14.0.0'}
 
   side-channel-list@1.0.0:
     resolution: {integrity: sha512-FCLHtRD/gnpCiCHEiJLOwdmFP+wzCmDEkc9y7NsYxeF4u7Btsn1ZuwgwJGxImImHicJArLP4R0yX4c2KCrMrTA==}
@@ -5652,6 +5659,8 @@ snapshots:
       shebang-regex: 3.0.0
 
   shebang-regex@3.0.0: {}
+
+  shopier@1.0.4: {}
 
   side-channel-list@1.0.0:
     dependencies:
