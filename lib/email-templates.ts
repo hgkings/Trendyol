@@ -31,7 +31,7 @@ export const getRiskAlertTemplate = (productName: string, riskScore: number, ris
       <p>Detayları incelemek ve aksiyon almak için panele gidin:</p>
       
       <div style="text-align: center; margin: 25px 0;">
-        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/analysis/${analysisId}" class="button">Analizi Görüntüle</a>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://www.xn--krnet-3qa.com'}/analysis/${analysisId}" class="button">Analizi Görüntüle</a>
       </div>
     </div>
     <div class="footer">

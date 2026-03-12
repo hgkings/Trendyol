@@ -1,7 +1,11 @@
-import { type NextRequest } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase-middleware'
 
 export async function middleware(request: NextRequest) {
+    // PayTR callback must NEVER go through auth - PayTR sends server-to-server POST without cookies
+    if (request.nextUrl.pathname.startsWith('/api/paytr/')) {
+        return NextResponse.next()
+    }
     return await updateSession(request)
 }
 
