@@ -72,6 +72,9 @@ export async function GET() {
             message: 'Test callback çalıştı',
             payment_id: payment.id,
             user_id: payment.user_id,
+            plan_type: planType,
+            pro_until: proUntil,
+            payment_plan_raw: payment.plan,
         });
 
     } catch (error: any) {
