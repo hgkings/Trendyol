@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
 export async function POST(req: Request) {
-    console.log('[PayTR Callback] ========== REQUEST RECEIVED ==========');
+    console.log('[PayTR Callback] ========== Callback alındı ==========');
 
     try {
         // PayTR sends callback as form-urlencoded
@@ -11,7 +11,7 @@ export async function POST(req: Request) {
         const payload = Object.fromEntries(formData.entries());
 
         // Log ALL incoming fields
-        console.log('[PayTR Callback] Incoming fields:');
+        console.log('[PayTR Callback] Gelen alanlar:');
         for (const [key, value] of Object.entries(payload)) {
             console.log(`  ${key}: ${value}`);
         }
@@ -20,21 +20,18 @@ export async function POST(req: Request) {
         const status = String(payload.status || '');
         const total_amount = String(payload.total_amount || '');
         const hash = String(payload.hash || '');
+        const payment_type = String(payload.payment_type || '');
 
-        // ── 1. Hash Validation ──────────────────────────────────
+        // ── STEP 1: Hash Doğrulama ──────────────────────────────
         const merchantKey = process.env.PAYTR_MERCHANT_KEY;
         const merchantSalt = process.env.PAYTR_MERCHANT_SALT;
 
         if (!merchantKey || !merchantSalt) {
-            console.error('[PayTR Callback] ❌ PAYTR_MERCHANT_KEY or PAYTR_MERCHANT_SALT env vars MISSING!');
-            console.error('[PayTR Callback] merchantKey exists:', !!merchantKey);
-            console.error('[PayTR Callback] merchantSalt exists:', !!merchantSalt);
+            console.error('[PayTR Callback] ❌ PAYTR_MERCHANT_KEY veya PAYTR_MERCHANT_SALT eksik!');
             return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
         }
 
-        console.log('[PayTR Callback] Env vars loaded. Validating hash...');
-
-        // PayTR Link API: hash = base64(hmac_sha256(merchant_oid + merchant_salt + status + total_amount, merchant_key))
+        // Hash: HMAC-SHA256(merchant_oid + merchant_salt + status + total_amount, merchant_key) → base64
         const hashStr = merchant_oid + merchantSalt + status + total_amount;
         const expectedHash = crypto
             .createHmac('sha256', merchantKey)
@@ -42,103 +39,111 @@ export async function POST(req: Request) {
             .digest('base64');
 
         if (hash !== expectedHash) {
-            console.error('[PayTR Callback] ❌ HASH MISMATCH!');
-            console.error('[PayTR Callback]   Received hash:', hash);
-            console.error('[PayTR Callback]   Expected hash:', expectedHash);
-            console.error('[PayTR Callback]   merchant_oid:', merchant_oid);
-            console.error('[PayTR Callback]   status:', status);
-            console.error('[PayTR Callback]   total_amount:', total_amount);
+            console.error('[PayTR Callback] ❌ Hash doğrulama başarısız!');
+            console.error(`  Gelen hash: ${hash}`);
+            console.error(`  Beklenen hash: ${expectedHash}`);
+            console.error(`  merchant_oid: ${merchant_oid}`);
+            console.error(`  status: ${status}`);
+            console.error(`  total_amount: ${total_amount}`);
             return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
         }
 
-        console.log('[PayTR Callback] ✅ Hash validated successfully');
+        console.log('[PayTR Callback] ✅ Hash doğrulandı');
 
-        // ── 2. Status Check ─────────────────────────────────────
-        if (status !== 'success') {
-            console.log(`[PayTR Callback] ⚠️ Status is not success: "${status}". Skipping upgrade.`);
-            return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
-        }
-
-        console.log('[PayTR Callback] ✅ Status is success. Proceeding with upgrade...');
-
-        // ── 3. Supabase Connection ──────────────────────────────
+        // ── STEP 2: Supabase Bağlantısı ─────────────────────────
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
         const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
         if (!supabaseUrl || !serviceKey) {
-            console.error('[PayTR Callback] ❌ Supabase env vars missing!');
-            console.error('[PayTR Callback]   SUPABASE_URL exists:', !!supabaseUrl);
-            console.error('[PayTR Callback]   SERVICE_ROLE_KEY exists:', !!serviceKey);
+            console.error('[PayTR Callback] ❌ Supabase env vars eksik!');
             return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
         }
 
         const supabase = createClient(supabaseUrl, serviceKey);
-        console.log('[PayTR Callback] Supabase client created with service role');
 
-        // ── 4. Find Pending Payment ─────────────────────────────
-        const { data: payment, error: fetchError } = await supabase
+        // ── STEP 3: Payment kaydını bul ─────────────────────────
+        // Önce merchant_oid ile ara (create-payment'ta kaydedilmiş olabilir)
+        let payment: any = null;
+
+        const { data: byOid } = await supabase
             .from('payments')
             .select('*')
-            .eq('status', 'created')
-            .eq('provider', 'paytr')
-            .order('created_at', { ascending: true })
-            .limit(1)
+            .eq('provider_order_id', merchant_oid)
             .single();
 
-        if (fetchError || !payment) {
-            console.error('[PayTR Callback] ❌ No pending payment record found!');
-            console.error('[PayTR Callback]   fetchError:', JSON.stringify(fetchError));
-            console.error('[PayTR Callback]   merchant_oid:', merchant_oid);
-            console.error('[PayTR Callback]   total_amount:', total_amount);
-            console.log('[PayTR Callback] ⚠️ Payment successful at PayTR but no pending record in DB.');
-            return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
-        }
-
-        console.log(`[PayTR Callback] ✅ Found pending payment: id=${payment.id}, user=${payment.user_id}, email=${payment.email}, plan=${payment.plan}`);
-
-        // ── 5. Update Payment Record ────────────────────────────
-        const { error: paymentUpdateErr } = await supabase
-            .from('payments')
-            .update({
-                status: 'paid',
-                paid_at: new Date().toISOString(),
-                provider_order_id: merchant_oid,
-                raw_payload: payload as any,
-            })
-            .eq('id', payment.id);
-
-        if (paymentUpdateErr) {
-            console.error('[PayTR Callback] ❌ Failed to update payment record:', JSON.stringify(paymentUpdateErr));
+        if (byOid) {
+            payment = byOid;
+            console.log(`[PayTR Callback] ✅ Payment bulundu (merchant_oid ile): id=${payment.id}, user=${payment.user_id}`);
         } else {
-            console.log('[PayTR Callback] ✅ Payment record updated to paid');
+            // Fallback: en eski 'created' status'lu paytr kaydını bul
+            const { data: oldest, error: oldestErr } = await supabase
+                .from('payments')
+                .select('*')
+                .eq('status', 'created')
+                .eq('provider', 'paytr')
+                .order('created_at', { ascending: true })
+                .limit(1)
+                .single();
+
+            if (oldest) {
+                payment = oldest;
+                console.log(`[PayTR Callback] ✅ Payment bulundu (pending fallback): id=${payment.id}, user=${payment.user_id}`);
+            } else {
+                console.error(`[PayTR Callback] ❌ Kayıt bulunamadı: ${merchant_oid}`);
+                console.error(`[PayTR Callback]   oldestErr: ${JSON.stringify(oldestErr)}`);
+                return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
+            }
         }
 
-        // ── 6. Upgrade User Profile ─────────────────────────────
-        const plan = payment.plan; // 'pro_monthly' or 'pro_yearly'
-        const daysToAdd = plan === 'pro_yearly' ? 365 : 30;
-        const proUntil = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000).toISOString();
+        // ── STEP 4: Status kontrolü ve güncelleme ───────────────
+        if (status === 'success') {
+            // Payment kaydını güncelle
+            const { error: payUpdateErr } = await supabase
+                .from('payments')
+                .update({
+                    status: 'paid',
+                    paid_at: new Date().toISOString(),
+                    provider_order_id: merchant_oid,
+                    raw_payload: payload as any,
+                })
+                .eq('id', payment.id);
 
-        const { error: profileUpdateErr } = await supabase
-            .from('profiles')
-            .update({
-                plan: 'pro',
-                is_pro: true,
-                plan_type: plan === 'pro_yearly' ? 'pro_yearly' : 'pro_monthly',
-                pro_until: proUntil,
-            })
-            .eq('id', payment.user_id);
+            if (payUpdateErr) {
+                console.error('[PayTR Callback] ❌ Payment güncelleme hatası:', JSON.stringify(payUpdateErr));
+            } else {
+                console.log('[PayTR Callback] ✅ Payment güncellendi (paid_at + raw_payload yazıldı)');
+            }
 
-        if (profileUpdateErr) {
-            console.error('[PayTR Callback] ❌ Failed to update profile:', JSON.stringify(profileUpdateErr));
-            console.error('[PayTR Callback]   user_id:', payment.user_id);
+            // ── STEP 5: Profili Pro yap ─────────────────────────
+            const { error: profileErr } = await supabase
+                .from('profiles')
+                .update({
+                    plan: 'pro',
+                    is_pro: true,
+                    plan_type: 'pro_monthly',
+                    pro_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                })
+                .eq('id', payment.user_id);
+
+            if (profileErr) {
+                console.error('[PayTR Callback] ❌ Profil güncelleme hatası:', JSON.stringify(profileErr));
+            } else {
+                console.log(`[PayTR Callback] ✅ Profil Pro yapıldı: user_id=${payment.user_id}, is_pro=true, plan_type=pro_monthly`);
+            }
         } else {
-            console.log(`[PayTR Callback] ✅ SUCCESS! User ${payment.user_id} (${payment.email}) upgraded to Pro`);
-            console.log(`[PayTR Callback]   is_pro: true`);
-            console.log(`[PayTR Callback]   plan_type: ${plan === 'pro_yearly' ? 'pro_yearly' : 'pro_monthly'}`);
-            console.log(`[PayTR Callback]   pro_until: ${proUntil}`);
+            console.log(`[PayTR Callback] ⚠️ Status success değil: "${status}"`);
+
+            // Başarısız durumda da payment kaydını güncelle
+            await supabase
+                .from('payments')
+                .update({
+                    status: 'failed',
+                    raw_payload: payload as any,
+                })
+                .eq('id', payment.id);
         }
 
-        console.log('[PayTR Callback] ========== DONE ==========');
+        console.log('[PayTR Callback] ========== İşlem tamamlandı ==========');
         return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
 
     } catch (error: any) {

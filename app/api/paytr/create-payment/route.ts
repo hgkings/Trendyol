@@ -11,7 +11,6 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Geçersiz plan' }, { status: 400 });
         }
 
-        // Get user from session
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
         const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -19,6 +18,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Config missing' }, { status: 500 });
         }
 
+        // Get user from session
         const { createServerClient } = await import('@supabase/ssr');
         const { cookies } = await import('next/headers');
 
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 });
         }
 
-        // Use service role to insert payment (bypasses RLS)
+        // Service role for insert (bypasses RLS)
         const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
         if (!serviceKey) {
             return NextResponse.json({ error: 'Server config missing' }, { status: 500 });
@@ -48,8 +48,9 @@ export async function POST(req: Request) {
 
         const amount = plan === 'pro_yearly' ? PRICING.proYearly : PRICING.proMonthly;
 
-        // Generate a temporary provider_order_id (will be replaced by PayTR's merchant_oid in callback)
-        const tempOrderId = `PAYTR_PENDING_${user.id}_${Date.now()}`;
+        // Generate merchant_oid — this is stored in provider_order_id column
+        // PayTR static link assigns its own merchant_oid, so this is a temporary placeholder
+        const merchantOid = `KARNET_${user.id.substring(0, 8)}_${Date.now()}`;
 
         const { data: payment, error: insertError } = await adminSupabase
             .from('payments')
@@ -61,22 +62,22 @@ export async function POST(req: Request) {
                 currency: 'TRY',
                 status: 'created',
                 provider: 'paytr',
-                provider_order_id: tempOrderId,
+                provider_order_id: merchantOid,
             })
             .select('id')
             .single();
 
         if (insertError) {
-            console.error('[PayTR] Payment record insert error:', insertError);
+            console.error('[PayTR] Payment insert error:', JSON.stringify(insertError));
             return NextResponse.json({ error: 'Ödeme kaydı oluşturulamadı' }, { status: 500 });
         }
 
-        console.log(`[PayTR] Created pending payment ${payment.id} for user ${user.id} (${user.email}), plan: ${plan}`);
+        console.log(`[PayTR] ✅ Payment oluşturuldu: id=${payment.id}, user=${user.id}, email=${user.email}, plan=${plan}, merchant_oid=${merchantOid}`);
 
         return NextResponse.json({ success: true, paymentId: payment.id });
 
     } catch (error: any) {
-        console.error('[PayTR] Create payment error:', error);
+        console.error('[PayTR] Create payment error:', error?.message || error);
         return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 });
     }
 }

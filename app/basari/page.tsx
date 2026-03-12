@@ -4,17 +4,27 @@ import { useEffect, useState, useCallback } from 'react';
 import { Navbar } from '@/components/layout/navbar';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function BasariPage() {
     const [status, setStatus] = useState<'checking' | 'active' | 'pending'>('checking');
     const [pollCount, setPollCount] = useState(0);
 
-    const checkProfile = useCallback(async (): Promise<boolean> => {
+    const checkIsPro = useCallback(async (): Promise<boolean> => {
         try {
-            const res = await fetch('/api/user/profile', { credentials: 'same-origin', cache: 'no-store' });
-            if (!res.ok) return false;
-            const data = await res.json();
-            return data?.plan === 'pro' || String(data?.plan || '').startsWith('pro_');
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return false;
+
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('is_pro, plan')
+                .eq('id', user.id)
+                .single();
+
+            if (!profile) return false;
+
+            // Check is_pro field first, fallback to plan field
+            return profile.is_pro === true || profile.plan === 'pro';
         } catch {
             return false;
         }
@@ -22,12 +32,13 @@ export default function BasariPage() {
 
     useEffect(() => {
         let attempt = 0;
-        const maxAttempts = 120;
+        const maxAttempts = 60; // 5 dakika (5s x 60)
+        let timeoutId: NodeJS.Timeout;
 
         const poll = async () => {
             attempt++;
             setPollCount(attempt);
-            const isPro = await checkProfile();
+            const isPro = await checkIsPro();
 
             if (isPro) {
                 setStatus('active');
@@ -35,14 +46,17 @@ export default function BasariPage() {
             }
 
             if (attempt < maxAttempts) {
-                setTimeout(poll, 5000);
+                timeoutId = setTimeout(poll, 5000);
             } else {
                 setStatus('pending');
             }
         };
 
-        setTimeout(poll, 2000);
-    }, [checkProfile]);
+        // İlk kontrolü 2 saniye sonra başlat
+        timeoutId = setTimeout(poll, 2000);
+
+        return () => clearTimeout(timeoutId);
+    }, [checkIsPro]);
 
     return (
         <div className="min-h-screen bg-background">
@@ -52,10 +66,10 @@ export default function BasariPage() {
                 {status === 'checking' && (
                     <>
                         <Loader2 className="h-16 w-16 text-primary animate-spin mx-auto" />
-                        <h1 className="text-2xl font-bold">Ödemenizi Tamamlayın 💳</h1>
+                        <h1 className="text-2xl font-bold">Ödemeniz İşleniyor... 💳</h1>
                         <p className="text-muted-foreground">
-                            Ödeme sayfası güvenli bir şekilde yeni sekmede açıldı.<br /><br />
-                            Lütfen işlemi orada tamamlayın. Ödemeniz bittiğinde bu sayfa <b>otomatik</b> olarak onaylanacaktır...
+                            Ödeme sayfasında işleminizi tamamladıysanız lütfen bekleyin.<br /><br />
+                            Ödemeniz onaylandığında bu sayfa <b>otomatik</b> olarak güncellenecektir.
                         </p>
                         <p className="text-xs text-muted-foreground">
                             Kontrol ediliyor... ({pollCount})
@@ -66,9 +80,9 @@ export default function BasariPage() {
                 {status === 'active' && (
                     <>
                         <CheckCircle2 className="h-16 w-16 text-emerald-500 mx-auto" />
-                        <h1 className="text-2xl font-bold text-emerald-600">Pro Plan Aktif! 🎉</h1>
+                        <h1 className="text-2xl font-bold text-emerald-600">🎉 Pro Planınız Aktif!</h1>
                         <p className="text-muted-foreground">
-                            Tebrikler! Pro planınız başarıyla aktif edildi.
+                            Pro planınız başarıyla aktif edildi! Tüm özelliklere erişebilirsiniz.
                         </p>
                         <Button
                             className="mt-4"
@@ -81,7 +95,7 @@ export default function BasariPage() {
 
                 {status === 'pending' && (
                     <>
-                        <Loader2 className="h-16 w-16 text-amber-500 animate-spin mx-auto" />
+                        <Loader2 className="h-16 w-16 text-amber-500 mx-auto" />
                         <h1 className="text-2xl font-bold text-amber-600">Ödeme Bekleniyor ⏳</h1>
                         <p className="text-muted-foreground">
                             Ödeme işleminiz henüz bize ulaşmadı. Eğer ödemeyi tamamladıysanız biraz daha bekleyip tekrar kontrol edebilirsiniz.
@@ -92,7 +106,7 @@ export default function BasariPage() {
                                 onClick={async () => {
                                     setStatus('checking');
                                     setPollCount(0);
-                                    const isPro = await checkProfile();
+                                    const isPro = await checkIsPro();
                                     setStatus(isPro ? 'active' : 'pending');
                                 }}
                             >
