@@ -8,7 +8,7 @@ export async function POST(req: Request) {
         const formData = await req.formData();
         const payload = Object.fromEntries(formData.entries());
 
-        // Log all incoming fields
+        // Log all incoming fields for debugging
         console.log('[PayTR Callback] === Incoming POST ===');
         for (const [key, value] of Object.entries(payload)) {
             console.log(`[PayTR Callback]   ${key}:`, value);
@@ -19,7 +19,6 @@ export async function POST(req: Request) {
             status,
             total_amount,
             hash,
-            callback_id,
         } = payload as Record<string, string>;
 
         // ── Hash Validation ──────────────────────────────────────
@@ -44,6 +43,7 @@ export async function POST(req: Request) {
                 expected: expectedHash,
                 merchant_oid,
             });
+            // Hash doğrulanamayan istekleri reddet
             return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
         }
 
@@ -60,34 +60,39 @@ export async function POST(req: Request) {
 
         const supabase = createClient(supabaseUrl, serviceKey);
 
+        // PayTR Link API only sends callbacks for successful payments
         if (status === 'success') {
-            // Find payment by provider_order_id (merchant_oid)
+            // Find the oldest pending payment record (created by pricing page button click)
             const { data: payment, error: fetchError } = await supabase
                 .from('payments')
                 .select('*')
-                .eq('provider_order_id', merchant_oid)
+                .eq('status', 'created')
+                .eq('provider', 'paytr')
+                .order('created_at', { ascending: true })
+                .limit(1)
                 .single();
 
             if (fetchError || !payment) {
-                // Payment record may not exist for Link API (link is static, no pre-created record).
-                // Log and still try to identify user from callback_id or skip.
-                console.warn('[PayTR Callback] Payment record not found for merchant_oid:', merchant_oid);
-                console.log('[PayTR Callback] callback_id:', callback_id);
-                console.log('[PayTR Callback] Payment successful but no matching record. Manual check needed.');
+                console.error('[PayTR Callback] ⚠️ No pending payment record found!');
+                console.log('[PayTR Callback] merchant_oid:', merchant_oid);
+                console.log('[PayTR Callback] total_amount:', total_amount);
+                console.log('[PayTR Callback] Payment successful but no matching pending record.');
                 return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
             }
 
+            // Already paid check (idempotency)
             if (payment.status === 'paid') {
-                console.log('[PayTR Callback] Payment already marked as paid:', merchant_oid);
+                console.log('[PayTR Callback] Payment already marked as paid');
                 return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
             }
 
-            // Update payment record
+            // Update payment record with PayTR data
             await supabase
                 .from('payments')
                 .update({
                     status: 'paid',
                     paid_at: new Date().toISOString(),
+                    provider_order_id: merchant_oid,
                     raw_payload: payload as any,
                 })
                 .eq('id', payment.id);
@@ -105,23 +110,9 @@ export async function POST(req: Request) {
                 })
                 .eq('id', payment.user_id);
 
-            console.log(`[PayTR Callback] ✅ User ${payment.user_id} upgraded to Pro (${plan}) until ${proUntil}`);
+            console.log(`[PayTR Callback] ✅ User ${payment.user_id} (${payment.email}) upgraded to Pro (${plan}) until ${proUntil}`);
         } else {
-            console.log(`[PayTR Callback] ⚠️ Payment not successful. status=${status}, merchant_oid=${merchant_oid}`);
-
-            // Update payment status to failed if record exists
-            const { data: payment } = await supabase
-                .from('payments')
-                .select('id')
-                .eq('provider_order_id', merchant_oid)
-                .single();
-
-            if (payment) {
-                await supabase
-                    .from('payments')
-                    .update({ status: 'failed', raw_payload: payload as any })
-                    .eq('id', payment.id);
-            }
+            console.log(`[PayTR Callback] ⚠️ Non-success status: ${status}, merchant_oid: ${merchant_oid}`);
         }
 
         return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });

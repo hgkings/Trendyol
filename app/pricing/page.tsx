@@ -337,11 +337,22 @@ export default function PricingPage() {
                   <Button
                     className="w-full h-14 rounded-xl text-lg font-bold bg-primary hover:bg-primary/90 shadow-premium-md hover:shadow-premium-lg hover:scale-[1.02] transition-all duration-300 active:scale-95"
                     disabled={loading || (isAnnual && !PRICING.paytrLinkYearly)}
-                    onClick={() => {
+                    onClick={async () => {
                       if (!user) { window.location.href = '/auth'; return; }
                       const link = isAnnual ? PRICING.paytrLinkYearly : PRICING.paytrLinkMonthly;
                       if (!link) return;
                       setLoading(true);
+                      try {
+                        // Create pending payment record before redirecting
+                        const selectedPlan = isAnnual ? 'pro_yearly' : 'pro_monthly';
+                        await fetch('/api/paytr/create-payment', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ plan: selectedPlan }),
+                        });
+                      } catch (e) {
+                        console.error('Payment record creation failed:', e);
+                      }
                       window.open(link, '_blank');
                       // Redirect current page to success polling page
                       window.location.href = '/basari';
