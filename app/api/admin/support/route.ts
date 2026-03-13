@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     // Fetch emails separately to avoid FK join issues
-    const userIds = [...new Set((tickets ?? []).map((t: any) => t.user_id))];
+    const userIds = Array.from(new Set((tickets ?? []).map((t: any) => t.user_id)));
     let emailMap: Record<string, string> = {};
 
     if (userIds.length > 0) {
