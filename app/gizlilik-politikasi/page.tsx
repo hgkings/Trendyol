@@ -34,6 +34,14 @@ export default function GizlilikPolitikasiPage() {
         Kullanıcı verileri güvenli sunucularda saklanır ve yasal zorunluluklar
         dışında üçüncü kişilerle paylaşılmaz.
       </p>
+
+      <h2>İletişim</h2>
+      <p>
+        Gizlilik politikamız ile ilgili sorularınız için bizimle iletişime geçebilirsiniz:<br />
+        <strong>E-posta:</strong> karnet.destek@gmail.com<br />
+        <strong>Telefon:</strong> +90 543 382 45 21<br />
+        <strong>Adres:</strong> Konya Seydişehir, Ulukapı Mahallesi, 153103 Sokak No:52, Türkiye
+      </p>
     </LegalPageLayout>
   );
 }

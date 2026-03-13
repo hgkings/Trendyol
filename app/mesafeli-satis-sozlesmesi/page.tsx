@@ -13,9 +13,9 @@ export default function MesafeliSatisSozlesmesiPage() {
       <p>
         <strong>Unvan:</strong> Kârnet<br />
         <strong>Sahibi:</strong> Süleyman Hilmi İşbilir<br />
-        <strong>Adres:</strong> Konya / Türkiye<br />
-        <strong>E-posta:</strong> destek@karnet.com<br />
-        <strong>Telefon:</strong> +90 5XX XXX XX XX
+        <strong>Adres:</strong> Konya Seydişehir, Ulukapı Mahallesi, 153103 Sokak No:52, Türkiye<br />
+        <strong>E-posta:</strong> karnet.destek@gmail.com<br />
+        <strong>Telefon:</strong> +90 543 382 45 21
       </p>
 
       <h2>Hizmet</h2>

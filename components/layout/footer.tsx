@@ -73,15 +73,20 @@ export function Footer() {
             <ul className="space-y-2.5">
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Mail className="h-4 w-4 shrink-0 text-primary/70" />
-                <a href="mailto:destek@karnet.com" className="hover:text-foreground transition-colors">destek@karnet.com</a>
+                <a href="mailto:karnet.destek@gmail.com" className="hover:text-foreground transition-colors">karnet.destek@gmail.com</a>
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Phone className="h-4 w-4 shrink-0 text-primary/70" />
-                <span>+90 5XX XXX XX XX</span>
+                <span>+90 543 382 45 21</span>
               </li>
-              <li className="flex items-center gap-2 text-sm text-muted-foreground">
-                <MapPin className="h-4 w-4 shrink-0 text-primary/70" />
-                <span>Konya / Türkiye</span>
+              <li className="flex items-start gap-2 text-sm text-muted-foreground">
+                <MapPin className="h-4 w-4 shrink-0 text-primary/70 mt-0.5" />
+                <span className="leading-tight">
+                  Konya Seydişehir<br />
+                  Ulukapı Mahallesi<br />
+                  153103 Sokak No:52<br />
+                  Türkiye
+                </span>
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <User className="h-4 w-4 shrink-0 text-primary/70" />

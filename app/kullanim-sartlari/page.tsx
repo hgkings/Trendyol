@@ -44,6 +44,14 @@ export default function KullanimSartlariPage() {
         Kârnet, platformun kesintisiz ve hatasız çalışacağını garanti etmez.
         Kullanıcılar verilerinin yedeklenmesinden kendileri sorumludur.
       </p>
+
+      <h2>İletişim</h2>
+      <p>
+        Kullanım şartları ile ilgili her türlü soru ve önerileriniz için:<br />
+        <strong>E-posta:</strong> karnet.destek@gmail.com<br />
+        <strong>Telefon:</strong> +90 543 382 45 21<br />
+        <strong>Adres:</strong> Konya Seydişehir, Ulukapı Mahallesi, 153103 Sokak No:52, Türkiye
+      </p>
     </LegalPageLayout>
   );
 }
