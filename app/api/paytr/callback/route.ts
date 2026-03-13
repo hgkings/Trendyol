@@ -126,6 +126,9 @@ export async function POST(req: Request) {
                     is_pro: true,
                     plan_type: planType,
                     pro_until: proUntil,
+                    pro_started_at: new Date().toISOString(),
+                    pro_expires_at: proUntil,
+                    pro_renewal: false,
                 })
                 .eq('id', payment.user_id);
 
