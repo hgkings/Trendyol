@@ -10,6 +10,7 @@ import {
   Upload,
   CreditCard,
   ArrowRight,
+  Shield,
 } from 'lucide-react';
 import { NAV_ITEMS, BOTTOM_NAV_ITEMS } from '@/config/navigation';
 import { isProUser } from '@/utils/access';
@@ -194,6 +195,17 @@ export function Sidebar() {
             );
           })}
         </div>
+
+        {/* Admin Link */}
+        {user?.plan === 'admin' && (
+          <Link
+            href="/admin"
+            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+          >
+            <Shield className="h-[18px] w-[18px]" />
+            Admin Panel
+          </Link>
+        )}
 
         {/* Version */}
         <div className="text-[9px] text-muted-foreground/30 font-mono text-center">
