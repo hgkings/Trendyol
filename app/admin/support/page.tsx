@@ -1,11 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { SupportService } from '@/lib/support-service';
+import { useEffect, useState, useCallback } from 'react';
 import { SupportTicket, SupportStatus } from '@/types';
 import { AdminLayout } from '@/components/layout/admin-layout';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -35,23 +33,32 @@ export default function AdminSupportPage() {
     const [saving, setSaving] = useState(false);
     const [statusFilter, setStatusFilter] = useState('');
 
-    const fetchTickets = async () => {
+    const fetchTickets = useCallback(async () => {
         setLoading(true);
         try {
-            const data = await SupportService.getAllTickets();
-            setTickets(data);
+            const params = new URLSearchParams();
+            if (statusFilter) params.set('status', statusFilter);
+            const res = await fetch(`/api/admin/support?${params}`);
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+            setTickets(data.tickets ?? []);
         } catch {
             toast.error('Biletler yüklenemedi.');
         } finally {
             setLoading(false);
         }
-    };
+    }, [statusFilter]);
 
-    useEffect(() => { fetchTickets(); }, []);
+    useEffect(() => { fetchTickets(); }, [fetchTickets]);
 
     const handleStatusUpdate = async (id: string, status: SupportStatus) => {
         try {
-            await SupportService.updateStatus(id, status);
+            const res = await fetch('/api/admin/support', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, status }),
+            });
+            if (!res.ok) throw new Error();
             setTickets(prev => prev.map(t => t.id === id ? { ...t, status } : t));
             toast.success('Durum güncellendi');
         } catch {
@@ -63,7 +70,12 @@ export default function AdminSupportPage() {
         if (!selectedTicket) return;
         setSaving(true);
         try {
-            await SupportService.updateAdminNote(selectedTicket.id, adminNote);
+            const res = await fetch('/api/admin/support', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: selectedTicket.id, admin_note: adminNote }),
+            });
+            if (!res.ok) throw new Error();
             setTickets(prev => prev.map(t => t.id === selectedTicket.id ? { ...t, admin_note: adminNote } : t));
             setSelectedTicket({ ...selectedTicket, admin_note: adminNote });
             toast.success('Not kaydedildi');
@@ -74,7 +86,7 @@ export default function AdminSupportPage() {
         }
     };
 
-    const filtered = statusFilter ? tickets.filter(t => t.status === statusFilter) : tickets;
+    const filtered = tickets;
     const openCount = tickets.filter(t => t.status === 'open').length;
 
     return (
