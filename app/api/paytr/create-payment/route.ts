@@ -54,7 +54,7 @@ export async function POST(req: Request) {
         const amount = plan === 'pro_yearly' ? PRICING.proYearly : PRICING.proMonthly;
         const amountKurus = Math.round(amount * 100); // TRY → kuruş
 
-        const merchantOid = `KARNET_${user.id.substring(0, 8)}_${Date.now()}`;
+        const merchantOid = `KARNET${user.id.replace(/-/g, '').substring(0, 12)}${Date.now()}`;
 
         // Create payment record
         const { data: payment, error: insertError } = await adminSupabase
