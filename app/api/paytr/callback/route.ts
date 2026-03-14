@@ -20,9 +20,10 @@ export async function POST(req: Request) {
         const status = String(payload.status || '');
         const total_amount = String(payload.total_amount || '');
         const hash = String(payload.hash || '');
-        const payment_type = String(payload.payment_type || '');
+        const callback_id = String(payload.callback_id || '');
 
         // ── STEP 1: Hash Doğrulama ──────────────────────────────
+        // Link API hash: HMAC-SHA256(callback_id + merchant_oid + salt + status + total_amount, key)
         const merchantKey = process.env.PAYTR_MERCHANT_KEY;
         const merchantSalt = process.env.PAYTR_MERCHANT_SALT;
 
@@ -31,8 +32,7 @@ export async function POST(req: Request) {
             return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
         }
 
-        // Hash: HMAC-SHA256(merchant_oid + merchant_salt + status + total_amount, merchant_key) → base64
-        const hashStr = merchant_oid + merchantSalt + status + total_amount;
+        const hashStr = callback_id + merchant_oid + merchantSalt + status + total_amount;
         const expectedHash = crypto
             .createHmac('sha256', merchantKey)
             .update(hashStr)
@@ -40,15 +40,11 @@ export async function POST(req: Request) {
 
         if (hash !== expectedHash) {
             console.error('[PayTR Callback] ❌ Hash doğrulama başarısız!');
-            console.error(`  Gelen hash: ${hash}`);
-            console.error(`  Beklenen hash: ${expectedHash}`);
-            console.error(`  merchant_oid: ${merchant_oid}`);
-            console.error(`  status: ${status}`);
-            console.error(`  total_amount: ${total_amount}`);
+            console.error(`  callback_id: ${callback_id}, merchant_oid: ${merchant_oid}, status: ${status}, total_amount: ${total_amount}`);
             return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
         }
 
-        console.log('[PayTR Callback] ✅ Hash doğrulandı');
+        console.log('[PayTR Callback] ✅ Hash doğrulandı, callback_id:', callback_id);
 
         // ── STEP 2: Supabase Bağlantısı ─────────────────────────
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -61,38 +57,21 @@ export async function POST(req: Request) {
 
         const supabase = createClient(supabaseUrl, serviceKey);
 
-        // ── STEP 3: Payment kaydını bul ─────────────────────────
-        // Önce merchant_oid ile ara (create-payment'ta kaydedilmiş olabilir)
+        // ── STEP 3: Payment kaydını bul (callback_id = payment.id) ──
         let payment: any = null;
 
-        const { data: byOid } = await supabase
+        const { data: byId } = await supabase
             .from('payments')
             .select('*')
-            .eq('provider_order_id', merchant_oid)
+            .eq('id', callback_id)
             .single();
 
-        if (byOid) {
-            payment = byOid;
-            console.log(`[PayTR Callback] ✅ Payment bulundu (merchant_oid ile): id=${payment.id}, user=${payment.user_id}`);
+        if (byId) {
+            payment = byId;
+            console.log(`[PayTR Callback] ✅ Payment bulundu: id=${payment.id}, user=${payment.user_id}`);
         } else {
-            // Fallback: en eski 'created' status'lu paytr kaydını bul
-            const { data: oldest, error: oldestErr } = await supabase
-                .from('payments')
-                .select('*')
-                .eq('status', 'created')
-                .eq('provider', 'paytr')
-                .order('created_at', { ascending: true })
-                .limit(1)
-                .single();
-
-            if (oldest) {
-                payment = oldest;
-                console.log(`[PayTR Callback] ✅ Payment bulundu (pending fallback): id=${payment.id}, user=${payment.user_id}`);
-            } else {
-                console.error(`[PayTR Callback] ❌ Kayıt bulunamadı: ${merchant_oid}`);
-                console.error(`[PayTR Callback]   oldestErr: ${JSON.stringify(oldestErr)}`);
-                return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
-            }
+            console.error(`[PayTR Callback] ❌ Payment bulunamadı: callback_id=${callback_id}`);
+            return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
         }
 
         // ── STEP 4: Status kontrolü ve güncelleme ───────────────

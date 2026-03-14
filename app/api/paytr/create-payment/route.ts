@@ -52,11 +52,9 @@ export async function POST(req: Request) {
         const adminSupabase = createClient(supabaseUrl, serviceKey);
 
         const amount = plan === 'pro_yearly' ? PRICING.proYearly : PRICING.proMonthly;
-        const amountKurus = Math.round(amount * 100); // TRY → kuruş
+        const amountKurus = Math.round(amount * 100);
 
-        const merchantOid = `KARNET${user.id.replace(/-/g, '').substring(0, 12)}${Date.now()}`;
-
-        // Create payment record
+        // Create payment record first — its ID becomes callback_id
         const { data: payment, error: insertError } = await adminSupabase
             .from('payments')
             .insert({
@@ -67,7 +65,6 @@ export async function POST(req: Request) {
                 currency: 'TRY',
                 status: 'created',
                 provider: 'paytr',
-                provider_order_id: merchantOid,
             })
             .select('id')
             .single();
@@ -77,61 +74,41 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Ödeme kaydı oluşturulamadı' }, { status: 500 });
         }
 
-        // Get user IP
-        const forwarded = req.headers.get('x-forwarded-for');
-        const userIp = forwarded ? forwarded.split(',')[0].trim() : '127.0.0.1';
-
-        // User basket: [[name, unit_price_in_kurus_as_string, quantity]]
-        const planName = plan === 'pro_yearly' ? 'Kârnet Pro Yıllık' : 'Kârnet Pro Aylık';
-        const userBasket = JSON.stringify([[planName, String(amountKurus), 1]]);
-
-        const userEmail = user.email || '';
-        const noInstallment = '1';
-        const maxInstallment = '0';
-        const currencyCode = 'TRY';
-        const testMode = process.env.PAYTR_TEST_MODE === 'false' ? '0' : '1';
-        const debugOn = '0';
+        const callbackId = payment.id; // UUID — used to match callback to payment
+        const planName = plan === 'pro_yearly' ? 'Karnet Pro Yillik' : 'Karnet Pro Aylik';
+        const currency = 'TL';
+        const maxInstallment = '1';
+        const linkType = 'product';
         const lang = 'tr';
-        const timeoutLimit = '30';
-
-        const merchantOkUrl = `${appUrl}/basari`;
-        const merchantFailUrl = `${appUrl}/pricing?error=payment_failed`;
+        const minCount = '1';
         const callbackLink = `${appUrl}/api/paytr/callback`;
 
-        // Hash: merchant_id + user_ip + merchant_oid + email + payment_amount + user_basket + no_installment + max_installment + currency_code + test_mode
-        const hashInput = merchantId + userIp + merchantOid + userEmail + String(amountKurus) + userBasket + noInstallment + maxInstallment + currencyCode + testMode;
+        // Hash: base64(HMAC-SHA256(name+price+currency+max_installment+link_type+lang+min_count+salt, key))
+        const required = planName + String(amountKurus) + currency + maxInstallment + linkType + lang + minCount;
         const paytrToken = crypto
-            .createHmac('sha256', merchantKey + merchantSalt)
-            .update(hashInput)
+            .createHmac('sha256', merchantKey)
+            .update(required + merchantSalt)
             .digest('base64');
 
-        // Call PayTR iFrame API
         const formParams = new URLSearchParams({
             merchant_id: merchantId,
-            user_ip: userIp,
-            merchant_oid: merchantOid,
-            email: userEmail,
-            payment_amount: String(amountKurus),
-            paytr_token: paytrToken,
-            user_basket: userBasket,
-            debug_on: debugOn,
-            no_installment: noInstallment,
+            name: planName,
+            price: String(amountKurus),
+            currency: currency,
             max_installment: maxInstallment,
-            user_name: userEmail,
-            user_address: 'Türkiye',
-            user_phone: '05000000000',
-            merchant_ok_url: merchantOkUrl,
-            merchant_fail_url: merchantFailUrl,
-            currency_code: currencyCode,
-            test_mode: testMode,
+            link_type: linkType,
             lang: lang,
-            timeout_limit: timeoutLimit,
+            min_count: minCount,
             callback_link: callbackLink,
+            callback_id: callbackId,
+            debug_on: '1',
+            get_qr: '0',
+            paytr_token: paytrToken,
         });
 
-        console.log('[PayTR] İstek gönderiliyor, merchant_id:', merchantId, 'merchant_oid:', merchantOid, 'amount:', amountKurus, 'test_mode:', testMode);
+        console.log('[PayTR] Link oluşturuluyor, callback_id:', callbackId, 'amount:', amountKurus);
 
-        const paytrRes = await fetch('https://www.paytr.com/odeme/api/get-token', {
+        const paytrRes = await fetch('https://www.paytr.com/odeme/api/link/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: formParams.toString(),
@@ -148,17 +125,13 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'PayTR geçersiz yanıt döndü' }, { status: 500 });
         }
 
-        console.log('[PayTR] API yanıtı:', JSON.stringify(paytrData));
-
-        if (paytrData.status !== 'success') {
-            console.error('[PayTR] Token alınamadı:', paytrData.reason);
-            return NextResponse.json({ error: paytrData.reason || 'PayTR token alınamadı' }, { status: 500 });
+        if (paytrData.status === 'error' || paytrData.status === 'failed') {
+            console.error('[PayTR] Link oluşturulamadı:', paytrData.err_msg || JSON.stringify(paytrData));
+            return NextResponse.json({ error: paytrData.err_msg || 'PayTR link oluşturulamadı' }, { status: 500 });
         }
 
-        const iframeToken = paytrData.token;
-        const paymentUrl = `https://www.paytr.com/odeme/guvenli/${iframeToken}`;
-
-        console.log(`[PayTR] ✅ Token alındı: merchant_oid=${merchantOid}, user=${user.id}, payment_id=${payment.id}`);
+        const paymentUrl = paytrData.link;
+        console.log(`[PayTR] ✅ Link oluşturuldu: ${paymentUrl}, callback_id=${callbackId}`);
 
         return NextResponse.json({ success: true, paymentId: payment.id, paymentUrl });
 
