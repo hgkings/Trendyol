@@ -129,13 +129,25 @@ export async function POST(req: Request) {
             callback_link: callbackLink,
         });
 
+        console.log('[PayTR] İstek gönderiliyor, merchant_id:', merchantId, 'merchant_oid:', merchantOid, 'amount:', amountKurus, 'test_mode:', testMode);
+
         const paytrRes = await fetch('https://www.paytr.com/odeme/api/get-token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: formParams.toString(),
         });
 
-        const paytrData = await paytrRes.json();
+        const rawText = await paytrRes.text();
+        console.log('[PayTR] Ham yanıt:', rawText);
+
+        let paytrData: any;
+        try {
+            paytrData = JSON.parse(rawText);
+        } catch {
+            console.error('[PayTR] JSON parse hatası:', rawText);
+            return NextResponse.json({ error: 'PayTR geçersiz yanıt döndü' }, { status: 500 });
+        }
+
         console.log('[PayTR] API yanıtı:', JSON.stringify(paytrData));
 
         if (paytrData.status !== 'success') {
