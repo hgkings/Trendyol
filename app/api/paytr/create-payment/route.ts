@@ -18,7 +18,11 @@ export async function POST(req: Request) {
         const merchantId = process.env.PAYTR_MERCHANT_ID;
         const merchantKey = process.env.PAYTR_MERCHANT_KEY;
         const merchantSalt = process.env.PAYTR_MERCHANT_SALT;
-        const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://trendyol-virid.vercel.app').trim().replace(/\/$/, '');
+        const appUrl = (
+            process.env.NEXT_PUBLIC_APP_URL ||
+            (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null) ||
+            'https://trendyol-p73m.vercel.app'
+        ).trim().replace(/\/$/, '');
 
         if (!supabaseUrl || !supabaseAnonKey || !serviceKey) {
             return NextResponse.json({ error: 'Config missing' }, { status: 500 });
