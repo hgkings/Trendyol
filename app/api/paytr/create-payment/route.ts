@@ -147,12 +147,14 @@ export async function POST(req: Request) {
         if (isTestMode) {
             const daysToAdd = plan === 'pro_yearly' ? 365 : 30;
             const proUntil = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000).toISOString();
-            await adminSupabase.from('payments').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', payment.id);
-            await adminSupabase.from('profiles').update({
+            const { error: payErr } = await adminSupabase.from('payments').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', payment.id);
+            if (payErr) console.error('[PayTR] 🧪 Test modu payments update hatası:', JSON.stringify(payErr));
+            const { error: profErr } = await adminSupabase.from('profiles').update({
                 plan: 'pro', is_pro: true, plan_type: plan,
                 pro_until: proUntil, pro_started_at: new Date().toISOString(), pro_expires_at: proUntil,
             }).eq('id', user.id);
-            console.log(`[PayTR] 🧪 Test modu: Pro otomatik aktif edildi, user=${user.id}`);
+            if (profErr) console.error('[PayTR] 🧪 Test modu profiles update hatası:', JSON.stringify(profErr));
+            else console.log(`[PayTR] 🧪 Test modu: Pro otomatik aktif edildi, user=${user.id}`);
         }
 
         return NextResponse.json({ success: true, paymentId: payment.id, paymentUrl });
