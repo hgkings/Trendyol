@@ -18,7 +18,7 @@ export async function POST(req: Request) {
         const merchantId = process.env.PAYTR_MERCHANT_ID;
         const merchantKey = process.env.PAYTR_MERCHANT_KEY;
         const merchantSalt = process.env.PAYTR_MERCHANT_SALT;
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.xn--krnet-3qa.com';
+        const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://xn--krnet-3qa.com').trim().replace(/\/$/, '');
 
         if (!supabaseUrl || !supabaseAnonKey || !serviceKey) {
             return NextResponse.json({ error: 'Config missing' }, { status: 500 });
