@@ -29,7 +29,18 @@ export function UpgradeModal({ open, onClose }: UpgradeModalProps) {
   const handleUpgrade = async () => {
     setLoading(true);
     try {
-      window.location.href = '/api/paytr/create-payment-link?plan=pro_monthly';
+      const res = await fetch('/api/paytr/create-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: 'pro_monthly' }),
+      });
+      const data = await res.json();
+      if (data.iframeToken) {
+        window.location.href = `/payment/iframe?token=${data.iframeToken}&paymentId=${data.paymentId}`;
+      } else {
+        toast.error(data.error || 'Ödeme başlatılamadı.');
+        setLoading(false);
+      }
     } catch (err: any) {
       console.error('[UPGRADE-MODAL] Error:', err);
       toast.error(err.message || 'Ödeme başlatılamadı.');

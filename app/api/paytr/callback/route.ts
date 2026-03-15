@@ -20,10 +20,9 @@ export async function POST(req: Request) {
         const status = String(payload.status || '');
         const total_amount = String(payload.total_amount || '');
         const hash = String(payload.hash || '');
-        const callback_id = String(payload.callback_id || '');
 
         // ── STEP 1: Hash Doğrulama ──────────────────────────────
-        // Link API hash: HMAC-SHA256(callback_id + merchant_oid + salt + status + total_amount, key)
+        // iFrame API hash: HMAC-SHA256(merchant_oid + salt + status + total_amount, key)
         const merchantKey = process.env.PAYTR_MERCHANT_KEY;
         const merchantSalt = process.env.PAYTR_MERCHANT_SALT;
 
@@ -32,7 +31,7 @@ export async function POST(req: Request) {
             return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
         }
 
-        const hashStr = callback_id + merchant_oid + merchantSalt + status + total_amount;
+        const hashStr = merchant_oid + merchantSalt + status + total_amount;
         const expectedHash = crypto
             .createHmac('sha256', merchantKey)
             .update(hashStr)
@@ -40,11 +39,11 @@ export async function POST(req: Request) {
 
         if (hash !== expectedHash) {
             console.error('[PayTR Callback] ❌ Hash doğrulama başarısız!');
-            console.error(`  callback_id: ${callback_id}, merchant_oid: ${merchant_oid}, status: ${status}, total_amount: ${total_amount}`);
+            console.error(`  merchant_oid: ${merchant_oid}, status: ${status}, total_amount: ${total_amount}`);
             return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
         }
 
-        console.log('[PayTR Callback] ✅ Hash doğrulandı, callback_id:', callback_id);
+        console.log('[PayTR Callback] ✅ Hash doğrulandı, merchant_oid:', merchant_oid);
 
         // ── STEP 2: Supabase Bağlantısı ─────────────────────────
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -57,33 +56,33 @@ export async function POST(req: Request) {
 
         const supabase = createClient(supabaseUrl, serviceKey);
 
-        // ── STEP 3: Payment kaydını bul (callback_id = payment.id) ──
-        let payment: any = null;
-
-        // callback_id = payment.id without hyphens, stored in provider_order_id
-        const { data: byId } = await supabase
+        // ── STEP 3: Payment kaydını bul (merchant_oid = provider_order_id) ──
+        const { data: payment } = await supabase
             .from('payments')
             .select('*')
-            .eq('provider_order_id', callback_id)
+            .eq('provider_order_id', merchant_oid)
             .single();
 
-        if (byId) {
-            payment = byId;
-            console.log(`[PayTR Callback] ✅ Payment bulundu: id=${payment.id}, user=${payment.user_id}`);
-        } else {
-            console.error(`[PayTR Callback] ❌ Payment bulunamadı: callback_id=${callback_id}`);
+        if (!payment) {
+            console.error(`[PayTR Callback] ❌ Payment bulunamadı: merchant_oid=${merchant_oid}`);
             return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
         }
 
-        // ── STEP 4: Status kontrolü ve güncelleme ───────────────
+        console.log(`[PayTR Callback] ✅ Payment bulundu: id=${payment.id}, user=${payment.user_id}`);
+
+        // ── STEP 4: Daha önce işlendiyse tekrar işleme ──────────
+        if (payment.status === 'paid') {
+            console.log('[PayTR Callback] ⚠️ Bu ödeme zaten işlendi, tekrar işlenmiyor.');
+            return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
+        }
+
+        // ── STEP 5: Status kontrolü ve güncelleme ───────────────
         if (status === 'success') {
-            // Payment kaydını güncelle
             const { error: payUpdateErr } = await supabase
                 .from('payments')
                 .update({
                     status: 'paid',
                     paid_at: new Date().toISOString(),
-                    provider_order_id: merchant_oid,
                     raw_payload: payload as any,
                 })
                 .eq('id', payment.id);
@@ -91,11 +90,11 @@ export async function POST(req: Request) {
             if (payUpdateErr) {
                 console.error('[PayTR Callback] ❌ Payment güncelleme hatası:', JSON.stringify(payUpdateErr));
             } else {
-                console.log('[PayTR Callback] ✅ Payment güncellendi (paid_at + raw_payload yazıldı)');
+                console.log('[PayTR Callback] ✅ Payment güncellendi');
             }
 
-            // ── STEP 5: Profili Pro yap ─────────────────────────
-            const planType = payment.plan || 'pro_monthly'; // 'pro_monthly' or 'pro_yearly'
+            // ── STEP 6: Profili Pro yap ─────────────────────────
+            const planType = payment.plan || 'pro_monthly';
             const daysToAdd = planType === 'pro_yearly' ? 365 : 30;
             const proUntil = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000).toISOString();
 
@@ -115,12 +114,11 @@ export async function POST(req: Request) {
             if (profileErr) {
                 console.error('[PayTR Callback] ❌ Profil güncelleme hatası:', JSON.stringify(profileErr));
             } else {
-                console.log(`[PayTR Callback] ✅ Profil Pro yapıldı: user_id=${payment.user_id}, is_pro=true, plan_type=${planType}, pro_until=${proUntil}`);
+                console.log(`[PayTR Callback] ✅ Profil Pro yapıldı: user_id=${payment.user_id}, plan_type=${planType}, pro_until=${proUntil}`);
             }
         } else {
             console.log(`[PayTR Callback] ⚠️ Status success değil: "${status}"`);
 
-            // Başarısız durumda da payment kaydını güncelle
             await supabase
                 .from('payments')
                 .update({
@@ -135,7 +133,6 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         console.error('[PayTR Callback] ❌ EXCEPTION:', error?.message || error);
-        console.error('[PayTR Callback] Stack:', error?.stack);
         return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
     }
 }

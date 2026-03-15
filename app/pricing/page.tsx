@@ -348,11 +348,11 @@ export default function PricingPage() {
                           body: JSON.stringify({ plan: selectedPlan }),
                         });
                         const data = await res.json();
-                        if (data.paymentUrl) {
-                          window.open(data.paymentUrl, '_blank');
-                          window.location.href = `/basari?paymentId=${data.paymentId}`;
+                        if (data.iframeToken) {
+                          window.location.href = `/payment/iframe?token=${data.iframeToken}&paymentId=${data.paymentId}`;
                         } else {
-                          console.error('PayTR URL alınamadı:', data.error);
+                          console.error('PayTR token alınamadı:', data.error);
+                          toast.error(data.error || 'Ödeme başlatılamadı.');
                           setLoading(false);
                         }
                       } catch (e) {
