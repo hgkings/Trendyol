@@ -55,9 +55,7 @@ export async function POST(req: Request) {
         const amount = testPrice ?? (plan === 'pro_yearly' ? PRICING.proYearly : PRICING.proMonthly);
         const amountKurus = Math.round(amount * 100);
 
-        const planName = plan === 'pro_yearly' ? 'Karnet Pro Yillik' : 'Karnet Pro Aylik';
-
-        // Create payment record — its ID becomes merchant_oid
+        // Create payment record first — its ID becomes callback_id
         const { data: payment, error: insertError } = await adminSupabase
             .from('payments')
             .insert({
@@ -78,65 +76,41 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Ödeme kaydı oluşturulamadı' }, { status: 500 });
         }
 
-        const merchantOid = payment.id.replace(/-/g, '');
-
-        // Update provider_order_id to merchantOid
-        await adminSupabase
-            .from('payments')
-            .update({ provider_order_id: merchantOid })
-            .eq('id', payment.id);
-
-        // User IP
-        const userIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-            || req.headers.get('x-real-ip')
-            || '127.0.0.1';
-
-        // Basket (base64 encoded JSON)
-        const basket = JSON.stringify([[planName, amount.toFixed(2), 1]]);
-        const userBasket = Buffer.from(basket).toString('base64');
-
-        const noInstallment = '1';
-        const maxInstallment = '0';
+        const callbackId = payment.id.replace(/-/g, '');
+        const planName = plan === 'pro_yearly' ? 'Karnet Pro Yillik' : 'Karnet Pro Aylik';
         const currency = 'TL';
-        const testMode = process.env.PAYTR_TEST_MODE === '1' ? '1' : '0';
+        const maxInstallment = '1';
+        const linkType = 'product';
+        const lang = 'tr';
+        const minCount = '1';
+        const callbackLink = `${appUrl}/api/paytr/callback`;
 
-        // iFrame API hash: merchant_id + user_ip + merchant_oid + email + payment_amount + user_basket + no_installment + max_installment + currency + test_mode + merchant_salt
-        const hashStr = merchantId + userIp + merchantOid + (user.email || '') + String(amountKurus) + userBasket + noInstallment + maxInstallment + currency + testMode;
+        // Link API hash: base64(HMAC-SHA256(name+price+currency+max_installment+link_type+lang+min_count+salt, key))
+        const required = planName + String(amountKurus) + currency + maxInstallment + linkType + lang + minCount;
         const paytrToken = crypto
             .createHmac('sha256', merchantKey)
-            .update(hashStr + merchantSalt)
+            .update(required + merchantSalt)
             .digest('base64');
-
-        const merchantOkUrl = `${appUrl}/pricing?payment=success&paymentId=${payment.id}`;
-        const merchantFailUrl = `${appUrl}/pricing?payment=fail`;
 
         const formParams = new URLSearchParams({
             merchant_id: merchantId,
-            merchant_key: merchantKey,
-            merchant_salt: merchantSalt,
-            email: user.email || '',
-            payment_amount: String(amountKurus),
-            merchant_oid: merchantOid,
-            user_name: user.email?.split('@')[0] || '',
-            user_address: 'Türkiye',
-            user_phone: '05000000000',
-            merchant_ok_url: merchantOkUrl,
-            merchant_fail_url: merchantFailUrl,
-            user_basket: userBasket,
-            user_ip: userIp,
-            timeout_limit: '30',
-            debug_on: '1',
-            test_mode: testMode,
-            lang: 'tr',
-            no_installment: noInstallment,
-            max_installment: maxInstallment,
+            name: planName,
+            price: String(amountKurus),
             currency: currency,
+            max_installment: maxInstallment,
+            link_type: linkType,
+            lang: lang,
+            min_count: minCount,
+            callback_link: callbackLink,
+            callback_id: callbackId,
+            debug_on: '1',
+            get_qr: '0',
             paytr_token: paytrToken,
         });
 
-        console.log('[PayTR] iFrame token isteniyor, merchant_oid:', merchantOid, 'amount:', amountKurus);
+        console.log('[PayTR] Link oluşturuluyor, callback_id:', callbackId, 'amount:', amountKurus, 'callback_link:', callbackLink);
 
-        const paytrRes = await fetch('https://www.paytr.com/odeme/api/get-token', {
+        const paytrRes = await fetch('https://www.paytr.com/odeme/api/link/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: formParams.toString(),
@@ -153,13 +127,20 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'PayTR geçersiz yanıt döndü' }, { status: 500 });
         }
 
-        if (paytrData.status !== 'success') {
-            console.error('[PayTR] Token alınamadı:', paytrData.reason || JSON.stringify(paytrData));
-            return NextResponse.json({ error: paytrData.reason || 'PayTR token alınamadı' }, { status: 500 });
+        if (paytrData.status === 'error' || paytrData.status === 'failed') {
+            console.error('[PayTR] Link oluşturulamadı:', paytrData.err_msg || JSON.stringify(paytrData));
+            return NextResponse.json({ error: paytrData.err_msg || 'PayTR link oluşturulamadı' }, { status: 500 });
         }
 
-        const iframeToken = paytrData.token;
-        console.log(`[PayTR] ✅ iFrame token alındı, merchant_oid=${merchantOid}`);
+        const paymentUrl = paytrData.link;
+
+        // Update provider_order_id to callbackId so callback can find it
+        await adminSupabase
+            .from('payments')
+            .update({ provider_order_id: callbackId })
+            .eq('id', payment.id);
+
+        console.log(`[PayTR] ✅ Link oluşturuldu: ${paymentUrl}, callback_id=${callbackId}`);
 
         // Test modunda callback gelmez — otomatik pro aktif et
         const isTestMode = process.env.PAYTR_TEST_MODE === '1';
@@ -174,7 +155,7 @@ export async function POST(req: Request) {
             console.log(`[PayTR] 🧪 Test modu: Pro otomatik aktif edildi, user=${user.id}`);
         }
 
-        return NextResponse.json({ success: true, paymentId: payment.id, iframeToken });
+        return NextResponse.json({ success: true, paymentId: payment.id, paymentUrl });
 
     } catch (error: any) {
         console.error('[PayTR] Create payment error:', error?.message || error);

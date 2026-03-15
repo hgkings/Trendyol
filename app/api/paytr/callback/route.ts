@@ -20,9 +20,10 @@ export async function POST(req: Request) {
         const status = String(payload.status || '');
         const total_amount = String(payload.total_amount || '');
         const hash = String(payload.hash || '');
+        const callback_id = String(payload.callback_id || '');
 
         // ── STEP 1: Hash Doğrulama ──────────────────────────────
-        // iFrame API hash: HMAC-SHA256(merchant_oid + salt + status + total_amount, key)
+        // Link API hash: HMAC-SHA256(callback_id + merchant_oid + salt + status + total_amount, key)
         const merchantKey = process.env.PAYTR_MERCHANT_KEY;
         const merchantSalt = process.env.PAYTR_MERCHANT_SALT;
 
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
             return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
         }
 
-        const hashStr = merchant_oid + merchantSalt + status + total_amount;
+        const hashStr = callback_id + merchant_oid + merchantSalt + status + total_amount;
         const expectedHash = crypto
             .createHmac('sha256', merchantKey)
             .update(hashStr)
@@ -39,11 +40,11 @@ export async function POST(req: Request) {
 
         if (hash !== expectedHash) {
             console.error('[PayTR Callback] ❌ Hash doğrulama başarısız!');
-            console.error(`  merchant_oid: ${merchant_oid}, status: ${status}, total_amount: ${total_amount}`);
+            console.error(`  callback_id: ${callback_id}, merchant_oid: ${merchant_oid}, status: ${status}, total_amount: ${total_amount}`);
             return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
         }
 
-        console.log('[PayTR Callback] ✅ Hash doğrulandı, merchant_oid:', merchant_oid);
+        console.log('[PayTR Callback] ✅ Hash doğrulandı, callback_id:', callback_id);
 
         // ── STEP 2: Supabase Bağlantısı ─────────────────────────
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -56,15 +57,15 @@ export async function POST(req: Request) {
 
         const supabase = createClient(supabaseUrl, serviceKey);
 
-        // ── STEP 3: Payment kaydını bul (merchant_oid = provider_order_id) ──
+        // ── STEP 3: Payment kaydını bul (callback_id = provider_order_id) ──
         const { data: payment } = await supabase
             .from('payments')
             .select('*')
-            .eq('provider_order_id', merchant_oid)
+            .eq('provider_order_id', callback_id)
             .single();
 
         if (!payment) {
-            console.error(`[PayTR Callback] ❌ Payment bulunamadı: merchant_oid=${merchant_oid}`);
+            console.error(`[PayTR Callback] ❌ Payment bulunamadı: callback_id=${callback_id}`);
             return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
         }
 
@@ -83,6 +84,7 @@ export async function POST(req: Request) {
                 .update({
                     status: 'paid',
                     paid_at: new Date().toISOString(),
+                    provider_order_id: merchant_oid,
                     raw_payload: payload as any,
                 })
                 .eq('id', payment.id);

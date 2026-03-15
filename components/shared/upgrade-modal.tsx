@@ -35,8 +35,9 @@ export function UpgradeModal({ open, onClose }: UpgradeModalProps) {
         body: JSON.stringify({ plan: 'pro_monthly' }),
       });
       const data = await res.json();
-      if (data.iframeToken) {
-        window.location.href = `/payment/iframe?token=${data.iframeToken}&paymentId=${data.paymentId}`;
+      if (data.paymentUrl) {
+        window.open(data.paymentUrl, '_blank');
+        window.location.href = `/basari?paymentId=${data.paymentId}`;
       } else {
         toast.error(data.error || 'Ödeme başlatılamadı.');
         setLoading(false);
