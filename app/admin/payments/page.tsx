@@ -5,7 +5,7 @@ import { AdminLayout } from '@/components/layout/admin-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, XCircle, Clock, Zap } from 'lucide-react';
 
 interface Payment {
     id: string;
@@ -32,6 +32,7 @@ export default function AdminPaymentsPage() {
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState('');
+    const [activating, setActivating] = useState<string | null>(null);
 
     const fetchPayments = useCallback(async () => {
         setLoading(true);
@@ -45,6 +46,27 @@ export default function AdminPaymentsPage() {
     }, [page, statusFilter]);
 
     useEffect(() => { fetchPayments(); }, [fetchPayments]);
+
+    const activatePayment = async (paymentId: string) => {
+        if (!confirm('Bu ödemeyi manuel olarak aktive etmek istediğinize emin misiniz?')) return;
+        setActivating(paymentId);
+        try {
+            const res = await fetch('/api/admin/activate-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ paymentId }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Pro plan aktive edildi!');
+                fetchPayments();
+            } else {
+                alert('Hata: ' + (data.error || 'Bilinmeyen hata'));
+            }
+        } finally {
+            setActivating(null);
+        }
+    };
 
     const totalPages = Math.ceil(total / 20);
 
@@ -106,6 +128,7 @@ export default function AdminPaymentsPage() {
                                             <th className="text-left px-4 py-3 font-medium text-muted-foreground">Tutar</th>
                                             <th className="text-left px-4 py-3 font-medium text-muted-foreground">Durum</th>
                                             <th className="text-left px-4 py-3 font-medium text-muted-foreground">Tarih</th>
+                                            <th className="text-left px-4 py-3 font-medium text-muted-foreground">İşlem</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y">
@@ -126,6 +149,20 @@ export default function AdminPaymentsPage() {
                                                     </td>
                                                     <td className="px-4 py-3 text-muted-foreground">
                                                         {new Date(p.paid_at ?? p.created_at).toLocaleDateString('tr-TR')}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        {p.status !== 'paid' && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                className="h-7 text-xs"
+                                                                disabled={activating === p.id}
+                                                                onClick={() => activatePayment(p.id)}
+                                                            >
+                                                                {activating === p.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Zap className="h-3 w-3 mr-1" />}
+                                                                Aktive Et
+                                                            </Button>
+                                                        )}
                                                     </td>
                                                 </tr>
                                             );

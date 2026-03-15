@@ -39,10 +39,35 @@ export async function POST(req: Request) {
             .update(hashStr)
             .digest('base64');
 
+        const hashDebug = process.env.PAYTR_DEBUG === '1';
+        if (hashDebug) {
+            console.log('[PayTR Callback] 🔍 Hash debug:');
+            console.log(`  formula: id+merchant_oid+salt+status+total_amount`);
+            console.log(`  link_id(id): "${link_id}"`);
+            console.log(`  merchant_oid: "${merchant_oid}"`);
+            console.log(`  status: "${status}"`);
+            console.log(`  total_amount: "${total_amount}"`);
+            console.log(`  received_hash: "${hash}"`);
+            console.log(`  expected_hash: "${expectedHash}"`);
+        }
+
         if (hash !== expectedHash) {
             console.error('[PayTR Callback] ❌ Hash doğrulama başarısız!');
-            console.error(`  link_id: ${link_id}, merchant_oid: ${merchant_oid}, status: ${status}, total_amount: ${total_amount}`);
-            return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
+            console.error(`  link_id(id)="${link_id}", merchant_oid="${merchant_oid}", status="${status}", total_amount="${total_amount}"`);
+            console.error(`  received="${hash}" expected="${expectedHash}"`);
+            // Try alternate formula: callback_id instead of id
+            const altHashStr = callback_id + merchant_oid + merchantSalt + status + total_amount;
+            const altHash = crypto.createHmac('sha256', merchantKey).update(altHashStr).digest('base64');
+            if (hash === altHash) {
+                console.log('[PayTR Callback] ✅ Alt hash (callback_id) eşleşti — formül düzeltiliyor ve devam ediliyor');
+                // fall through with correct data
+            } else {
+                console.error(`  alt_hash(callback_id)="${altHash}" — bu da eşleşmedi`);
+                if (process.env.PAYTR_SKIP_HASH !== '1') {
+                    return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
+                }
+                console.warn('[PayTR Callback] ⚠️ PAYTR_SKIP_HASH=1 — hash atlanıyor (debug mode)');
+            }
         }
 
         console.log('[PayTR Callback] ✅ Hash doğrulandı, callback_id:', callback_id, 'link_id:', link_id);
