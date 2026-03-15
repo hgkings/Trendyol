@@ -51,7 +51,8 @@ export async function POST(req: Request) {
         const { createClient } = await import('@supabase/supabase-js');
         const adminSupabase = createClient(supabaseUrl, serviceKey);
 
-        const amount = plan === 'pro_yearly' ? PRICING.proYearly : PRICING.proMonthly;
+        const testPrice = process.env.PAYTR_TEST_PRICE ? parseFloat(process.env.PAYTR_TEST_PRICE) : null;
+        const amount = testPrice ?? (plan === 'pro_yearly' ? PRICING.proYearly : PRICING.proMonthly);
         const amountKurus = Math.round(amount * 100);
 
         // Create payment record first — its ID becomes callback_id
