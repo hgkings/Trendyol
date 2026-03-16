@@ -9,7 +9,7 @@ export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
         const token = searchParams.get('token');
-        const paymentId = searchParams.get('paymentId'); // fallback legacy support
+        const paymentId = searchParams.get('paymentId');
 
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
         const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -19,9 +19,11 @@ export async function GET(req: Request) {
             return NextResponse.json({ success: false, error: 'Sunucu yapılandırma hatası' }, { status: 500 });
         }
 
-        // ── Token-based verification (new secure flow) ──────────────────────
+        const admin = createClient(supabaseUrl, serviceKey);
+
+        // ── Token-based polling (new flow) ───────────────────────────────────
         if (token) {
-            // 1. Authenticate the user making the request
+            // 1. Authenticate the caller
             const cookieStore = cookies();
             const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
                 cookies: {
@@ -37,9 +39,7 @@ export async function GET(req: Request) {
                 return NextResponse.json({ success: false, error: 'Giriş yapmalısınız' }, { status: 401 });
             }
 
-            const admin = createClient(supabaseUrl, serviceKey);
-
-            // 2. Find payment session by token
+            // 2. Find payment by token
             const { data: payment, error: paymentErr } = await admin
                 .from('payments')
                 .select('id, user_id, plan, status, token_expires_at')
@@ -47,77 +47,36 @@ export async function GET(req: Request) {
                 .single();
 
             if (paymentErr || !payment) {
-                console.warn('[verify-payment] Token bulunamadı:', token?.slice(0, 8) + '...');
                 return NextResponse.json({ success: false, error: 'Geçersiz token' }, { status: 400 });
             }
 
-            // 3. Verify token belongs to the logged-in user
+            // 3. Token must belong to the logged-in user
             if (payment.user_id !== user.id) {
-                console.warn('[verify-payment] Token kullanıcı uyuşmazlığı. payment.user_id:', payment.user_id, 'auth user:', user.id);
                 return NextResponse.json({ success: false, error: 'Bu token size ait değil' }, { status: 403 });
             }
 
-            // 4. Check if already activated (idempotent — return success)
-            if (payment.status === 'paid') {
-                return NextResponse.json({ success: true });
-            }
-
-            // 5. Verify token has not expired (15-minute window)
+            // 4. Check expiry
             if (payment.token_expires_at) {
                 const expiresAt = new Date(payment.token_expires_at).getTime();
                 if (Date.now() > expiresAt) {
                     await admin.from('payments').update({ status: 'expired' }).eq('id', payment.id);
-                    console.warn('[verify-payment] Token süresi dolmuş:', payment.id);
                     return NextResponse.json({ success: false, error: 'Oturum süresi doldu. Lütfen tekrar ödeme yapın.' }, { status: 410 });
                 }
             }
 
-            // 6. Verify session is in an activatable state
-            if (payment.status !== 'created' && payment.status !== 'pending') {
-                return NextResponse.json({ success: false, error: `Ödeme durumu geçersiz: ${payment.status}` }, { status: 400 });
+            // 5. ONLY report success if PayTR callback already marked payment as paid.
+            //    This endpoint does NOT activate Pro itself — the callback does.
+            if (payment.status === 'paid') {
+                console.log('[verify-payment] ✅ Ödeme onaylandı (callback tarafından):', payment.id);
+                return NextResponse.json({ success: true });
             }
 
-            // ── Activate Pro ────────────────────────────────────────────────
-            const planType = payment.plan || 'pro_monthly';
-            const daysToAdd = planType === 'pro_yearly' ? 365 : 30;
-            const proUntil = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000).toISOString();
-            const now = new Date().toISOString();
-
-            const { error: paymentUpdateErr } = await admin
-                .from('payments')
-                .update({ status: 'paid', paid_at: now })
-                .eq('id', payment.id);
-
-            if (paymentUpdateErr) {
-                console.error('[verify-payment] payments güncelleme hatası:', JSON.stringify(paymentUpdateErr));
-                return NextResponse.json({ success: false, error: 'Ödeme kaydı güncellenemedi' }, { status: 500 });
-            }
-
-            const { error: profileErr } = await admin
-                .from('profiles')
-                .update({
-                    plan: 'pro',
-                    is_pro: true,
-                    plan_type: planType,
-                    pro_until: proUntil,
-                    pro_started_at: now,
-                    pro_expires_at: proUntil,
-                    pro_renewal: false,
-                })
-                .eq('id', payment.user_id);
-
-            if (profileErr) {
-                console.error('[verify-payment] profiles güncelleme hatası:', JSON.stringify(profileErr));
-                return NextResponse.json({ success: false, error: 'Profil güncellenemedi' }, { status: 500 });
-            }
-
-            console.log('[verify-payment] ✅ Token ile Pro aktif edildi. user:', user.id, 'plan:', planType, 'until:', proUntil);
-            return NextResponse.json({ success: true });
+            // Payment session exists and token is valid, but callback hasn't arrived yet.
+            return NextResponse.json({ success: false, pending: true });
         }
 
-        // ── Legacy fallback: paymentId-based check (read-only, no activation) ──
+        // ── Legacy fallback: paymentId-based read-only check ─────────────────
         if (paymentId) {
-            const admin = createClient(supabaseUrl, serviceKey);
             const { data: payment } = await admin
                 .from('payments')
                 .select('status')
