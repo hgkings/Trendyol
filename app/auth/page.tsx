@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { LiveAnalysisShowcase } from '@/components/auth/live-analysis-showcase';
 import { Label } from '@/components/ui/label';
 import {
   Eye,
@@ -18,9 +19,6 @@ import {
   Star,
   BadgeCheck,
   Zap,
-  CreditCard,
-  Lock as LockIcon,
-  Users,
 } from 'lucide-react';
 
 export default function AuthPage() {
@@ -125,33 +123,8 @@ export default function AuthPage() {
             ))}
           </div>
 
-          {/* ── Örnek Sonuç Card ── */}
-          <div className="rounded-xl border bg-card/80 backdrop-blur-sm p-5 shadow-sm space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Örnek Sonuç</span>
-              <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                Risk: Orta
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <p className="text-[10px] text-muted-foreground">Satış</p>
-                <p className="text-sm font-bold tabular-nums">₺349</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Maliyet</p>
-                <p className="text-sm font-bold tabular-nums">₺287</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Net Kâr</p>
-                <p className="text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400">₺62</p>
-              </div>
-            </div>
-            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-              <div className="h-full w-[18%] rounded-full bg-emerald-500" />
-            </div>
-            <p className="text-[10px] text-muted-foreground text-right">Marj: %17.8</p>
-          </div>
+          {/* ── Live Analysis Showcase ── */}
+          <LiveAnalysisShowcase />
 
           {/* ── Compact Testimonials ── */}
           <div className="space-y-3">
@@ -176,20 +149,6 @@ export default function AuthPage() {
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Trust badges */}
-          <div className="space-y-1.5">
-            {[
-              { icon: CreditCard, text: 'Kredi kartı gerekmez' },
-              { icon: Users, text: '500+ satıcı kullanıyor' },
-              { icon: Star, text: 'Ücretsiz plan sonsuza kadar ücretsiz' },
-            ].map((item) => (
-              <div key={item.text} className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                <item.icon className="h-3.5 w-3.5 shrink-0" />
-                <span>{item.text}</span>
-              </div>
-            ))}
           </div>
         </div>
       </div>
@@ -360,30 +319,8 @@ export default function AuthPage() {
 
         {/* Mobile context (below login on small screens) */}
         <div className="lg:hidden w-full max-w-[420px] mt-10 space-y-6">
-
-          {/* Örnek Sonuç mini card */}
-          <div className="rounded-xl border bg-card/80 p-4 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Örnek Sonuç</span>
-              <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                Risk: Orta
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <p className="text-[10px] text-muted-foreground">Satış</p>
-                <p className="text-sm font-bold tabular-nums">₺349</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Maliyet</p>
-                <p className="text-sm font-bold tabular-nums">₺287</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Net Kâr</p>
-                <p className="text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400">₺62</p>
-              </div>
-            </div>
-          </div>
+          {/* Mobile: Live Analysis Showcase */}
+          <LiveAnalysisShowcase />
 
           {/* Mobile testimonial */}
           <div className="rounded-lg border bg-card/60 p-3.5 space-y-2">
@@ -397,15 +334,6 @@ export default function AuthPage() {
               <span className="text-[11px] font-semibold">Emre K.</span>
               <span className="text-[10px] text-muted-foreground">· Trendyol Satıcısı</span>
             </div>
-          </div>
-
-          {/* Trust line */}
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1"><CreditCard className="h-3 w-3" /> Kredi kartı gerekmez</span>
-            <span className="hidden sm:inline">•</span>
-            <span className="flex items-center gap-1"><LockIcon className="h-3 w-3" /> Veriler satılmaz</span>
-            <span className="hidden sm:inline">•</span>
-            <span className="flex items-center gap-1"><Users className="h-3 w-3" /> 500+ satıcı</span>
           </div>
         </div>
       </div>
