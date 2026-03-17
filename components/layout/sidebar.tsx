@@ -11,6 +11,7 @@ import {
   CreditCard,
   ArrowRight,
   Shield,
+  Store,
 } from 'lucide-react';
 import { NAV_ITEMS, BOTTOM_NAV_ITEMS } from '@/config/navigation';
 import { isProUser } from '@/utils/access';
@@ -128,6 +129,13 @@ export function Sidebar() {
                 <Upload className="h-3.5 w-3.5" />
               </div>
               <span>CSV İçe Aktar</span>
+            </Link>
+
+            <Link href="/settings/commission-rates" className="flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all group">
+              <div className="p-1.5 rounded-md bg-muted group-hover:bg-background border border-transparent group-hover:border-border transition-colors">
+                <Store className="h-3.5 w-3.5" />
+              </div>
+              <span>Komisyon Oranları</span>
             </Link>
 
             <Link href="/pricing" className="flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all group">

@@ -90,8 +90,13 @@ export interface ProductInput {
   return_refunds_commission?: boolean;
   return_extra_cost?: number;
 
-  // Trendyol category for automatic commission rate
+  // Category selected in the marketplace category dropdown
+  marketplace_category?: string;
+  /** @deprecated use marketplace_category */
   trendyol_category?: string;
+
+  // n11 extra fees: +1.20% marketing + 0.67% marketplace = 1.87%
+  n11_extra_pct?: number;
 
   // Legacy/Standard fields keep compatibility
   accounting_mode?: 'standard' | 'pro';

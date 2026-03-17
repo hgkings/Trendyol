@@ -19,8 +19,10 @@ export function calculateProfit(input: ProductInput): CalculationResult {
   const other_cost = n(input.other_cost);
   const monthly_sales_volume = n(input.monthly_sales_volume);
 
-  // 1.1 Komisyon
-  const commission_amount = sale_price * (commission_pct / 100);
+  // 1.1 Komisyon (+ n11 ek bedeller varsa)
+  const n11_extra_pct = n(input.n11_extra_pct, 0);
+  const effective_commission_pct = commission_pct + n11_extra_pct;
+  const commission_amount = sale_price * (effective_commission_pct / 100);
 
   // 1.2 KDV etkisi (Satiş fiyatı KDV dahil kabul edilerek)
   let vat_amount = 0;
@@ -91,6 +93,7 @@ export function calculateBreakevenPrice(input: ProductInput): number {
   const ad_cost_per_sale = n(input.ad_cost_per_sale);
   const other_cost = n(input.other_cost);
   const commission_pct = n(input.commission_pct);
+  const n11_extra_pct = n(input.n11_extra_pct, 0);
   const vat_pct = n(input.vat_pct, 20);
   const return_rate_pct = n(input.return_rate_pct);
 
@@ -98,7 +101,7 @@ export function calculateBreakevenPrice(input: ProductInput): number {
 
   // KDV dahil mantığına göre paydadaki vergi çarpanı: 1 / (1 + KDV/100)
   const vat_factor = 1 / (1 + vat_pct / 100);
-  const commission_factor = commission_pct / 100;
+  const commission_factor = (commission_pct + n11_extra_pct) / 100;
   const return_factor = return_rate_pct / 100;
 
   const denominator = vat_factor - commission_factor - return_factor;
@@ -126,12 +129,13 @@ export function calculateRequiredPrice(
   const ad_cost_per_sale = n(input.ad_cost_per_sale);
   const other_cost = n(input.other_cost);
   const commission_pct = n(input.commission_pct);
+  const n11_extra_pct = n(input.n11_extra_pct, 0);
   const vat_pct = n(input.vat_pct, 20);
   const return_rate_pct = n(input.return_rate_pct);
 
   const base_cost = product_cost + shipping_cost + packaging_cost + ad_cost_per_sale + other_cost;
   const vat_factor = 1 / (1 + vat_pct / 100);
-  const commission_factor = commission_pct / 100;
+  const commission_factor = (commission_pct + n11_extra_pct) / 100;
   const return_factor = return_rate_pct / 100;
 
   if (type === 'margin') {

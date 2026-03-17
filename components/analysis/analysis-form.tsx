@@ -6,7 +6,9 @@ import { useAuth } from '@/contexts/auth-context';
 import { useAlerts } from '@/contexts/alert-context';
 import { ProductInput, Marketplace } from '@/types';
 import { marketplaces, getMarketplaceDefaults } from '@/lib/marketplace-data';
-import { trendyolCategories, getTrendyolCategoryCommission } from '@/lib/trendyol-categories';
+import { getMarketplaceCategories, getCategoryCommission, N11_EXTRA_FEE_PCT, N11_MARKETING_FEE_PCT, N11_MARKETPLACE_FEE_PCT } from '@/lib/commission-categories';
+import { getUserCommissionRates, getLastRatesUpdate, buildRateMap, lookupRate } from '@/lib/commission-rates';
+import type { CommissionRate } from '@/lib/commission-rates';
 import { calculateProfit, calculateRequiredPrice, n } from '@/utils/calculations';
 import { calculateProAccounting } from '@/utils/pro-accounting';
 import { calculateRisk } from '@/utils/risk-engine';
@@ -38,6 +40,7 @@ const defaultInput: ProductInput = {
   vat_pct: 20,
   other_cost: 0,
   payout_delay_days: 28,
+  n11_extra_pct: 0,
   // PRO defaults
   pro_mode: false,
   sale_price_includes_vat: true,
@@ -107,6 +110,9 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
   const [targetProfit, setTargetProfit] = useState<number | undefined>();
   const [suggestedPrice, setSuggestedPrice] = useState<number | undefined>();
 
+  const [customRateMap, setCustomRateMap] = useState<Map<string, number>>(new Map());
+  const [ratesLastUpdated, setRatesLastUpdated] = useState<string | null>(null);
+
   // In demo mode, treat as free user unless simulated otherwise
   const isProUserFlag = isDemo ? false : isProUser(user);
   const isProMode = input.pro_mode === true;
@@ -133,6 +139,20 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
     }
   }, [input.pro_mode, isProUserFlag, user, isDemo]);
 
+  useEffect(() => {
+    if (!user || isDemo) return;
+    (async () => {
+      const [rates, lastUpdated] = await Promise.all([
+        getUserCommissionRates(user.id),
+        getLastRatesUpdate(user.id),
+      ]);
+      if (rates.length > 0) {
+        setCustomRateMap(buildRateMap(rates));
+      }
+      setRatesLastUpdated(lastUpdated);
+    })();
+  }, [user, isDemo]);
+
   const handleMarketplaceChange = (mp: Marketplace) => {
     const defaults = getMarketplaceDefaults(mp);
     setInput((prev) => ({
@@ -144,16 +164,21 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
       sale_vat_pct: defaults.vat_pct,
       purchase_vat_pct: defaults.vat_pct,
       payout_delay_days: defaults.payout_delay_days,
-      // Clear category when switching away from Trendyol
-      trendyol_category: mp === 'trendyol' ? prev.trendyol_category : undefined,
+      marketplace_category: undefined,
+      trendyol_category: undefined,
+      n11_extra_pct: mp === 'n11' ? N11_EXTRA_FEE_PCT : 0,
     }));
   };
 
   const handleCategoryChange = (categoryLabel: string) => {
-    const commission = getTrendyolCategoryCommission(categoryLabel);
+    // Use custom rate if available, fall back to default
+    const customRate = lookupRate(customRateMap, input.marketplace, categoryLabel);
+    const defaultRate = getCategoryCommission(input.marketplace, categoryLabel);
+    const commission = customRate ?? defaultRate;
     setInput((prev) => ({
       ...prev,
-      trendyol_category: categoryLabel,
+      marketplace_category: categoryLabel,
+      trendyol_category: prev.marketplace === 'trendyol' ? categoryLabel : prev.trendyol_category,
       ...(commission !== undefined ? { commission_pct: commission } : {}),
     }));
   };
@@ -487,23 +512,91 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
           <p className="text-xs text-muted-foreground">Pazaryeri değişikliği komisyon, iade ve KDV alanlarını otomatik doldurur.</p>
         </div>
 
-        {/* Trendyol Category Selector */}
-        {input.marketplace === 'trendyol' && (
+        {/* Category Selector (all marketplaces except custom) */}
+        {input.marketplace !== 'custom' && (
           <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-            <Label className="text-sm font-semibold">Trendyol Kategorisi</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-semibold">Kategori</Label>
+              {ratesLastUpdated && (
+                <span className="text-[10px] text-muted-foreground">
+                  Son güncelleme: {new Date(ratesLastUpdated).toLocaleDateString('tr-TR')}
+                </span>
+              )}
+            </div>
             <select
-              value={input.trendyol_category || ''}
+              value={input.marketplace_category || input.trendyol_category || ''}
               onChange={(e) => handleCategoryChange(e.target.value)}
               className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              <option value="">— Kategori seçin —</option>
-              {trendyolCategories.map((cat) => (
-                <option key={cat.label} value={cat.label}>
-                  {cat.label} (%{cat.commission_pct})
-                </option>
-              ))}
+              <option value="">— Kategori seçin (isteğe bağlı) —</option>
+              {getMarketplaceCategories(input.marketplace).map((cat) => {
+                const customRate = lookupRate(customRateMap, input.marketplace, cat.label);
+                const displayRate = customRate ?? cat.commission_pct;
+                const isCustom = customRate !== undefined;
+                return (
+                  <option key={cat.label} value={cat.label}>
+                    {cat.label} (%{displayRate}{isCustom ? ' ✓' : ''})
+                  </option>
+                );
+              })}
             </select>
-            <p className="text-xs text-muted-foreground">Kategori seçimi komisyon oranını otomatik doldurur; dilediğinizde manuel değiştirebilirsiniz.</p>
+            <p className="text-xs text-muted-foreground">
+              Kategori seçimi komisyon oranını otomatik doldurur; dilediğinizde manuel değiştirebilirsiniz.
+              {customRateMap.size > 0 && <span className="text-emerald-600 dark:text-emerald-400"> ✓ işaretliler kişisel oranlarınızı kullanıyor.</span>}
+            </p>
+
+            {/* Commission rate disclaimer */}
+            <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-900/10 dark:border-amber-800 p-3 text-xs space-y-1.5">
+              <p className="font-semibold text-amber-800 dark:text-amber-300">
+                ⚠️ Bu oranlar genel tahmindir. Gerçek komisyon oranınız için:
+              </p>
+              <ul className="space-y-1 text-amber-700 dark:text-amber-400">
+                <li>
+                  <span className="font-medium">Trendyol →</span>{' '}
+                  <a href="https://akademi.trendyol.com/satici-bilgi-merkezi/detay/trendyol-komisyonlari" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+                    akademi.trendyol.com/satici-bilgi-merkezi/detay/trendyol-komisyonlari
+                  </a>
+                </li>
+                <li>
+                  <span className="font-medium">Hepsiburada →</span>{' '}
+                  <a href="https://merchant.hepsiburada.com" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+                    merchant.hepsiburada.com
+                  </a>
+                  {' '}→ Yardım → Komisyon Oranları
+                </li>
+                <li>
+                  <span className="font-medium">n11 →</span>{' '}
+                  <a href="https://magazadestek.n11.com/s/komisyon-oranlari" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+                    magazadestek.n11.com/s/komisyon-oranlari
+                  </a>
+                </li>
+                <li>
+                  <span className="font-medium">Amazon TR →</span>{' '}
+                  <a href="https://sellercentral.amazon.com.tr" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+                    sellercentral.amazon.com.tr
+                  </a>
+                </li>
+              </ul>
+              <p className="text-amber-600 dark:text-amber-500">
+                Komisyon oranını yukarıdaki alandan manuel düzeltebilirsiniz.
+              </p>
+            </div>
+
+            {/* n11 Extra Fees Info */}
+            {input.marketplace === 'n11' && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-800 p-3 text-xs space-y-1 animate-in fade-in duration-200">
+                <p className="font-semibold text-blue-800 dark:text-blue-300">
+                  ℹ️ n11, komisyon üstüne ayrıca şu bedelleri de keser:
+                </p>
+                <ul className="space-y-0.5 text-blue-700 dark:text-blue-400">
+                  <li>+%{N11_MARKETING_FEE_PCT} Pazarlama Hizmet Bedeli (her satıştan)</li>
+                  <li>+%{N11_MARKETPLACE_FEE_PCT} Pazaryeri Hizmet Bedeli (her satıştan)</li>
+                </ul>
+                <p className="font-medium text-blue-800 dark:text-blue-300">
+                  Toplam ek kesinti: ~%{N11_EXTRA_FEE_PCT} — hesaba otomatik dahil edildi.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
