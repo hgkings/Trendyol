@@ -36,7 +36,7 @@ const defaultInput: ProductInput = {
   shipping_cost: 0,
   packaging_cost: 0,
   ad_cost_per_sale: 0,
-  return_rate_pct: 8,
+  return_rate_pct: 12, // ETBİS 2024 genel sektör ortalaması; kategori seçince otomatik güncellenir
   vat_pct: 20,
   other_cost: 0,
   payout_delay_days: 28,

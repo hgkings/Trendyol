@@ -6,7 +6,7 @@ export const marketplaces: MarketplaceDefaults[] = [
     key: 'trendyol',
     label: 'Trendyol',
     commission_pct: 18,
-    return_rate_pct: 8,
+    return_rate_pct: 12, // ETBİS 2024 — kategori seçilmezse genel sektör ortalaması
     vat_pct: 20,
     payout_delay_days: 28
   },
@@ -14,7 +14,7 @@ export const marketplaces: MarketplaceDefaults[] = [
     key: 'hepsiburada',
     label: 'Hepsiburada',
     commission_pct: 20,
-    return_rate_pct: 10,
+    return_rate_pct: 12,
     vat_pct: 20,
     payout_delay_days: 30
   },
@@ -22,7 +22,7 @@ export const marketplaces: MarketplaceDefaults[] = [
     key: 'n11',
     label: 'n11',
     commission_pct: 16,
-    return_rate_pct: 7,
+    return_rate_pct: 10,
     vat_pct: 20,
     payout_delay_days: 21
   },
@@ -30,7 +30,7 @@ export const marketplaces: MarketplaceDefaults[] = [
     key: 'amazon_tr',
     label: 'Amazon TR',
     commission_pct: 17,
-    return_rate_pct: 6,
+    return_rate_pct: 13, // Koşulsuz iade politikası nedeniyle +3 puan — genel ortalama 10+3
     vat_pct: 20,
     payout_delay_days: 14
   },
@@ -38,7 +38,7 @@ export const marketplaces: MarketplaceDefaults[] = [
     key: 'custom',
     label: 'Ozel Pazaryeri',
     commission_pct: 15,
-    return_rate_pct: 5,
+    return_rate_pct: 10,
     vat_pct: 20,
     payout_delay_days: 30
   },

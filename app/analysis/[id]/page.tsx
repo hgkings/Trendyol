@@ -15,6 +15,7 @@ import { MarketplaceComparison } from '@/components/analysis/marketplace-compari
 import { CashflowEstimator } from '@/components/analysis/cashflow-estimator';
 import { VatImpactCard } from '@/components/analysis/vat-impact-card';
 import { SafePriceCard } from '@/components/analysis/safe-price-card';
+import { MinPriceCards } from '@/components/analysis/min-price-cards';
 import { ScenarioSimulator } from '@/components/analysis/scenario-simulator';
 import { formatCurrency, formatPercent } from '@/components/shared/format';
 import { getMarketplaceLabel } from '@/lib/marketplace-data';
@@ -368,6 +369,11 @@ export default function AnalysisResultPage() {
         </div>
 
 
+        {/* Minimum Kârlı Satış Fiyatı — 3 kart */}
+        <div className="rounded-2xl border bg-card p-6 shadow-sm">
+          <MinPriceCards input={input} currentPrice={input.sale_price} />
+        </div>
+
         {/* Main Content Grid (12 Columns on Desktop) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
@@ -392,6 +398,11 @@ export default function AnalysisResultPage() {
               const profitBeforeReturn = result.unit_net_profit + returnImpactUnit;
               const isHighReturn = returnRate >= 20;
               const isNegativeAfterReturn = result.unit_net_profit < 0;
+              // Pro modunda girilen ek iade maliyeti (kargo, operasyon vb. — birim başı)
+              const extraReturnCost = n(input.return_extra_cost, 0);
+              // Beklenen iade başına ekstra maliyet → birim satışa yayılan etki
+              const extraReturnImpactUnit = (returnRate / 100) * extraReturnCost;
+              const isProMode = input.pro_mode === true;
 
               return (
                 <div className="rounded-2xl border bg-card p-6 shadow-sm space-y-4">
@@ -431,6 +442,20 @@ export default function AnalysisResultPage() {
                           -{formatCurrency(returnImpactUnit)}
                         </span>
                       </div>
+                      {extraReturnCost > 0 && (
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-muted-foreground">
+                            Ek İade Maliyeti
+                            {!isProMode && <span className="ml-1 text-[10px] text-amber-500">(bilgi)</span>}
+                          </span>
+                          <span className="font-semibold text-orange-600 dark:text-orange-400">
+                            -{formatCurrency(extraReturnImpactUnit)}
+                            <span className="text-xs text-muted-foreground ml-1">
+                              ({formatCurrency(extraReturnCost)}/iade)
+                            </span>
+                          </span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center text-sm">
                         <span className="text-muted-foreground">İade Öncesi Kâr</span>
                         <span className={`font-semibold ${profitBeforeReturn >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
