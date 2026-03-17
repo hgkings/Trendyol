@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useAlerts } from '@/contexts/alert-context';
 import { ProductInput, Marketplace } from '@/types';
 import { marketplaces, getMarketplaceDefaults } from '@/lib/marketplace-data';
+import { trendyolCategories, getTrendyolCategoryCommission } from '@/lib/trendyol-categories';
 import { calculateProfit, calculateRequiredPrice, n } from '@/utils/calculations';
 import { calculateProAccounting } from '@/utils/pro-accounting';
 import { calculateRisk } from '@/utils/risk-engine';
@@ -142,7 +143,18 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
       vat_pct: defaults.vat_pct,
       sale_vat_pct: defaults.vat_pct,
       purchase_vat_pct: defaults.vat_pct,
-      payout_delay_days: defaults.payout_delay_days
+      payout_delay_days: defaults.payout_delay_days,
+      // Clear category when switching away from Trendyol
+      trendyol_category: mp === 'trendyol' ? prev.trendyol_category : undefined,
+    }));
+  };
+
+  const handleCategoryChange = (categoryLabel: string) => {
+    const commission = getTrendyolCategoryCommission(categoryLabel);
+    setInput((prev) => ({
+      ...prev,
+      trendyol_category: categoryLabel,
+      ...(commission !== undefined ? { commission_pct: commission } : {}),
     }));
   };
 
@@ -474,6 +486,26 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
           </div>
           <p className="text-xs text-muted-foreground">Pazaryeri değişikliği komisyon, iade ve KDV alanlarını otomatik doldurur.</p>
         </div>
+
+        {/* Trendyol Category Selector */}
+        {input.marketplace === 'trendyol' && (
+          <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+            <Label className="text-sm font-semibold">Trendyol Kategorisi</Label>
+            <select
+              value={input.trendyol_category || ''}
+              onChange={(e) => handleCategoryChange(e.target.value)}
+              className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <option value="">— Kategori seçin —</option>
+              {trendyolCategories.map((cat) => (
+                <option key={cat.label} value={cat.label}>
+                  {cat.label} (%{cat.commission_pct})
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">Kategori seçimi komisyon oranını otomatik doldurur; dilediğinizde manuel değiştirebilirsiniz.</p>
+          </div>
+        )}
 
         {/* Field Groups */}
         {groups.map((group) => {

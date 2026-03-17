@@ -282,7 +282,10 @@ export default function AnalysisResultPage() {
             <div>
               <h1 className="text-2xl font-bold tracking-tight">{input.product_name}</h1>
               <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-                <span>{getMarketplaceLabel(input.marketplace)}</span>
+                <span>
+                  {getMarketplaceLabel(input.marketplace)}
+                  {input.trendyol_category && ` - ${input.trendyol_category} (%${input.commission_pct})`}
+                </span>
                 <span>·</span>
                 <span>{new Date(analysis.createdAt).toLocaleDateString('tr-TR')}</span>
               </div>

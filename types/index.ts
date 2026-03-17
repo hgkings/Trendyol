@@ -90,6 +90,9 @@ export interface ProductInput {
   return_refunds_commission?: boolean;
   return_extra_cost?: number;
 
+  // Trendyol category for automatic commission rate
+  trendyol_category?: string;
+
   // Legacy/Standard fields keep compatibility
   accounting_mode?: 'standard' | 'pro';
   income_tax_pct?: number;
