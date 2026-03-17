@@ -77,6 +77,67 @@ export const N11_EXTRA_FEE_PCT = 1.87;
 export const N11_MARKETING_FEE_PCT = 1.20;
 export const N11_MARKETPLACE_FEE_PCT = 0.67;
 
+/**
+ * Amazon TR koşulsuz iade politikası nedeniyle diğer pazaryerlerine kıyasla
+ * ~%3 ek iade oranı uygulanır.
+ */
+export const AMAZON_TR_RETURN_BONUS = 3;
+
+/**
+ * Kategori bazlı beklenen iade oranı varsayılanları (%).
+ * Kaynak: T.C. Ticaret Bakanlığı 2024 ETBİS raporu + sektör ortalamaları.
+ *
+ * Eşleşme: birden fazla pazaryerindeki benzer etiketler aynı anahtara düşer.
+ */
+export const CATEGORY_RETURN_RATES: Record<string, number> = {
+  // Giyim / Moda
+  'Giyim & Moda':           28,
+  // Ayakkabı
+  'Ayakkabı':               30,
+  'Ayakkabı & Çanta':       30,
+  // Çanta / Aksesuar
+  'Çanta & Aksesuar':       18,
+  // Kozmetik
+  'Kozmetik & Kişisel Bakım': 10,
+  'Kozmetik':               10,
+  // Spor
+  'Spor & Outdoor':         18,
+  // Elektronik
+  'Elektronik':             10,
+  // Telefon
+  'Telefon & Aksesuar':     12,
+  // Bilgisayar
+  'Bilgisayar & Tablet':    10,
+  'Bilgisayar':             10,
+  // Ev
+  'Ev & Yaşam':             10,
+  // Mobilya
+  'Mobilya':                7,
+  // Anne Bebek
+  'Anne & Bebek':           7,
+  // Oyuncak
+  'Oyuncak':                10,
+  // Kitap
+  'Kitap & Kırtasiye':      3,
+  'Kitap':                  3,
+  // Süpermarket
+  'Süpermarket & Gıda':     2,
+  'Süpermarket':            2,
+  // Otomotiv
+  'Otomotiv':               7,
+  // Diğer / fallback
+  'Diğer':                  10,
+};
+
+/**
+ * Kategori ve pazaryerine göre beklenen iade oranı döndürür.
+ * Amazon TR'de +3 puan eklenir.
+ */
+export function getCategoryReturnRate(marketplace: Marketplace, categoryLabel: string): number {
+  const base = CATEGORY_RETURN_RATES[categoryLabel] ?? 10;
+  return marketplace === 'amazon_tr' ? base + AMAZON_TR_RETURN_BONUS : base;
+}
+
 export function getMarketplaceCategories(marketplace: Marketplace): CommissionCategory[] {
   return MARKETPLACE_CATEGORIES[marketplace] ?? MARKETPLACE_CATEGORIES.custom;
 }

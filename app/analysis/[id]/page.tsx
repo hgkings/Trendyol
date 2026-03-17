@@ -44,7 +44,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { saveAnalysis } from '@/lib/storage';
-import { calculateProfit, calculateAdCeiling } from '@/utils/calculations';
+import { calculateProfit, calculateAdCeiling, n } from '@/utils/calculations';
 import { calculateProAccounting } from '@/utils/pro-accounting';
 import { calculateRisk } from '@/utils/risk-engine';
 import { toast } from 'sonner';
@@ -381,6 +381,77 @@ export default function AnalysisResultPage() {
                 <SafePriceCard input={input} breakevenPrice={result.breakeven_price} />
               </div>
             </div>
+
+            {/* İade Analizi Kartı */}
+            {(() => {
+              const returnRate = n(input.return_rate_pct, 0);
+              const monthlySales = n(input.monthly_sales_volume, 0);
+              const expectedReturns = Math.round((returnRate / 100) * monthlySales);
+              // expected_return_loss zaten formülde var; iade öncesi kâr = net + iade etkisi
+              const returnImpactUnit = result.expected_return_loss;
+              const profitBeforeReturn = result.unit_net_profit + returnImpactUnit;
+              const isHighReturn = returnRate >= 20;
+              const isNegativeAfterReturn = result.unit_net_profit < 0;
+
+              return (
+                <div className="rounded-2xl border bg-card p-6 shadow-sm space-y-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">📦</span>
+                    <h3 className="text-sm font-bold uppercase tracking-tight text-muted-foreground">İade Analizi</h3>
+                  </div>
+
+                  {/* İade uyarı kartları */}
+                  {isNegativeAfterReturn && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-900/30 p-3 text-xs font-medium text-red-700 dark:text-red-400">
+                      🔴 Beklenen iadeler hesaba katıldığında bu ürün ZARAR ettiriyor!
+                    </div>
+                  )}
+                  {!isNegativeAfterReturn && isHighReturn && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-900/10 dark:border-amber-900/30 p-3 text-xs text-amber-700 dark:text-amber-400">
+                      ⚠️ Yüksek iade oranı! {monthlySales > 0 ? `${monthlySales} satışta ~${expectedReturns} iade bekleniyor.` : ''} Net kârınız iade maliyetlerini karşılıyor mu? Fiyatlandırmanızı gözden geçirmenizi öneririz.
+                    </div>
+                  )}
+
+                  {/* Metrikler */}
+                  <div className="space-y-2.5">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">İade Oranı</span>
+                      <span className="font-semibold">{formatPercent(returnRate)}</span>
+                    </div>
+                    {monthlySales > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Aylık Beklenen İade</span>
+                        <span className="font-semibold">{monthlySales} satışta ~{expectedReturns} adet</span>
+                      </div>
+                    )}
+                    <div className="border-t pt-2.5 space-y-2">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">İade Etkisi (birim)</span>
+                        <span className="font-semibold text-red-600 dark:text-red-400">
+                          -{formatCurrency(returnImpactUnit)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">İade Öncesi Kâr</span>
+                        <span className={`font-semibold ${profitBeforeReturn >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {formatCurrency(profitBeforeReturn)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center border-t pt-2">
+                        <span className="font-bold text-sm">İade Sonrası Net</span>
+                        <div className="text-right">
+                          <p className={`text-xl font-black ${result.unit_net_profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                            {formatCurrency(result.unit_net_profit)}
+                            <span className="ml-1 text-base">{result.unit_net_profit >= 0 ? '✅' : '🔴'}</span>
+                          </p>
+                          <p className="text-xs text-muted-foreground">{formatPercent(result.margin_pct)} marj</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* VAT Impact & Monthly Revenue */}
             <div className="grid gap-6 md:grid-cols-2">

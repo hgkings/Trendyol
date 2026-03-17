@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useAlerts } from '@/contexts/alert-context';
 import { ProductInput, Marketplace } from '@/types';
 import { marketplaces, getMarketplaceDefaults } from '@/lib/marketplace-data';
-import { getMarketplaceCategories, getCategoryCommission, N11_EXTRA_FEE_PCT, N11_MARKETING_FEE_PCT, N11_MARKETPLACE_FEE_PCT } from '@/lib/commission-categories';
+import { getMarketplaceCategories, getCategoryCommission, getCategoryReturnRate, N11_EXTRA_FEE_PCT, N11_MARKETING_FEE_PCT, N11_MARKETPLACE_FEE_PCT } from '@/lib/commission-categories';
 import { getUserCommissionRates, getLastRatesUpdate, buildRateMap, lookupRate } from '@/lib/commission-rates';
 import type { CommissionRate } from '@/lib/commission-rates';
 import { calculateProfit, calculateRequiredPrice, calculateTrendyolServiceFee, getDefaultServiceFee, n } from '@/utils/calculations';
@@ -82,7 +82,6 @@ const fields: FieldConfig[] = [
   { key: 'shipping_cost', label: 'Kargo Ücreti', type: 'number', suffix: '₺', min: 0, step: 0.01, group: 'costs' },
   { key: 'packaging_cost', label: 'Paketleme Maliyeti', type: 'number', suffix: '₺', min: 0, step: 0.01, group: 'costs' },
   { key: 'ad_cost_per_sale', label: 'Reklam Maliyeti (Birim)', type: 'number', suffix: '₺', min: 0, step: 0.01, group: 'costs' },
-  { key: 'return_rate_pct', label: 'İade Oranı', type: 'number', suffix: '%', min: 0, max: 100, step: 0.1, group: 'marketplace' },
   { key: 'vat_pct', label: 'Varsayılan KDV', type: 'number', suffix: '%', min: 0, max: 100, step: 1, group: 'tax' },
   { key: 'other_cost', label: 'Diğer Giderler', type: 'number', suffix: '₺', min: 0, step: 0.01, group: 'costs' },
   { key: 'payout_delay_days', label: 'Ödeme Gecikme Süresi', type: 'number', suffix: 'gün', min: 0, step: 1, group: 'cashflow' },
@@ -185,11 +184,14 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
     const customRate = lookupRate(customRateMap, input.marketplace, categoryLabel);
     const defaultRate = getCategoryCommission(input.marketplace, categoryLabel);
     const commission = customRate ?? defaultRate;
+    // Auto-fill expected return rate from category data
+    const returnRate = categoryLabel ? getCategoryReturnRate(input.marketplace, categoryLabel) : undefined;
     setInput((prev) => ({
       ...prev,
       marketplace_category: categoryLabel,
       trendyol_category: prev.marketplace === 'trendyol' ? categoryLabel : prev.trendyol_category,
       ...(commission !== undefined ? { commission_pct: commission } : {}),
+      ...(returnRate !== undefined ? { return_rate_pct: returnRate } : {}),
     }));
   };
 
@@ -224,7 +226,7 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
     if (input.monthly_sales_volume <= 0) w.push('Aylık satış adedi 0 veya boş. Toplam kâr hesaplanamaz.');
     if (input.commission_pct > 35) w.push(`Komisyon oranı %${input.commission_pct} çok yüksek görünüyor.`);
     if (input.commission_pct < 0) w.push('Komisyon oranı negatif olamaz.');
-    if (input.return_rate_pct > 30) w.push('İade oranı %30 üzerinde. Bu sektör ortalamasının üzerinde olabilir.');
+    if (input.return_rate_pct > 35) w.push('İade oranı %35 üzerinde. Bu sektör ortalamasının üzerinde olabilir.');
 
     // Pro specific warnings
     if (input.pro_mode) {
@@ -609,6 +611,39 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
             )}
           </div>
         )}
+
+        {/* Beklenen İade Oranı — kategori seçiminden otomatik dolar */}
+        <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center gap-1.5">
+            <Label htmlFor="return_rate_pct" className="text-sm font-medium">Beklenen İade Oranı</Label>
+            <span
+              title="Ticaret Bakanlığı 2024 verilerine göre Türkiye'de en yüksek iade oranı giyim ve ayakkabı kategorisindedir. Kategori seçiminize göre sektör ortalaması otomatik girilmiştir. Kendi iade oranınızı biliyorsanız bu alanı manuel güncelleyebilirsiniz."
+              className="cursor-help text-muted-foreground"
+            >
+              <Info className="h-3.5 w-3.5" />
+            </span>
+          </div>
+          <div className="relative">
+            <Input
+              id="return_rate_pct"
+              type="number"
+              value={(input.return_rate_pct as number) ?? ''}
+              onChange={(e) => handleFieldChange('return_rate_pct', parseFloat(e.target.value) || 0)}
+              min={0}
+              max={100}
+              step={0.1}
+              className="h-11 pr-8"
+              placeholder="10"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">%</span>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Satışlarınızın yüzde kaçının iade edileceğini tahmin edin. Otomatik hesaplanan değeri dilediğinizde manuel değiştirebilirsiniz.
+            {input.marketplace === 'amazon_tr' && (
+              <span className="text-blue-600 dark:text-blue-400"> Amazon TR koşulsuz iade politikası nedeniyle +%3 eklendi.</span>
+            )}
+          </p>
+        </div>
 
         {/* Platform Servis Bedeli — pazaryerine göre farklı davranır */}
         {input.marketplace !== 'amazon_tr' && input.marketplace !== 'n11' && (
