@@ -31,12 +31,7 @@ export function calculateProfit(input: ProductInput): CalculationResult {
   const other_cost = n(input.other_cost);
   const monthly_sales_volume = n(input.monthly_sales_volume);
 
-  // 1.1 Komisyon (+ n11 ek bedeller varsa)
-  const n11_extra_pct = n(input.n11_extra_pct, 0);
-  const effective_commission_pct = commission_pct + n11_extra_pct;
-  const commission_amount = sale_price * (effective_commission_pct / 100);
-
-  // 1.2 KDV etkisi (Satiş fiyatı KDV dahil kabul edilerek)
+  // 1.1 KDV etkisi (Satış fiyatı KDV dahil kabul edilerek) — komisyondan önce hesaplanmalı
   let vat_amount = 0;
   let sale_price_excl_vat = sale_price;
 
@@ -48,6 +43,13 @@ export function calculateProfit(input: ProductInput): CalculationResult {
     const calcVat = sale_price - sale_price_excl_vat;
     vat_amount = Number.isFinite(calcVat) ? calcVat : 0;
   }
+
+  // 1.2 Komisyon
+  // Türkiye pazaryerlerinde komisyon KDV-HARİÇ liste fiyatı üzerinden kesilir (PRO mod ile tutarlı).
+  // n11 ek bedelleri ("satış tutarı üzerinden") ise KDV-DAHİL fiyata uygulanır.
+  const n11_extra_pct = n(input.n11_extra_pct, 0);
+  const commission_amount = sale_price_excl_vat * (commission_pct / 100)
+    + sale_price * (n11_extra_pct / 100);
 
   // 1.3 İade kaybı
   const expected_return_loss = (return_rate_pct / 100) * sale_price;
@@ -122,12 +124,15 @@ export function calculateBreakevenPrice(input: ProductInput): number {
   const return_extra_unit = n(input.return_extra_cost, 0) * (return_rate_pct / 100);
   const base_cost = product_cost + shipping_cost + packaging_cost + ad_cost_per_sale + other_cost + service_fee_amount + return_extra_unit;
 
-  // KDV dahil mantığına göre paydadaki vergi çarpanı: 1 / (1 + KDV/100)
+  // Formül türetimi (komisyon KDV-hariç, n11 extra ve iade KDV-dahil üzerinden):
+  // P × vat_factor × (1 - comm/100) − P × n11_extra/100 − P × return/100 = base_cost
+  // → denominator = vat_factor × (1 − comm_pct/100) − n11_extra_pct/100 − return_factor
   const vat_factor = 1 / (1 + vat_pct / 100);
-  const commission_factor = (commission_pct + n11_extra_pct) / 100;
   const return_factor = return_rate_pct / 100;
 
-  const denominator = vat_factor - commission_factor - return_factor;
+  const denominator = vat_factor * (1 - commission_pct / 100)
+    - (n11_extra_pct / 100)
+    - return_factor;
 
   if (denominator <= 0) return Infinity;
 
@@ -161,20 +166,22 @@ export function calculateRequiredPrice(
     : 0;
   const return_extra_unit = n(input.return_extra_cost, 0) * (return_rate_pct / 100);
   const base_cost = product_cost + shipping_cost + packaging_cost + ad_cost_per_sale + other_cost + service_fee_amount + return_extra_unit;
+  // Komisyon KDV-hariç, n11 extra ve iade KDV-dahil — calculateBreakevenPrice ile aynı türetim
   const vat_factor = 1 / (1 + vat_pct / 100);
-  const commission_factor = (commission_pct + n11_extra_pct) / 100;
   const return_factor = return_rate_pct / 100;
+  const base_denominator = vat_factor * (1 - commission_pct / 100)
+    - (n11_extra_pct / 100)
+    - return_factor;
 
   if (type === 'margin') {
     const target_margin_rate = value / 100;
-    const denominator = vat_factor - commission_factor - return_factor - target_margin_rate;
+    const denominator = base_denominator - target_margin_rate;
     if (denominator <= 0) return 0;
     return base_cost / denominator;
   } else {
     // Target net profit per unit
-    const denominator = vat_factor - commission_factor - return_factor;
-    if (denominator <= 0) return 0;
-    return (value + base_cost) / denominator;
+    if (base_denominator <= 0) return 0;
+    return (value + base_cost) / base_denominator;
   }
 }
 
@@ -212,13 +219,26 @@ export function generateSensitivityAnalysis(input: ProductInput) {
 // ... existing code ...
 
 export function calculateCashflow(input: ProductInput) {
-  const unitCost = input.product_cost + input.shipping_cost + input.packaging_cost + input.other_cost;
-  const monthlyOutflow = unitCost * input.monthly_sales_volume;
+  const volume = n(input.monthly_sales_volume);
+  const payoutDelay = n(input.payout_delay_days);
+
+  // Satıcının doğrudan ödediği birim başı nakit çıkışı
+  // (service_fee pazaryeri tarafından ödemeden kesilir, ayrı çıkış değil)
+  const unitCashOut = n(input.product_cost) + n(input.shipping_cost)
+    + n(input.packaging_cost) + n(input.other_cost) + n(input.ad_cost_per_sale);
+  const monthlyOutflow = unitCashOut * volume;
   const dailyOutflow = monthlyOutflow / 30;
-  const workingCapitalNeeded = dailyOutflow * input.payout_delay_days;
+  const workingCapitalNeeded = dailyOutflow * payoutDelay;
+
   const result = calculateProfit(input);
-  const monthlyInflow = result.monthly_revenue - result.commission_amount - result.vat_amount;
-  const monthlyCashGap = monthlyOutflow - (monthlyInflow * (30 - input.payout_delay_days) / 30);
+  // Pazaryerinin satıcıya yansıttığı aylık net ödeme:
+  // ciro − komisyon (aylık) − servis bedeli (aylık) − KDV (aylık)
+  // NOT: commission_amount, service_fee_amount, vat_amount birim başı değerler — volume ile çarpılır
+  const monthlyInflow = result.monthly_revenue
+    - (result.commission_amount + result.service_fee_amount + result.vat_amount) * volume;
+
+  const receivedFraction = Math.max(0, 30 - payoutDelay) / 30;
+  const monthlyCashGap = monthlyOutflow - monthlyInflow * receivedFraction;
 
   return {
     workingCapitalNeeded: Math.max(0, workingCapitalNeeded),
