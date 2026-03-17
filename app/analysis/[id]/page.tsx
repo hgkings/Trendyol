@@ -14,7 +14,6 @@ import { SensitivityTable } from '@/components/analysis/sensitivity-table';
 import { MarketplaceComparison } from '@/components/analysis/marketplace-comparison';
 import { CashflowEstimator } from '@/components/analysis/cashflow-estimator';
 import { VatImpactCard } from '@/components/analysis/vat-impact-card';
-import { SafePriceCard } from '@/components/analysis/safe-price-card';
 import { MinPriceCards } from '@/components/analysis/min-price-cards';
 import { ScenarioSimulator } from '@/components/analysis/scenario-simulator';
 import { formatCurrency, formatPercent } from '@/components/shared/format';
@@ -380,13 +379,8 @@ export default function AnalysisResultPage() {
           {/* LEFT COLUMN (8/12) */}
           <div className="lg:col-span-8 space-y-6 min-w-0">
 
-            {/* Cost Breakdown & Safe Price */}
-            <div className="grid gap-6 md:grid-cols-2">
-              <CostBreakdown input={input} result={result} />
-              <div className="h-full">
-                <SafePriceCard input={input} breakevenPrice={result.breakeven_price} />
-              </div>
-            </div>
+            {/* Cost Breakdown */}
+            <CostBreakdown input={input} result={result} />
 
             {/* İade Analizi Kartı */}
             {(() => {

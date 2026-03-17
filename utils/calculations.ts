@@ -118,7 +118,9 @@ export function calculateBreakevenPrice(input: ProductInput): number {
   const service_fee_amount = (input.marketplace === 'trendyol' || input.marketplace === 'hepsiburada' || input.marketplace === 'custom')
     ? n(input.trendyol_service_fee, 0)
     : 0;
-  const base_cost = product_cost + shipping_cost + packaging_cost + ad_cost_per_sale + other_cost + service_fee_amount;
+  // Ek iade maliyeti: iade edilen birim başına operasyon/kargo bedeli → beklenen birim etkisi
+  const return_extra_unit = n(input.return_extra_cost, 0) * (return_rate_pct / 100);
+  const base_cost = product_cost + shipping_cost + packaging_cost + ad_cost_per_sale + other_cost + service_fee_amount + return_extra_unit;
 
   // KDV dahil mantığına göre paydadaki vergi çarpanı: 1 / (1 + KDV/100)
   const vat_factor = 1 / (1 + vat_pct / 100);
@@ -157,7 +159,8 @@ export function calculateRequiredPrice(
   const service_fee_amount = (input.marketplace === 'trendyol' || input.marketplace === 'hepsiburada' || input.marketplace === 'custom')
     ? n(input.trendyol_service_fee, 0)
     : 0;
-  const base_cost = product_cost + shipping_cost + packaging_cost + ad_cost_per_sale + other_cost + service_fee_amount;
+  const return_extra_unit = n(input.return_extra_cost, 0) * (return_rate_pct / 100);
+  const base_cost = product_cost + shipping_cost + packaging_cost + ad_cost_per_sale + other_cost + service_fee_amount + return_extra_unit;
   const vat_factor = 1 / (1 + vat_pct / 100);
   const commission_factor = (commission_pct + n11_extra_pct) / 100;
   const return_factor = return_rate_pct / 100;
