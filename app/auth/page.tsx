@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  TrendingUp,
   Eye,
   EyeOff,
   HelpCircle,
@@ -21,6 +20,7 @@ import {
   Zap,
   CreditCard,
   Lock as LockIcon,
+  Users,
 } from 'lucide-react';
 
 export default function AuthPage() {
@@ -91,11 +91,11 @@ export default function AuthPage() {
         <div className="max-w-md mx-auto space-y-8">
 
           {/* Logo */}
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-premium-sm">
-              <TrendingUp className="h-4 w-4 text-primary-foreground" />
+          <div className="flex items-center">
+            <div className="relative h-9 w-auto">
+              <img src="/brand/logo.svg" alt="Kârnet" className="h-9 w-auto dark:hidden" />
+              <img src="/brand/logo-dark.svg" alt="Kârnet" className="h-9 w-auto hidden dark:block" />
             </div>
-            <span className="text-lg font-bold tracking-tight">Kârnet</span>
           </div>
 
           {/* Headline + subline */}
@@ -178,11 +178,18 @@ export default function AuthPage() {
             </div>
           </div>
 
-          {/* Trust line */}
-          <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1"><CreditCard className="h-3 w-3" /> Kredi kartı gerekmez</span>
-            <span>•</span>
-            <span className="flex items-center gap-1"><LockIcon className="h-3 w-3" /> Veriler satılmaz</span>
+          {/* Trust badges */}
+          <div className="space-y-1.5">
+            {[
+              { icon: CreditCard, text: 'Kredi kartı gerekmez' },
+              { icon: Users, text: '500+ satıcı kullanıyor' },
+              { icon: Star, text: 'Ücretsiz plan sonsuza kadar ücretsiz' },
+            ].map((item) => (
+              <div key={item.text} className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                <item.icon className="h-3.5 w-3.5 shrink-0" />
+                <span>{item.text}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -193,11 +200,11 @@ export default function AuthPage() {
         {/* Mobile Header */}
         <div className="lg:hidden w-full max-w-[420px] mb-8 text-center space-y-3">
           <div className="flex justify-center">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary shadow-premium-sm">
-              <TrendingUp className="h-5 w-5 text-primary-foreground" />
+            <div className="relative h-10 w-auto">
+              <img src="/brand/logo.svg" alt="Kârnet" className="h-10 w-auto dark:hidden" />
+              <img src="/brand/logo-dark.svg" alt="Kârnet" className="h-10 w-auto hidden dark:block" />
             </div>
           </div>
-          <h1 className="text-xl font-bold tracking-tight">Kârnet</h1>
           <p className="text-sm text-muted-foreground">Net kârını gör. Komisyon, kargo, iade dahil.</p>
         </div>
 
@@ -206,13 +213,6 @@ export default function AuthPage() {
           <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-7 sm:p-8 shadow-premium-md relative overflow-hidden">
             {/* Subtle inner glow */}
             <div className="pointer-events-none absolute -top-16 -right-16 h-32 w-32 bg-primary/[0.06] rounded-full blur-[50px]" />
-
-            {/* Mode badge */}
-            <div className="absolute top-4 right-4">
-              <span className="px-2 py-0.5 rounded-md bg-muted text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
-                {mode === 'login' ? 'Giriş' : 'Kayıt'}
-              </span>
-            </div>
 
             <div className="relative z-10">
               <div className="space-y-1.5 mb-7">
@@ -350,10 +350,10 @@ export default function AuthPage() {
           <div className="text-center">
             <Link
               href="/demo"
-              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:opacity-80 transition-opacity border-b border-primary/40 hover:border-primary pb-0.5"
             >
-              <Zap className="h-3.5 w-3.5" />
-              Hesap oluşturmadan dene
+              <Zap className="h-4 w-4" />
+              → Hesap oluşturmadan demo&apos;yu dene
             </Link>
           </div>
         </div>
@@ -400,10 +400,12 @@ export default function AuthPage() {
           </div>
 
           {/* Trust line */}
-          <div className="flex items-center justify-center gap-4 text-[11px] text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[11px] text-muted-foreground">
             <span className="flex items-center gap-1"><CreditCard className="h-3 w-3" /> Kredi kartı gerekmez</span>
-            <span>•</span>
+            <span className="hidden sm:inline">•</span>
             <span className="flex items-center gap-1"><LockIcon className="h-3 w-3" /> Veriler satılmaz</span>
+            <span className="hidden sm:inline">•</span>
+            <span className="flex items-center gap-1"><Users className="h-3 w-3" /> 500+ satıcı</span>
           </div>
         </div>
       </div>
