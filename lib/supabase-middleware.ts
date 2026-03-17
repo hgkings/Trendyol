@@ -2,6 +2,28 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Routes that should be publicly accessible without authentication
+const PUBLIC_ROUTES = [
+    '/',
+    '/auth',
+    '/pricing',
+    '/demo',
+    '/hakkimizda',
+    '/iletisim',
+    '/gizlilik-politikasi',
+    '/mesafeli-satis-sozlesmesi',
+    '/iade-politikasi',
+    '/kullanim-sartlari',
+    '/support',
+    '/hata',
+];
+
+function isPublicRoute(pathname: string): boolean {
+    return PUBLIC_ROUTES.some(route =>
+        pathname === route || pathname.startsWith(`${route}/`)
+    );
+}
+
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next({
         request,
@@ -38,16 +60,20 @@ export async function updateSession(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
+    // ── SECURITY: Redirect unauthenticated users to auth page ──
+    const pathname = request.nextUrl.pathname;
+
     if (
         !user &&
-        !request.nextUrl.pathname.startsWith('/auth') &&
-        !request.nextUrl.pathname.startsWith('/_next') &&
-        request.nextUrl.pathname !== '/'
+        !pathname.startsWith('/auth') &&
+        !pathname.startsWith('/_next') &&
+        !pathname.startsWith('/api/') &&
+        !isPublicRoute(pathname)
     ) {
-        // no user, potentially redirect to login
-        // const url = request.nextUrl.clone()
-        // url.pathname = '/login'
-        // return NextResponse.redirect(url)
+        const url = request.nextUrl.clone()
+        url.pathname = '/auth'
+        url.searchParams.set('next', pathname)
+        return NextResponse.redirect(url)
     }
 
     return supabaseResponse

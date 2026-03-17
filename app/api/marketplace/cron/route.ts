@@ -14,11 +14,16 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(req: Request) {
     try {
-        // Verify cron secret
+        // ── SECURITY: Verify cron secret (REQUIRED) ──
         const authHeader = req.headers.get('authorization');
         const cronSecret = process.env.CRON_SECRET;
 
-        if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+        if (!cronSecret) {
+            console.error('[marketplace/cron] CRON_SECRET is not set — denying access.');
+            return NextResponse.json({ error: 'Cron secret not configured' }, { status: 500 });
+        }
+
+        if (authHeader !== `Bearer ${cronSecret}`) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
