@@ -1,97 +1,92 @@
-'use client';
+'use client'
 
-import { SupportTicket } from '@/types';
+import { Ticket } from '@/types'
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-} from "@/components/ui/dialog";
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
-import { SupportService } from '@/lib/support-service';
-import { useState, useEffect } from 'react';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import { Separator } from '@/components/ui/separator'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 interface TicketDetailDialogProps {
-    ticket: SupportTicket | null;
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
+  ticket: Ticket | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  acik: 'Açık',
+  inceleniyor: 'İnceleniyor',
+  cevaplandi: 'Cevaplandı',
+  kapali: 'Kapalı',
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  teknik: 'Teknik Sorun',
+  odeme: 'Ödeme',
+  hesap: 'Hesap',
+  oneri: 'Öneri',
+  diger: 'Diğer',
+}
+
+const PRIORITY_LABELS: Record<string, string> = {
+  dusuk: 'Düşük',
+  normal: 'Normal',
+  yuksek: 'Yüksek',
+  acil: 'Acil',
 }
 
 export function TicketDetailDialog({ ticket, open, onOpenChange }: TicketDetailDialogProps) {
-    const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  if (!ticket) return null
 
-    useEffect(() => {
-        if (ticket?.attachment_url) {
-            SupportService.getAttachmentUrl(ticket.attachment_url).then(url => {
-                if (url) setDownloadUrl(url);
-            });
-        } else {
-            setDownloadUrl(null);
-        }
-    }, [ticket]);
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="text-xl">{ticket.subject}</DialogTitle>
+          <DialogDescription>
+            {CATEGORY_LABELS[ticket.category] ?? ticket.category}
+            {' · '}
+            {PRIORITY_LABELS[ticket.priority] ?? ticket.priority} Öncelik
+            {' · '}
+            {STATUS_LABELS[ticket.status] ?? ticket.status}
+          </DialogDescription>
+        </DialogHeader>
 
-    if (!ticket) return null;
+        <Separator />
 
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
-                <DialogHeader>
-                    <div className="flex items-start justify-between gap-4">
-                        <div>
-                            <DialogTitle className="text-xl">{ticket.subject}</DialogTitle>
-                            <DialogDescription>
-                                Talep ID: {ticket.id.slice(0, 8)} • Kategori: {ticket.category}
-                            </DialogDescription>
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
-                            <Badge variant="outline">{ticket.status}</Badge>
-                            <span className="text-xs text-muted-foreground">{new Date(ticket.created_at).toLocaleDateString()}</span>
-                        </div>
-                    </div>
-                </DialogHeader>
+        <ScrollArea className="flex-1 pr-4">
+          <div className="space-y-6 py-4">
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-muted-foreground">Mesajınız</h4>
+              <div className="bg-muted/30 p-4 rounded-lg text-sm whitespace-pre-wrap">
+                {ticket.message}
+              </div>
+            </div>
 
-                <Separator />
+            <div className="text-xs text-muted-foreground">
+              {new Date(ticket.created_at).toLocaleString('tr-TR')}
+            </div>
 
-                <ScrollArea className="flex-1 pr-4">
-                    <div className="space-y-6 py-4">
-                        {/* User Message */}
-                        <div className="space-y-2">
-                            <h4 className="text-sm font-medium text-muted-foreground">Mesajınız</h4>
-                            <div className="bg-muted/30 p-4 rounded-lg text-sm whitespace-pre-wrap">
-                                {ticket.message}
-                            </div>
-                        </div>
-
-                        {/* Attachment */}
-                        {downloadUrl && (
-                            <div className="space-y-2">
-                                <h4 className="text-sm font-medium text-muted-foreground">Ek Dosya</h4>
-                                <Button variant="outline" size="sm" asChild>
-                                    <a href={downloadUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
-                                        <Download className="h-4 w-4" />
-                                        Dosyayı İndir
-                                    </a>
-                                </Button>
-                            </div>
-                        )}
-
-                        {/* Admin Response */}
-                        {ticket.admin_note && (
-                            <div className="space-y-2">
-                                <h4 className="text-sm font-medium text-blue-600 dark:text-blue-400">Yönetici Yanıtı</h4>
-                                <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg text-sm border border-blue-100 dark:border-blue-900 whitespace-pre-wrap">
-                                    {ticket.admin_note}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </ScrollArea>
-            </DialogContent>
-        </Dialog>
-    );
+            {ticket.admin_reply && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-green-700 dark:text-green-400">Destek Cevabı</h4>
+                <div className="bg-green-50 dark:bg-green-950/30 p-4 rounded-lg text-sm border border-green-200 dark:border-green-900 whitespace-pre-wrap">
+                  {ticket.admin_reply}
+                </div>
+                {ticket.admin_replied_at && (
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(ticket.admin_replied_at).toLocaleString('tr-TR')}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  )
 }

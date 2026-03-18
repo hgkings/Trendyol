@@ -175,3 +175,49 @@ export interface SupportTicket {
   created_at: string;
   updated_at: string;
 }
+
+// Yeni destek talebi sistemi tipleri
+export type TicketCategory = 'teknik' | 'odeme' | 'hesap' | 'oneri' | 'diger'
+export type TicketPriority = 'dusuk' | 'normal' | 'yuksek' | 'acil'
+export type TicketStatus = 'acik' | 'inceleniyor' | 'cevaplandi' | 'kapali'
+
+export interface Ticket {
+  id: string
+  user_id: string
+  user_email: string
+  subject: string
+  category: TicketCategory
+  priority: TicketPriority
+  status: TicketStatus
+  message: string
+  admin_reply: string | null
+  admin_replied_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateTicketDto {
+  subject: string
+  category: TicketCategory
+  priority: TicketPriority
+  message: string
+}
+
+export interface UpdateTicketDto {
+  admin_reply?: string
+  status?: TicketStatus
+}
+
+export interface TicketFilters {
+  status?: TicketStatus
+  priority?: TicketPriority
+  category?: TicketCategory
+  search?: string
+}
+
+export interface TicketStats {
+  open: number
+  reviewing: number
+  answeredToday: number
+  total: number
+}

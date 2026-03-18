@@ -1,67 +1,108 @@
-'use client';
+'use client'
 
-import { SupportTicket } from '@/types';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
-import { tr } from 'date-fns/locale';
+import { Ticket } from '@/types'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { MessageSquare } from 'lucide-react'
 
 interface TicketListProps {
-    tickets: SupportTicket[];
-    onSelectTicket: (ticket: SupportTicket) => void;
+  tickets: Ticket[]
+  loading: boolean
+  onSelectTicket: (ticket: Ticket) => void
 }
 
-const statusMap: Record<string, { label: string; color: string }> = {
-    open: { label: 'Açık', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-    in_progress: { label: 'İşleniyor', color: 'bg-amber-100 text-amber-700 border-amber-200' },
-    resolved: { label: 'Çözüldü', color: 'bg-green-100 text-green-700 border-green-200' },
-    closed: { label: 'Kapalı', color: 'bg-gray-100 text-gray-700 border-gray-200' },
-};
+const STATUS_STYLES: Record<string, string> = {
+  acik: 'bg-blue-100 text-blue-800',
+  inceleniyor: 'bg-yellow-100 text-yellow-800',
+  cevaplandi: 'bg-green-100 text-green-800',
+  kapali: 'bg-gray-100 text-gray-800',
+}
 
-const priorityMap: Record<string, { label: string; color: string }> = {
-    low: { label: 'Düşük', color: 'bg-gray-100 text-gray-600' },
-    medium: { label: 'Orta', color: 'bg-blue-50 text-blue-600' },
-    high: { label: 'Yüksek', color: 'bg-red-50 text-red-600' },
-};
+const STATUS_LABELS: Record<string, string> = {
+  acik: 'Açık',
+  inceleniyor: 'İnceleniyor',
+  cevaplandi: 'Cevaplandı',
+  kapali: 'Kapalı',
+}
 
-export function TicketList({ tickets, onSelectTicket }: TicketListProps) {
-    if (tickets.length === 0) {
-        return (
-            <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl">
-                Henüz bir destek talebiniz bulunmuyor.
-            </div>
-        );
-    }
+const CATEGORY_LABELS: Record<string, string> = {
+  teknik: 'Teknik',
+  odeme: 'Ödeme',
+  hesap: 'Hesap',
+  oneri: 'Öneri',
+  diger: 'Diğer',
+}
 
+const PRIORITY_LABELS: Record<string, string> = {
+  dusuk: 'Düşük',
+  normal: 'Normal',
+  yuksek: 'Yüksek',
+  acil: 'Acil',
+}
+
+function SkeletonRow() {
+  return (
+    <div className="flex justify-between p-4 bg-card rounded-xl border animate-pulse">
+      <div className="space-y-2 flex-1">
+        <div className="h-4 bg-muted rounded w-1/3" />
+        <div className="h-3 bg-muted rounded w-1/4" />
+      </div>
+      <div className="h-8 bg-muted rounded w-20" />
+    </div>
+  )
+}
+
+export function TicketList({ tickets, loading, onSelectTicket }: TicketListProps) {
+  if (loading) {
     return (
-        <div className="grid gap-4">
-            {tickets.map((ticket) => (
-                <div
-                    key={ticket.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-card rounded-xl border hover:shadow-sm transition-all cursor-pointer"
-                    onClick={() => onSelectTicket(ticket)}
-                >
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                            <span className="font-semibold">{ticket.subject}</span>
-                            <Badge variant="outline" className={statusMap[ticket.status].color}>
-                                {statusMap[ticket.status].label}
-                            </Badge>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>{new Date(ticket.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</span>
-                            <span>•</span>
-                            <span>{priorityMap[ticket.priority].label} Öncelik</span>
-                            <span>•</span>
-                            <span className="capitalize">{ticket.category}</span>
-                        </div>
-                    </div>
+      <div className="space-y-3">
+        {[1, 2, 3].map(i => <SkeletonRow key={i} />)}
+      </div>
+    )
+  }
 
-                    <Badge variant="secondary" className="mt-4 sm:mt-0 w-fit">
-                        Detayları Gör
-                    </Badge>
-                </div>
-            ))}
+  if (tickets.length === 0) {
+    return (
+      <div className="flex flex-col items-center py-12 text-muted-foreground gap-2 border-2 border-dashed rounded-xl">
+        <MessageSquare className="h-8 w-8 opacity-40" />
+        <p className="text-sm">Henüz destek talebiniz bulunmuyor</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      {tickets.map(ticket => (
+        <div
+          key={ticket.id}
+          className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-card rounded-xl border hover:bg-muted/10 transition-colors"
+        >
+          <div className="space-y-1 flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold text-sm truncate">{ticket.subject}</span>
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLES[ticket.status] ?? 'bg-gray-100 text-gray-800'}`}>
+                {STATUS_LABELS[ticket.status] ?? ticket.status}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+              <span>{new Date(ticket.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</span>
+              <span>·</span>
+              <span>{CATEGORY_LABELS[ticket.category] ?? ticket.category}</span>
+              <span>·</span>
+              <span>{PRIORITY_LABELS[ticket.priority] ?? ticket.priority} Öncelik</span>
+            </div>
+          </div>
+
+          <Button
+            variant="secondary"
+            size="sm"
+            className="mt-3 sm:mt-0 shrink-0"
+            onClick={() => onSelectTicket(ticket)}
+          >
+            Detay Gör
+          </Button>
         </div>
-    );
+      ))}
+    </div>
+  )
 }
