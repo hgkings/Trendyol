@@ -121,6 +121,109 @@ html {
 ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.4); }
 
+/* ── Animated Background Orbs ── */
+.bg-animated {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: white;
+}
+
+.bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.35;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.bg-orb-1 {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, hsl(221 83% 53%) 0%, transparent 70%);
+  top: -200px;
+  left: -100px;
+  animation: orbFloat1 20s linear infinite;
+}
+
+.bg-orb-2 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, hsl(35 92% 55%) 0%, transparent 70%);
+  top: 10%;
+  right: -150px;
+  animation: orbFloat2 25s linear infinite;
+  opacity: 0.2;
+}
+
+.bg-orb-3 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, hsl(260 70% 60%) 0%, transparent 70%);
+  bottom: 20%;
+  left: 20%;
+  animation: orbFloat3 18s linear infinite;
+  opacity: 0.15;
+}
+
+.bg-orb-4 {
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, hsl(142 71% 45%) 0%, transparent 70%);
+  bottom: -100px;
+  right: 10%;
+  animation: orbFloat4 22s linear infinite;
+  opacity: 0.12;
+}
+
+@keyframes orbFloat1 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  25%       { transform: translate(80px, 60px) scale(1.1); }
+  50%       { transform: translate(40px, 120px) scale(0.95); }
+  75%       { transform: translate(-40px, 60px) scale(1.05); }
+}
+
+@keyframes orbFloat2 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  33%      { transform: translate(-60px, 80px) scale(1.1); }
+  66%      { transform: translate(-100px, 30px) scale(0.9); }
+}
+
+@keyframes orbFloat3 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  50%      { transform: translate(60px, -80px) scale(1.15); }
+}
+
+@keyframes orbFloat4 {
+  0%, 100% { transform: translate(0px, 0px); }
+  25%      { transform: translate(-50px, -40px); }
+  75%      { transform: translate(30px, -60px); }
+}
+
+.bg-animated::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+}
+
+.dark .bg-animated {
+  background: hsl(222 84% 5%);
+}
+
+.dark .bg-orb-1 { opacity: 0.25; }
+.dark .bg-orb-2 { opacity: 0.15; }
+.dark .bg-orb-3 { opacity: 0.12; }
+.dark .bg-orb-4 { opacity: 0.10; }
+
+.dark .bg-animated::after {
+  background: rgba(10, 10, 20, 0.5);
+}
+
 /* ── Page Hero Background (ana sayfa genel arka plan) ── */
 .page-hero-bg {
   background:

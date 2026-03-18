@@ -12,11 +12,17 @@ import { TrustStrip } from '@/components/landing/trust-strip';
 import { FAQSection } from '@/components/landing/faq-section';
 import { CTASection } from '@/components/landing/cta-section';
 import { Footer } from '@/components/layout/footer';
-import { TrendingUp } from 'lucide-react';
-
 export default function LandingPage() {
   return (
-    <div className="min-h-screen text-foreground font-sans selection:bg-primary/20 page-hero-bg">
+    <div className="min-h-screen text-foreground font-sans selection:bg-primary/20">
+      {/* Animated background orbs */}
+      <div className="bg-animated">
+        <div className="bg-orb bg-orb-1" />
+        <div className="bg-orb bg-orb-2" />
+        <div className="bg-orb bg-orb-3" />
+        <div className="bg-orb bg-orb-4" />
+      </div>
+
       <Header />
 
       <main>
