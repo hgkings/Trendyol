@@ -35,6 +35,7 @@ function formatMonth(yyyy_mm: string): string {
 }
 
 import { UpgradeModal } from '@/components/shared/upgrade-modal';
+import { isProUser } from '@/utils/access';
 // ... existing imports
 
 export default function CashPlanPage() {
@@ -42,7 +43,7 @@ export default function CashPlanPage() {
     const [showUpgrade, setShowUpgrade] = useState(false);
 
     useEffect(() => {
-        if (user && user.plan !== 'pro' && user.plan !== 'admin') {
+        if (user && !isProUser(user)) {
             setShowUpgrade(true);
         }
     }, [user]);

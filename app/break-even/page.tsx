@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { Calculator, Target, TrendingUp, DollarSign, Save, Info } from 'lucide-react';
 
 import { UpgradeModal } from '@/components/shared/upgrade-modal';
+import { isProUser } from '@/utils/access';
 // ... existing imports
 
 export default function BreakEvenPage() {
@@ -19,7 +20,7 @@ export default function BreakEvenPage() {
     const [showUpgrade, setShowUpgrade] = useState(false);
 
     useEffect(() => {
-        if (user && user.plan !== 'pro' && user.plan !== 'admin') {
+        if (user && !isProUser(user)) {
             setShowUpgrade(true);
         }
     }, [user]);
