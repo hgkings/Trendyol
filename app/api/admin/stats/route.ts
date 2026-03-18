@@ -29,8 +29,8 @@ export async function GET() {
         admin.from('profiles').select('*', { count: 'exact', head: true }).eq('plan', 'pro'),
         admin.from('analyses').select('*', { count: 'exact', head: true }),
         admin.from('payments').select('amount_try, status').eq('status', 'paid'),
-        admin.from('support_tickets').select('*', { count: 'exact', head: true }),
-        admin.from('support_tickets').select('*', { count: 'exact', head: true }).eq('status', 'open'),
+        admin.from('tickets').select('*', { count: 'exact', head: true }),
+        admin.from('tickets').select('*', { count: 'exact', head: true }).eq('status', 'acik'),
         admin.from('profiles').select('id, email, plan, created_at').order('created_at', { ascending: false }).limit(5),
     ]);
 
