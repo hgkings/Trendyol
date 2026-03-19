@@ -3,26 +3,22 @@ import { sendEmail } from '@/lib/email/smtp'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST() {
+async function handler() {
   const result = await sendEmail({
     to: 'isbilirhilmi8@gmail.com',
     subject: '✅ Kârnet Brevo SMTP Test',
     html: `
-      <div style="font-family: sans-serif;
-                  max-width: 480px;
-                  margin: 0 auto;
-                  padding: 32px;">
-        <h2 style="color: #4f46e5;">
-          ✅ Brevo SMTP Çalışıyor!
-        </h2>
-        <p>Kârnet e-posta sistemi
-           başarıyla Brevo'ya geçirildi.</p>
-        <p style="color: #6b7280;
-                  font-size: 14px;">
-          Tarih: ${new Date().toLocaleString('tr-TR')}
-        </p>
-      </div>
+      <h2>✅ Brevo SMTP Çalışıyor!</h2>
+      <p>Tarih: ${new Date().toLocaleString('tr-TR')}</p>
     `,
   })
   return NextResponse.json(result)
+}
+
+export async function GET() {
+  return handler()
+}
+
+export async function POST() {
+  return handler()
 }
