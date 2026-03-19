@@ -41,7 +41,7 @@ serve(async (req) => {
                 "api-key": BREVO_API_KEY ?? "",
             },
             body: JSON.stringify({
-                sender: { name: "Kârnet", email: "no-reply@kârnet.com" },
+                sender: { name: "Kârnet", email: "karnet.destek@gmail.com" },
                 to: [{ email: profile.email }],
                 subject: `KRİTİK RİSK BİLDİRİMİ: ${record.title}`,
                 htmlContent: `
