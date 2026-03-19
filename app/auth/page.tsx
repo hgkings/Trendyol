@@ -73,23 +73,24 @@ function AuthPageContent() {
     return (next.startsWith('/') && !next.startsWith('//') && !next.includes('://')) ? next : '/dashboard';
   })();
 
-  if (user) {
-    router.replace(returnUrl);
-    return null;
-  }
+  // ⚠️ Tüm hook'lar conditional return'dan ÖNCE tanımlanmalı (Rules of Hooks)
+  const handleCapsLockCheck = useCallback((e: React.KeyboardEvent) => {
+    setCapsLockOn(e.getModifierState('CapsLock'));
+  }, []);
 
-  const switchMode = (m: 'login' | 'register') => {
+  const switchMode = useCallback((m: 'login' | 'register') => {
     setMode(m);
     setError('');
     setPassword('');
     setConfirmPassword('');
     setFullName('');
     setAcceptTerms(false);
-  };
-
-  const handleCapsLockCheck = useCallback((e: React.KeyboardEvent) => {
-    setCapsLockOn(e.getModifierState('CapsLock'));
   }, []);
+
+  if (user) {
+    router.replace(returnUrl);
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
