@@ -3,7 +3,7 @@ import { sendEmail } from '@/lib/email/smtp'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function POST() {
   const result = await sendEmail({
     to: 'isbilirhilmi8@gmail.com',
     subject: '✅ Kârnet Brevo SMTP Test',
