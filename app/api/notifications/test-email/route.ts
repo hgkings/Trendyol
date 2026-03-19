@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
     // Lazy imports — only after env is confirmed present
     const { createClient } = await import('@/lib/supabase-server-client');
-    const { sendEmail } = await import('@/lib/notification-service');
+    const { sendNotificationEmail: sendEmail } = await import('@/lib/notification-service');
     const { getTestEmailTemplate } = await import('@/lib/email-templates');
 
     const supabase = createClient();
