@@ -1,7 +1,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server-client';
-import { sendEmail } from '@/lib/notification-service';
+import { sendNotificationEmail as sendEmail } from '@/lib/notification-service';
 import { getRiskAlertTemplate } from '@/lib/email-templates';
 
 export async function POST(req: NextRequest) {
