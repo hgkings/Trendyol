@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { Navbar } from '@/components/layout/navbar';
 import { Button } from '@/components/ui/button';
 import {
-  Check, X, Crown, Sparkles, Loader2, RefreshCw,
+  Check, X, Crown, Loader2, RefreshCw,
   CheckCircle2, XCircle, ChevronDown, ChevronUp, ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -14,6 +14,8 @@ import { PLAN_LIMITS } from '@/config/plans';
 import { PRICING } from '@/config/pricing';
 import { isProUser } from '@/utils/access';
 import { toast } from 'sonner';
+import { PricingSection } from '@/components/shared/PricingSection';
+import type { PricingTier } from '@/components/shared/PricingSection';
 
 // ─── types ───────────────────────────────────────────────────────────────────
 type BillingCycle = 'monthly' | 'yearly';
@@ -22,8 +24,6 @@ type BillingCycle = 'monthly' | 'yearly';
 const FREE_LIMIT = PLAN_LIMITS.free.maxProducts;
 const MONTHLY_PRICE = PRICING.proMonthly;          // 229
 const YEARLY_PRICE  = PRICING.proYearly;           // 2290
-const YEARLY_MONTHLY_EQUIV = Math.round(YEARLY_PRICE / 12); // ~191
-const SAVINGS = MONTHLY_PRICE * 12 - YEARLY_PRICE; // 458
 
 const COMPARISON_ROWS: { label: string; free: string | boolean; pro: string | boolean }[] = [
   { label: 'Ürün analizi',                      free: `${FREE_LIMIT} ürün`,  pro: 'Sınırsız' },
@@ -65,27 +65,6 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
 ];
 
 // ─── sub-components ───────────────────────────────────────────────────────────
-
-function FeatureRow({ text, included, highlight = false }: { text: string; included: boolean; highlight?: boolean }) {
-  return (
-    <div className={cn('flex items-start gap-3', !included && 'opacity-35')}>
-      <div className={cn(
-        'flex h-5 w-5 shrink-0 items-center justify-center rounded-full mt-0.5',
-        included
-          ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400'
-          : 'bg-muted/50 text-muted-foreground',
-      )}>
-        {included ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
-      </div>
-      <span className={cn(
-        'text-sm leading-6',
-        included && highlight ? 'font-semibold text-foreground' : 'text-muted-foreground',
-      )}>
-        {text}
-      </span>
-    </div>
-  );
-}
 
 function CellValue({ val }: { val: string | boolean }) {
   if (val === true)  return <Check className="h-5 w-5 text-emerald-500 mx-auto" />;
@@ -241,7 +220,7 @@ function PricingContent() {
         )}
 
         {/* ─ Header ────────────────────────────────────────────────────────── */}
-        <div className="text-center space-y-5">
+        <div className="text-center space-y-3">
           <span className="inline-block mb-1 rounded-full border border-primary/20 bg-primary/5 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
             Fiyatlandırma
           </span>
@@ -251,174 +230,56 @@ function PricingContent() {
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
             Gizli ücret yok. İstediğin zaman iptal et.
           </p>
-
-          {/* Billing Toggle */}
-          <div className="flex items-center justify-center mt-6">
-            <div className="relative flex items-center bg-muted/60 p-1 rounded-xl border border-border/60">
-              <button
-                onClick={() => setBilling('monthly')}
-                className={cn(
-                  'px-6 py-2.5 text-sm font-medium rounded-lg transition-all duration-200',
-                  billing === 'monthly' ? 'bg-card text-foreground shadow-sm border border-border/60' : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                Aylık
-              </button>
-              <button
-                onClick={() => setBilling('yearly')}
-                className={cn(
-                  'px-6 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 relative',
-                  billing === 'yearly' ? 'bg-card text-foreground shadow-sm border border-border/60' : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                Yıllık
-                <span className="absolute -top-2.5 -right-3 bg-emerald-500 text-white text-[9px] px-1.5 py-0.5 rounded-full shadow-sm border border-white/20 font-bold tracking-wide rotate-3 transform">
-                  %17
-                </span>
-              </button>
-            </div>
-          </div>
-          {isAnnual && (
-            <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium animate-in fade-in">
-              🎉 Yıllık planda <strong>{SAVINGS.toLocaleString('tr-TR')}₺</strong> tasarruf edersiniz — 2 ay bedava!
-            </p>
-          )}
         </div>
 
-        {/* ─ Plan Cards ─────────────────────────────────────────────────────── */}
-        <div className="grid md:grid-cols-2 gap-8 lg:gap-12 max-w-4xl mx-auto">
+        {/* ─ Plan Cards — PricingSection ───────────────────────────────────── */}
+        {(() => {
+          const freeTier: PricingTier = {
+            name: 'Başlangıç',
+            price: { monthly: 0, yearly: 0 },
+            description: 'Yeni başlayanlar ve denemek isteyenler için ideal.',
+            icon: <span className="text-xl">🚀</span>,
+            onAction: () => { window.location.href = user ? '/dashboard' : '/auth'; },
+            features: [
+              { name: `${FREE_LIMIT} ürüne kadar analiz`, description: 'Kayıt edilebilir ürün sayısı', included: true },
+              { name: 'Temel kâr hesaplama', description: 'Komisyon, kargo, KDV dahil', included: true },
+              { name: '4 pazaryeri desteği', description: 'Trendyol, HB, Amazon, N11', included: true },
+              { name: 'PDF rapor (1 adet/ay)', description: 'Aylık tek rapor', included: true },
+              { name: 'Sınırsız ürün analizi', description: 'Pro planında sınırsız', included: false },
+              { name: 'CSV içe / dışa aktarma', description: 'Pro planında aktif', included: false },
+              { name: 'PRO Muhasebe Modu', description: 'KDV ayrıştırma', included: false },
+              { name: 'Hassasiyet & nakit akışı', description: 'Gelişmiş analizler', included: false },
+            ],
+          };
 
-          {/* FREE */}
-          <div className="relative rounded-2xl border border-border/60 bg-card p-8 shadow-sm hover:shadow-md hover:border-border transition-all duration-300 flex flex-col">
-            <div className="mb-6">
-              <h3 className="text-xl font-bold">Başlangıç</h3>
-              <p className="text-sm text-muted-foreground mt-2">Yeni başlayanlar ve denemek isteyenler için ideal.</p>
-            </div>
-            <div className="mb-8">
-              <span className="text-4xl font-bold">0₺</span>
-              <span className="text-muted-foreground ml-1">/ sonsuza kadar</span>
-            </div>
-            <div className="space-y-3.5 flex-1">
-              <FeatureRow text={`${FREE_LIMIT} ürüne kadar analiz kaydetme`} included />
-              <FeatureRow text="Temel kâr hesaplama" included />
-              <FeatureRow text="4 pazaryeri desteği" included />
-              <FeatureRow text="PDF rapor (1 adet/ay)" included />
-              <FeatureRow text="Sınırsız ürün analizi" included={false} />
-              <FeatureRow text="CSV içe aktarma" included={false} />
-              <FeatureRow text="CSV & rapor dışa aktarma" included={false} />
-              <FeatureRow text="Hassasiyet analizi" included={false} />
-              <FeatureRow text="Pazaryeri karşılaştırması" included={false} />
-              <FeatureRow text="Nakit akışı tahmini" included={false} />
-              <FeatureRow text="PRO Muhasebe Modu (KDV ayrıştırma)" included={false} />
-              <FeatureRow text="Öncelikli destek" included={false} />
-            </div>
-            <div className="mt-8 pt-6 border-t">
-              {user && user.plan === 'free' ? (
-                <Button variant="outline" className="w-full h-12 rounded-xl text-base font-medium" disabled>
-                  Mevcut Plan
-                </Button>
-              ) : (
-                <Button variant="outline" className="w-full h-12 rounded-xl text-base font-medium hover:bg-muted/50" asChild>
-                  <a href={user ? '/dashboard' : '/auth'}>
-                    {user ? 'Panele Git' : 'Ücretsiz Başla'}
-                  </a>
-                </Button>
-              )}
-            </div>
-          </div>
+          const proTier: PricingTier = {
+            name: 'Pro',
+            price: { monthly: MONTHLY_PRICE, yearly: YEARLY_PRICE },
+            description: 'Ciddi satıcılar için tüm özellikler — kurucu üye fırsatı.',
+            highlight: true,
+            badge: 'EN ÇOK TERCİH EDİLEN',
+            icon: <Crown className="h-5 w-5" />,
+            onAction: user && isProUser(user) ? undefined : handleUpgrade,
+            features: [
+              { name: 'Sınırsız ürün analizi', description: 'Dilediğiniz kadar analiz', included: true },
+              { name: 'PRO Muhasebe Modu', description: 'KDV ayrıştırma, net kâr', included: true },
+              { name: 'Hassasiyet analizi', description: 'Senaryo bazlı projeksiyon', included: true },
+              { name: 'Pazaryeri karşılaştırması', description: 'Trendyol vs HB vs Amazon', included: true },
+              { name: 'Nakit akışı tahmini', description: 'Aylık cashflow projeksiyonu', included: true },
+              { name: 'CSV içe / dışa aktarma', description: 'Excel ile tam entegrasyon', included: true },
+              { name: 'API entegrasyonu', description: 'Trendyol & Hepsiburada', included: true },
+              { name: 'Sınırsız PDF rapor + öncelikli destek', description: 'Kurucu üye fiyatı garantili', included: true },
+            ],
+          };
 
-          {/* PRO */}
-          <div className="relative rounded-2xl border-2 border-primary/40 bg-gradient-to-b from-primary/5 via-card to-card p-8 shadow-xl hover:scale-[1.01] hover:shadow-2xl transition-all duration-300 flex flex-col">
-            {/* Badge */}
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-blue-500 text-white px-5 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-1.5 whitespace-nowrap border border-primary/20">
-              <Sparkles className="h-3.5 w-3.5 fill-current" />
-              EN ÇOK TERCİH EDİLEN
-            </div>
-
-            <div className="mb-6">
-              <h3 className="text-xl font-bold flex items-center gap-2">
-                Pro <Crown className="h-5 w-5 text-primary fill-current" />
-              </h3>
-              <p className="text-sm text-muted-foreground mt-2">Ciddi satıcılar ve büyümek isteyenler için tüm özellikler.</p>
-            </div>
-
-            <div className="mb-8 space-y-2">
-              {/* Crossed out old price */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Normal Fiyat</span>
-                <span className="text-lg text-muted-foreground/80 font-bold line-through decoration-red-400 decoration-2">
-                  {isAnnual ? `${PRICING.oldMonthly * 10}₺` : `${PRICING.oldMonthly}₺`}
-                </span>
-              </div>
-              {/* Current price */}
-              <div className="flex items-baseline gap-2">
-                <span className="text-5xl font-bold tracking-tight">
-                  {isAnnual ? YEARLY_PRICE.toLocaleString('tr-TR') : MONTHLY_PRICE}₺
-                </span>
-                <span className="text-base font-medium text-muted-foreground">
-                  {isAnnual ? '/ yıl' : '/ ay'}
-                </span>
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                  %50 İndirim
-                </span>
-              </div>
-              {isAnnual && (
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">≈ {YEARLY_MONTHLY_EQUIV}₺/ay olarak faturalandırılır</p>
-                  <span className="inline-block text-xs font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400 px-2.5 py-1 rounded-lg border border-emerald-100 dark:border-emerald-900/30">
-                    🎉 2 Ay Bedava!
-                  </span>
-                </div>
-              )}
-              {/* Founder badge */}
-              <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/10 border border-amber-200/60 dark:border-amber-800/30">
-                <Sparkles className="h-4 w-4 text-amber-500 fill-current shrink-0" />
-                <div>
-                  <p className="text-[10px] font-bold text-amber-600/90 uppercase tracking-wider leading-none mb-0.5">Kurucu Üye Fırsatı</p>
-                  <p className="text-xs text-foreground/80 font-medium leading-tight">Erken erişim süresince sabitlenen özel fiyat</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3.5 flex-1">
-              <FeatureRow text="Sınırsız ürün analizi" included highlight />
-              <FeatureRow text="PRO Muhasebe Modu (KDV ayrıştırma)" included highlight />
-              <FeatureRow text="Hassasiyet analizi" included highlight />
-              <FeatureRow text="Pazaryeri karşılaştırması" included highlight />
-              <FeatureRow text="Nakit akışı tahmini" included highlight />
-              <FeatureRow text="CSV içe aktarma" included highlight />
-              <FeatureRow text="CSV & rapor dışa aktarma" included highlight />
-              <FeatureRow text="Trendyol API entegrasyonu" included highlight />
-              <FeatureRow text="Hepsiburada API entegrasyonu" included highlight />
-              <FeatureRow text="Sınırsız PDF rapor" included highlight />
-              <FeatureRow text="Öncelikli e-posta desteği" included highlight />
-              <FeatureRow text="Yeni özellikler erken erişim" included highlight />
-            </div>
-
-            <div className="mt-8 pt-6 border-t space-y-3">
-              {user && isProUser(user) ? (
-                <div className="w-full h-12 flex items-center justify-center gap-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl border border-emerald-500/20 font-medium">
-                  <Check className="h-5 w-5" /> Pro Plan Aktif
-                </div>
-              ) : (
-                <>
-                  <Button
-                    className="w-full h-14 rounded-xl text-lg font-bold shadow-lg hover:scale-[1.01] btn-shine transition-all duration-300 active:scale-95"
-                    disabled={loading}
-                    onClick={handleUpgrade}
-                  >
-                    {loading
-                      ? <><Loader2 className="h-5 w-5 animate-spin mr-2" />Yönlendiriliyor…</>
-                      : user ? "Pro'ya Geç" : "Pro ile Başla"}
-                  </Button>
-                  <p className="text-[10px] text-center text-muted-foreground">
-                    7 gün içinde koşulsuz para iade garantisi
-                  </p>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
+          return (
+            <PricingSection
+              tiers={[freeTier, proTier]}
+              className="!py-0"
+              onBillingChange={(isYearly) => setBilling(isYearly ? 'yearly' : 'monthly')}
+            />
+          );
+        })()}
 
         {/* ─ Comparison Table ───────────────────────────────────────────────── */}
         <div className="max-w-4xl mx-auto">

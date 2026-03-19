@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/layout/navbar';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
+import { CheckCircle2, Loader2, RefreshCw, LayoutDashboard } from 'lucide-react';
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
     const searchParams = useSearchParams();
     const paymentId = searchParams.get('paymentId');
 
@@ -55,41 +55,56 @@ export default function PaymentSuccessPage() {
 
                 {status === 'checking' && (
                     <>
-                        <Loader2 className="h-16 w-16 text-primary animate-spin mx-auto" />
+                        <div className="flex justify-center">
+                            <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
+                                <Loader2 className="h-10 w-10 text-primary animate-spin" />
+                            </div>
+                        </div>
                         <h1 className="text-2xl font-bold">Ödemenizi Tamamlayın 💳</h1>
-                        <p className="text-muted-foreground">
+                        <p className="text-muted-foreground leading-relaxed">
                             Ödeme sayfası güvenli bir şekilde yeni sekmede açıldı.<br /><br />
                             Lütfen işlemi orada tamamlayın. Ödemeniz bittiğinde bu sayfa <b>otomatik</b> olarak onaylanacaktır...
                         </p>
+                        <p className="text-xs text-muted-foreground">Kontrol: {pollCount} / 120</p>
                     </>
                 )}
 
                 {status === 'active' && (
                     <>
-                        <CheckCircle2 className="h-16 w-16 text-emerald-500 mx-auto" />
-                        <h1 className="text-2xl font-bold text-emerald-600">Pro Plan Aktif! 🎉</h1>
+                        <div className="flex justify-center">
+                            <div className="h-20 w-20 rounded-full bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center">
+                                <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+                            </div>
+                        </div>
+                        <h1 className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">Pro Plan Aktif! 🎉</h1>
                         <p className="text-muted-foreground">
                             Tebrikler! Pro planınız başarıyla aktif edildi.
                         </p>
                         <Button
-                            className="mt-4"
+                            className="mt-4 gap-2"
                             onClick={() => window.location.href = '/dashboard'}
                         >
-                            Dashboard'a Git
+                            <LayoutDashboard className="h-4 w-4" />
+                            Dashboard&apos;a Git
                         </Button>
                     </>
                 )}
 
                 {status === 'pending' && (
                     <>
-                        <Loader2 className="h-16 w-16 text-amber-500 animate-spin mx-auto" />
-                        <h1 className="text-2xl font-bold text-amber-600">Ödeme Bekleniyor ⏳</h1>
+                        <div className="flex justify-center">
+                            <div className="h-20 w-20 rounded-full bg-amber-100 dark:bg-amber-950 flex items-center justify-center">
+                                <Loader2 className="h-10 w-10 text-amber-500 animate-spin" />
+                            </div>
+                        </div>
+                        <h1 className="text-2xl font-bold text-amber-600 dark:text-amber-400">Ödeme Bekleniyor ⏳</h1>
                         <p className="text-muted-foreground">
                             Ödeme işleminiz henüz bize ulaşmadı. Eğer ödemeyi tamamladıysanız biraz daha bekleyip tekrar kontrol edebilirsiniz.
                         </p>
                         <div className="flex gap-3 justify-center mt-4">
                             <Button
                                 variant="outline"
+                                className="gap-2"
                                 onClick={async () => {
                                     setStatus('checking');
                                     setPollCount(0);
@@ -97,11 +112,15 @@ export default function PaymentSuccessPage() {
                                     setStatus(isPro ? 'active' : 'pending');
                                 }}
                             >
-                                <RefreshCw className="h-4 w-4 mr-2" />
+                                <RefreshCw className="h-4 w-4" />
                                 Tekrar Kontrol Et
                             </Button>
-                            <Button onClick={() => window.location.href = '/dashboard'}>
-                                Dashboard'a Git
+                            <Button
+                                className="gap-2"
+                                onClick={() => window.location.href = '/dashboard'}
+                            >
+                                <LayoutDashboard className="h-4 w-4" />
+                                Dashboard&apos;a Git
                             </Button>
                         </div>
                     </>
@@ -114,5 +133,17 @@ export default function PaymentSuccessPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function PaymentSuccessPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex min-h-screen items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        }>
+            <PaymentSuccessContent />
+        </Suspense>
     );
 }
