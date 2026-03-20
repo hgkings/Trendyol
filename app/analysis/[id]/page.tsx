@@ -328,20 +328,20 @@ export default function AnalysisResultPage() {
         {/* Compact Key Metrics Grid */}
         <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
           <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-4">
-            <p className="text-[10px] uppercase font-bold text-[rgba(255,255,255,0.4)] tracking-wider">Birim Net Kâr</p>
-            <p className={`mt-0.5 text-xl sm:text-2xl font-black tracking-tight ${result.unit_net_profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <p className="text-xs font-medium text-muted-foreground">Birim net kâr</p>
+            <p className={`mt-0.5 text-xl sm:text-2xl font-bold tracking-tight ${result.unit_net_profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
               {formatCurrency(result.unit_net_profit)}
             </p>
           </div>
           <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-4">
-            <p className="text-[10px] uppercase font-bold text-[rgba(255,255,255,0.4)] tracking-wider">Kâr Marjı</p>
-            <p className={`mt-0.5 text-xl sm:text-2xl font-black tracking-tight ${result.margin_pct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <p className="text-xs font-medium text-muted-foreground">Kâr marjı</p>
+            <p className={`mt-0.5 text-xl sm:text-2xl font-bold tracking-tight ${result.margin_pct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
               {formatPercent(result.margin_pct)}
             </p>
           </div>
           <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-4">
-            <p className="text-[10px] uppercase font-bold text-[rgba(255,255,255,0.4)] tracking-wider">Aylık Net Kâr</p>
-            <p className={`mt-0.5 text-xl sm:text-2xl font-black tracking-tight ${result.monthly_net_profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <p className="text-xs font-medium text-muted-foreground">Aylık net kâr</p>
+            <p className={`mt-0.5 text-xl sm:text-2xl font-bold tracking-tight ${result.monthly_net_profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
               {formatCurrency(result.monthly_net_profit)}
             </p>
           </div>
@@ -356,7 +356,7 @@ export default function AnalysisResultPage() {
               return (
                 <>
                   <div className="flex items-center justify-between">
-                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Reklam Tavanı</p>
+                    <p className="text-xs font-medium text-muted-foreground">Reklam tavanı</p>
                     {isRisk && <span className="animate-pulse h-2 w-2 rounded-full bg-red-500"></span>}
                   </div>
                   <p className={`mt-0.5 text-xl sm:text-2xl font-black tracking-tight ${isLoss || isRisk ? 'text-red-400' : 'text-foreground'}`}>
@@ -403,7 +403,7 @@ export default function AnalysisResultPage() {
                 <div className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6 space-y-4">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">📦</span>
-                    <h3 className="text-sm font-bold uppercase tracking-tight text-muted-foreground">İade Analizi</h3>
+                    <h3 className="text-sm font-semibold text-foreground border-b border-border/20 pb-2 mb-2">İade analizi</h3>
                   </div>
 
                   {/* İade uyarı kartları */}
@@ -536,7 +536,7 @@ export default function AnalysisResultPage() {
           <div className="lg:col-span-4 space-y-6 min-w-0">
             {/* Risk Gauge */}
             <div className="flex flex-col items-center rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-5">
-              <h3 className="mb-4 self-start text-xs font-bold uppercase text-muted-foreground tracking-wider">Risk Skoru</h3>
+              <h3 className="mb-4 self-start text-sm font-semibold text-foreground border-b border-border/20 pb-2 w-full">Risk skoru</h3>
               <RiskGauge score={risk.score} level={risk.level} />
               {risk.factors.length > 0 && (
                 <div className="mt-6 w-full space-y-2">
@@ -558,7 +558,7 @@ export default function AnalysisResultPage() {
                 <div className="p-1.5 bg-amber-500/10 rounded-md">
                   <TrendingUp className="h-4 w-4 text-amber-400" />
                 </div>
-                <h3 className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Akıllı Öneriler</h3>
+                <h3 className="text-sm font-semibold text-foreground">Akıllı öneriler</h3>
               </div>
               <div className="space-y-3">
                 {result.margin_pct < 10 && (
@@ -585,7 +585,7 @@ export default function AnalysisResultPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <User2 className="h-4 w-4 text-primary" />
-                  <h3 className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Rakip Analizi</h3>
+                  <h3 className="text-sm font-semibold text-foreground">Rakip analizi</h3>
                 </div>
                 <Button size="icon" variant="ghost" className="h-6 w-6" onClick={handleSaveCompetitor} disabled={saving}>
                   <Save className="h-3 w-3" />

@@ -21,16 +21,16 @@ export function SensitivityTable({ input }: SensitivityTableProps) {
       <div className="mt-4 overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b">
-              <th className="pb-2 text-left font-medium text-muted-foreground">Senaryo</th>
-              <th className="pb-2 text-right font-medium text-muted-foreground">Yeni Aylik Kar</th>
-              <th className="pb-2 text-right font-medium text-muted-foreground">Fark</th>
-              <th className="pb-2 text-right font-medium text-muted-foreground">Degisim</th>
+            <tr className="border-b border-border/20">
+              <th className="pb-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Senaryo</th>
+              <th className="pb-2 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Yeni aylık kâr</th>
+              <th className="pb-2 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Fark</th>
+              <th className="pb-2 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Değişim</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-border/20">
             {rows.map((row) => (
-              <tr key={row.scenario} className="transition-colors hover:bg-white/[0.03]">
+              <tr key={row.scenario} className="transition-colors hover:bg-muted/30">
                 <td className="py-2.5 font-medium">{row.scenario}</td>
                 <td className={`py-2.5 text-right font-medium ${row.newProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                   {formatCurrency(row.newProfit)}

@@ -42,15 +42,9 @@ function ToggleRow({
   informational?: boolean;
 }) {
   return (
-    <div className="flex items-start gap-3">
-      <Switch
-        checked={enabled}
-        onCheckedChange={onChange}
-        disabled={informational}
-        className="mt-0.5 shrink-0"
-      />
-      <div className="min-w-0">
-        <p className={`text-sm font-medium leading-snug ${informational ? 'text-muted-foreground' : ''}`}>
+    <div className="flex justify-between items-start py-3 border-b border-border/20">
+      <div className="min-w-0 pr-4">
+        <p className={`text-sm font-medium leading-snug ${informational ? 'text-muted-foreground' : 'text-foreground'}`}>
           {label}
           {informational && (
             <span className="ml-2 text-[10px] uppercase tracking-wide text-muted-foreground border rounded px-1 py-0.5">
@@ -60,6 +54,12 @@ function ToggleRow({
         </p>
         <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{description}</p>
       </div>
+      <Switch
+        checked={enabled}
+        onCheckedChange={onChange}
+        disabled={informational}
+        className="mt-0.5 shrink-0"
+      />
     </div>
   );
 }
@@ -81,8 +81,8 @@ function ResultRow({
       : 'font-medium';
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">{label}</p>
-      <p className={`text-sm ${colorClass}`}>{value}</p>
+      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">{label}</p>
+      <p className={`text-base font-semibold ${colorClass}`}>{value}</p>
     </div>
   );
 }
@@ -430,7 +430,7 @@ export function CampaignSimulator({ input, originalResult }: Props) {
       )}
 
       {/* Sonuç Paneli */}
-      <div className="rounded-xl border bg-muted/30 p-4 space-y-3">
+      <div className="rounded-lg border border-border/30 bg-muted/40 p-4 space-y-3">
         <p className="text-sm font-semibold">
           📊 {discountPct > 0 ? `%${discountPct} İndirim` : 'Mevcut Fiyat'} Senaryosu
         </p>

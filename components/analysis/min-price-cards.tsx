@@ -108,8 +108,8 @@ export function MinPriceCards({ input, currentPrice }: MinPriceCardsProps) {
     <div className="space-y-4">
       {/* Header note */}
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-          Minimum Kârlı Satış Fiyatı
+        <h3 className="text-xs font-medium text-muted-foreground">
+          Minimum kârlı satış fiyatı
         </h3>
         <span className="text-[10px] text-muted-foreground">
           {mpLabel} komisyon, servis bedeli ve iade maliyetleri dahil
@@ -121,38 +121,39 @@ export function MinPriceCards({ input, currentPrice }: MinPriceCardsProps) {
         {cards.map((card, idx) => {
           const isActive = idx + 1 === activeIndex || (idx === 0 && activeIndex === 0);
           const isCurrentActive = activeIndex === idx + 1 || (activeIndex === 0 && idx === 0);
+          const accentClasses = ['border-l-border/50', 'border-l-amber-500', 'border-l-emerald-500'];
 
           return (
             <div
               key={card.label}
-              className={`rounded-xl border p-4 transition-all ${card.borderClass} ${card.bgClass} ${
-                isCurrentActive ? 'ring-2 ring-offset-1 ring-current shadow-md' : 'shadow-sm'
+              className={`rounded-xl border border-l-4 bg-card p-4 transition-all ${accentClasses[idx]} ${
+                isCurrentActive ? 'shadow-md ring-1 ring-border/40' : 'shadow-sm'
               }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5">
                   <span className="text-base leading-none">{card.emoji}</span>
-                  <span className={`text-xs font-bold uppercase tracking-wide ${card.textClass}`}>
+                  <span className="text-xs font-medium text-muted-foreground">
                     {card.label}
                   </span>
                 </div>
                 <span
                   title={card.tooltipText}
-                  className={`cursor-help ${card.textClass} opacity-60 hover:opacity-100 transition-opacity`}
+                  className="cursor-help text-muted-foreground opacity-60 hover:opacity-100 transition-opacity"
                 >
                   <Info className="h-3.5 w-3.5" />
                 </span>
               </div>
 
               {isInfinity(card.price) ? (
-                <p className={`text-base font-bold ${card.colorClass}`}>Hesaplanamaz</p>
+                <p className="text-base font-bold text-muted-foreground">Hesaplanamaz</p>
               ) : (
-                <p className={`text-xl font-black ${card.colorClass}`}>
+                <p className="text-xl font-bold text-foreground">
                   {formatCurrency(card.price)}
                 </p>
               )}
 
-              <p className={`text-[11px] mt-1 ${card.textClass} opacity-70`}>
+              <p className="text-xs mt-1 text-muted-foreground">
                 {card.sublabel}
               </p>
             </div>

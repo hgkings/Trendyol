@@ -61,16 +61,16 @@ export function CostBreakdown({ input, result }: CostBreakdownProps) {
   return (
     <div className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Maliyet Dağılımı (Birim)</h3>
+        <h3 className="text-sm font-semibold text-foreground">Maliyet dağılımı (birim)</h3>
         {isProMode && <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded">NET ESASLI</span>}
       </div>
 
-      <div className="space-y-4">
+      <div className="divide-y divide-border/20">
         {items.filter((i) => i.value > 0).map((item) => (
-          <div key={item.label} className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground font-medium">{item.label}</span>
-              <span className="font-bold">{formatCurrency(item.value)}</span>
+          <div key={item.label} className="space-y-1.5 py-3 hover:bg-muted/30 transition-colors rounded-md px-1 -mx-1">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">{item.label}</span>
+              <span className="font-medium text-foreground">{formatCurrency(item.value)}</span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.06)]">
               <div
@@ -84,27 +84,27 @@ export function CostBreakdown({ input, result }: CostBreakdownProps) {
 
       <div className="mt-6 border-t pt-5 space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-muted-foreground uppercase">Toplam Birim Maliyet</span>
-          <span className="text-lg font-black">{formatCurrency(total)}</span>
+          <span className="text-xs font-medium text-muted-foreground">Toplam birim maliyet</span>
+          <span className="text-lg font-semibold">{formatCurrency(total)}</span>
         </div>
-        <div className="flex items-center justify-between pb-1 border-b border-dashed">
-          <span className="text-xs font-bold text-muted-foreground uppercase">Satış Fiyatı</span>
-          <span className="text-lg font-black text-primary">{formatCurrency(n(input.sale_price) || (result as any).sale_price || 0)}</span>
+        <div className="flex items-center justify-between pb-1 border-b border-dashed border-border/30">
+          <span className="text-xs font-medium text-muted-foreground">Satış fiyatı</span>
+          <span className="text-lg font-semibold text-primary">{formatCurrency(n(input.sale_price) || (result as any).sale_price || 0)}</span>
         </div>
 
-        <div className="flex items-center justify-between pt-1">
+        <div className="flex items-center justify-between pt-1 border-t border-border/50">
           <div>
-            <span className="text-xs font-bold text-muted-foreground uppercase block">Birim Net Kâr</span>
+            <span className="text-sm font-semibold block">Birim net kâr</span>
             <span className="text-[10px] text-muted-foreground italic leading-none">
               {isProMode ? "(KDV ve Vergiler Hariç)" : "(Tahmini)"}
             </span>
           </div>
           <div className="text-right">
-            <p className={`text-xl font-black ${result.unit_net_profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+            <p className={`text-xl font-bold ${result.unit_net_profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
               {formatCurrency(result.unit_net_profit)}
             </p>
-            <p className={`text-xs font-bold ${result.margin_pct >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-              {formatPercent(result.margin_pct)} Marj
+            <p className={`text-xs font-medium ${result.margin_pct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              {formatPercent(result.margin_pct)} marj
             </p>
           </div>
         </div>

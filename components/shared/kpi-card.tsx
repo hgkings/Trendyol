@@ -13,15 +13,18 @@ interface KPICardProps {
 }
 
 export function KPICard({ title, value, subtitle, icon: Icon, trend, className }: KPICardProps) {
+  const accentClass = trend === 'up' ? 'bg-emerald-500' : trend === 'down' ? 'bg-red-500' : 'bg-border';
+
   return (
     <div className={cn(
-      'rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6',
+      'flex overflow-hidden rounded-2xl border border-border/30 bg-card hover:border-border/60 transition-colors duration-200',
       className
     )}>
-      <div className="flex items-start justify-between">
+      <div className={cn('w-[3px] shrink-0', accentClass)} />
+      <div className="flex flex-1 items-start justify-between p-6">
         <div className="space-y-1.5">
-          <p className="text-[13px] font-medium text-[rgba(255,255,255,0.5)]">{title}</p>
-          <p className="text-2xl font-bold tracking-tight">{value}</p>
+          <p className="text-xs font-medium text-muted-foreground">{title}</p>
+          <p className="text-2xl font-semibold tracking-tight mt-1">{value}</p>
           {subtitle && (
             <p className={cn(
               'text-xs font-medium',
