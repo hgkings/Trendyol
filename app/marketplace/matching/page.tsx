@@ -103,11 +103,11 @@ export default function MatchingPage() {
     const confidenceBadge = (c: string) => {
         switch (c) {
             case 'high':
-                return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 className="h-3 w-3" /> Yüksek</span>;
+                return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400"><CheckCircle2 className="h-3 w-3" /> Yüksek</span>;
             case 'medium':
-                return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 className="h-3 w-3" /> Orta</span>;
+                return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400"><Link2 className="h-3 w-3" /> Orta</span>;
             default:
-                return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400 className="h-3 w-3" /> Manuel Gerekli</span>;
+                return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400"><AlertTriangle className="h-3 w-3" /> Manuel Gerekli</span>;
         }
     };
 
@@ -130,7 +130,7 @@ export default function MatchingPage() {
                         </p>
                     </div>
                     {manualCount > 0 && (
-                        <span className="px-3 py-1 rounded-full text-sm font-medium bg-red-500/10 text-red-400
+                        <span className="px-3 py-1 rounded-full text-sm font-medium bg-red-500/10 text-red-400">
                             {manualCount} eşleşmemiş
                         </span>
                     )}

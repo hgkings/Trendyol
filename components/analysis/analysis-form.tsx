@@ -844,7 +844,7 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
 
         {/* Warnings Display */}
         {warnings.length > 0 && (
-          <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 animate-in fade-in slide-in-from-top-2
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 animate-in fade-in slide-in-from-top-2">
             <div className="flex items-center gap-2 mb-2">
               <AlertTriangle className="h-5 w-5 text-amber-400" />
               <h4 className="font-semibold text-amber-800 text-sm">Dikkat Edilmesi Gerekenler</h4>
