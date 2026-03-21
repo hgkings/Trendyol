@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
-import { ThemeToggle } from '@/components/layout/theme-toggle';
 import {
   Sheet,
   SheetContent,
@@ -63,7 +62,6 @@ export function Header() {
 
         {/* Right Actions */}
         <div className="hidden md:flex items-center gap-2">
-          <ThemeToggle />
           {user ? (
             <Link href="/dashboard">
               <Button
@@ -96,7 +94,6 @@ export function Header() {
 
         {/* Mobile */}
         <div className="flex items-center gap-2 md:hidden">
-          <ThemeToggle />
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl">
