@@ -10,7 +10,6 @@ import {
 import { NAV_ITEMS, BOTTOM_NAV_ITEMS } from '@/config/navigation';
 import { isProUser } from '@/utils/access';
 import { ProStatusCard } from '@/components/ProStatusCard';
-import { KarnetLogo } from '@/components/shared/KarnetLogo';
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -20,11 +19,6 @@ export function Sidebar() {
   return (
     <aside className="flex h-full w-full flex-col bg-[rgba(255,255,255,0.01)] border-r border-[rgba(255,255,255,0.06)] overflow-y-auto scrollbar-thin">
       <div className="flex h-full flex-col px-3 py-5 gap-6">
-
-        {/* Logo */}
-        <div className="px-2 pb-2">
-          <KarnetLogo size={36} />
-        </div>
 
         {/* Pro Status */}
         <div className="w-full">

@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
-import { ThemeToggle } from './theme-toggle';
 import { NotificationDrawer } from '@/components/dashboard/notification-drawer';
 import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
@@ -28,7 +27,6 @@ export function Navbar() {
               <Link href="/pricing">
                 <Button variant="ghost" size="sm" className="rounded-xl font-medium text-[rgba(255,255,255,0.5)] hover:text-white">Fiyatlandırma</Button>
               </Link>
-              <ThemeToggle />
               <Link href="/auth">
                 <Button variant="outline" size="sm" className="rounded-xl font-medium border-[rgba(255,255,255,0.06)]">Giriş Yap</Button>
               </Link>
@@ -44,14 +42,12 @@ export function Navbar() {
                 {user.email}
               </span>
               <NotificationDrawer />
-              <ThemeToggle />
             </div>
           )}
         </div>
 
         <div className="flex items-center gap-2 md:hidden">
           {user && <NotificationDrawer />}
-          <ThemeToggle />
           <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => setMobileOpen(!mobileOpen)}>
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
