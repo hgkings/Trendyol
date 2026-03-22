@@ -482,9 +482,9 @@ function AuthPageContent() {
           <div className="text-center text-sm pt-2">
             {mode === 'login' ? (
               <p className="text-white/40">
-                Hesabınız yok mu?{' '}
+                Hesabın yok mu?{' '}
                 <button onClick={() => switchMode('register')} className="font-semibold text-amber-500 hover:text-amber-400 transition-colors">
-                  Ücretsiz Kayıt Ol
+                  Ücretsiz Başla
                 </button>
               </p>
             ) : (
@@ -544,12 +544,11 @@ function AuthPageContent() {
             transition={{ duration: 0.5, delay: 0.1 }}
           >
             <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold leading-tight tracking-tight">
-              Her satışında{' '}
-              <span className="text-amber-400">gerçek kârını</span>{' '}
-              bil
+              Kârını{' '}
+              <span className="text-amber-400">kontrol altına al</span>
             </h1>
             <p className="mt-4 text-base lg:text-lg text-white/45 leading-relaxed max-w-md">
-              Komisyon, kargo, reklam, iade — tüm gizli maliyetleri hesapla, net kârını gör.
+              Komisyon, kargo, iade — tüm gizli maliyetleri tek ekranda gör. Veriye dayalı kararlar al.
             </p>
           </motion.div>
 
@@ -561,9 +560,9 @@ function AuthPageContent() {
             className="grid gap-4"
           >
             {[
-              { icon: TrendingUp, title: 'Anlık kâr analizi', desc: '4 pazaryerinde komisyon, kargo ve KDV dahil net kârını hesapla.' },
-              { icon: TestTube2, title: 'Kampanya simülatörü', desc: 'Fiyat değişikliklerini ve kampanya senaryolarını önceden test et.' },
-              { icon: Plug, title: 'Pazaryeri entegrasyonu', desc: 'Trendyol, Hepsiburada, Amazon ve n11 verilerini API ile çek.' },
+              { icon: TrendingUp, title: 'Anlık Kâr Analizi', desc: 'Ürün bazlı net kâr, saniyeler içinde.' },
+              { icon: TestTube2, title: 'Kampanya Simülatörü', desc: 'İndirimi uygulamadan önce test et.' },
+              { icon: Plug, title: 'Pazaryeri Entegrasyonu', desc: 'Trendyol, Hepsiburada, n11, Amazon.' },
             ].map((card) => (
               <div key={card.title} className="flex items-start gap-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] p-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/15">
