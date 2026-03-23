@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getBlogPost, blogPosts, formatDate } from '@/lib/blog';
 import { Clock, Calendar, ArrowLeft } from 'lucide-react';
+import { CommentsSection } from '@/components/blog/CommentsSection';
 
 interface Props {
   params: { slug: string };
@@ -90,6 +91,8 @@ export default function BlogPostPage({ params }: Props) {
             <ArrowLeft className="h-4 w-4 rotate-180" />
           </Link>
         </div>
+
+        <CommentsSection slug={params.slug} />
       </div>
     </main>
   );

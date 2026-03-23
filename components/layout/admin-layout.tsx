@@ -11,6 +11,7 @@ import {
     CreditCard,
     MessageSquare,
     ArrowLeft,
+    MessagesSquare,
 } from 'lucide-react';
 import { KarnetLogo } from '@/components/shared/KarnetLogo';
 import { ThemeToggle } from './theme-toggle';
@@ -20,6 +21,7 @@ const ADMIN_NAV = [
     { label: 'Kullanıcılar', href: '/admin/users', icon: Users },
     { label: 'Ödemeler', href: '/admin/payments', icon: CreditCard },
     { label: 'Destek', href: '/admin/support', icon: MessageSquare },
+    { label: 'Blog Yorumları', href: '/admin/comments', icon: MessagesSquare },
 ];
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
