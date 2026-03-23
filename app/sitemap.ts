@@ -2,10 +2,9 @@ import { MetadataRoute } from 'next'
 import { blogPosts } from '@/lib/blog'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const blogEntries: MetadataRoute.Sitemap = blogPosts.map((post) => ({
+  const blogUrls = blogPosts.map((post) => ({
     url: `https://www.xn--krnet-3qa.com/blog/${post.slug}`,
-    lastModified: new Date(post.date),
-    priority: 0.7,
+    priority: 0.6,
   }))
 
   return [
@@ -15,6 +14,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: 'https://www.xn--krnet-3qa.com/blog', priority: 0.8 },
     { url: 'https://www.xn--krnet-3qa.com/hakkimizda', priority: 0.7 },
     { url: 'https://www.xn--krnet-3qa.com/iletisim', priority: 0.7 },
-    ...blogEntries,
+    ...blogUrls,
   ]
 }
