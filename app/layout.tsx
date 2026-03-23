@@ -17,8 +17,8 @@ export const metadata: Metadata = {
   },
   description: 'Ürün portföyünüzün anlık kârlılık ve risk durumu.',
   icons: {
-    icon: '/favicon.svg',
-    apple: '/brand/apple-touch-icon.png',
+    icon: '/favicon.ico',
+    apple: '/apple-icon.png',
   },
   manifest: '/manifest.json',
   openGraph: {
