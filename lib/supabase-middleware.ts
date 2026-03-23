@@ -8,6 +8,7 @@ const PUBLIC_ROUTES = [
     '/auth',
     '/pricing',
     '/demo',
+    '/blog',
     '/hakkimizda',
     '/iletisim',
     '/gizlilik-politikasi',
