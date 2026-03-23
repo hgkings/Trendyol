@@ -30,6 +30,7 @@ export function Header() {
     { href: '#how-it-works', label: 'Nasıl Çalışır?' },
     { href: '/pricing', label: 'Fiyatlandırma' },
     { href: '/demo', label: 'Demo' },
+    { href: '/blog', label: 'Blog' },
   ];
 
   return (

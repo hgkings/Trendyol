@@ -486,3 +486,14 @@ button {
 /* ── Dashboard sidebar scrollbar thin ── */
 .scrollbar-thin::-webkit-scrollbar { width: 4px; }
 .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
+
+/* ── Blog prose ── */
+.prose-blog { color: rgba(255,255,255,0.75); font-size: 0.9375rem; line-height: 1.8; }
+.prose-blog h2 { color: #fff; font-size: 1.2rem; font-weight: 700; margin-top: 2rem; margin-bottom: 0.75rem; }
+.prose-blog p { margin-bottom: 1.25rem; }
+.prose-blog ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 1.25rem; }
+.prose-blog ul li { margin-bottom: 0.4rem; }
+.prose-blog strong { color: rgba(255,255,255,0.9); font-weight: 600; }
+.prose-blog em { color: rgba(255,255,255,0.5); font-style: italic; }
+.prose-blog pre { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 0.75rem; padding: 1rem 1.25rem; overflow-x: auto; margin-bottom: 1.25rem; }
+.prose-blog code { font-family: "JetBrains Mono", "Fira Code", monospace; font-size: 0.85em; color: #F59E0B; }
