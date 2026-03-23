@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/contexts/theme-provider';
 import { AuthProvider } from '@/contexts/auth-context';
 import { AlertProvider } from '@/contexts/alert-context';
 import { Toaster } from 'sonner';
+import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -73,6 +74,7 @@ export default function RootLayout({
             />
           </AuthProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
