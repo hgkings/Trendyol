@@ -1,11 +1,18 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-server-client'
 import * as profileService from '@/services/profile.service'
+import { apiRateLimit, getIp } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const ip = getIp(request)
+    const { success: allowed } = await apiRateLimit.limit(ip)
+    if (!allowed) {
+      return NextResponse.json({ error: 'Çok fazla istek. Lütfen bekleyin.' }, { status: 429 })
+    }
+
     const supabase = createClient()
     const { data: { user }, error: authErr } = await supabase.auth.getUser()
 

@@ -1,9 +1,19 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail } from '@/lib/email/smtp'
+import { emailRateLimit, getIp } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
-async function handler() {
+async function handler(request: Request) {
+  const ip = getIp(request)
+  const { success } = await emailRateLimit.limit(ip)
+  if (!success) {
+    return NextResponse.json(
+      { error: 'Çok fazla istek. Lütfen bekleyin.' },
+      { status: 429 }
+    )
+  }
+
   const result = await sendEmail({
     to: 'isbilirhilmi8@gmail.com',
     subject: '✅ Kârnet Brevo SMTP Test',
@@ -15,10 +25,10 @@ async function handler() {
   return NextResponse.json(result)
 }
 
-export async function GET() {
-  return handler()
+export async function GET(request: NextRequest) {
+  return handler(request)
 }
 
-export async function POST() {
-  return handler()
+export async function POST(request: NextRequest) {
+  return handler(request)
 }

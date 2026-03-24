@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { NAV_ITEMS, BOTTOM_NAV_ITEMS } from '@/config/navigation';
 import { isProUser } from '@/utils/access';
-import { ProStatusCard } from '@/components/ProStatusCard';
+import { ProStatusCard } from '@/components/shared/ProStatusCard';
 
 export function Sidebar() {
   const pathname = usePathname();

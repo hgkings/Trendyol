@@ -2,9 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-server-client'
 import * as supportService from '@/services/support.service'
 import { CreateTicketSchema, TicketFilterSchema } from '@/lib/validations/support'
+import { apiRateLimit, getIp } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getIp(request)
+    const { success: allowed } = await apiRateLimit.limit(ip)
+    if (!allowed) {
+      return NextResponse.json({ success: false, error: 'Çok fazla istek. Lütfen bekleyin.' }, { status: 429 })
+    }
+
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -31,6 +38,12 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    const ip = getIp(request)
+    const { success: allowed } = await apiRateLimit.limit(ip)
+    if (!allowed) {
+      return NextResponse.json({ success: false, error: 'Çok fazla istek. Lütfen bekleyin.' }, { status: 429 })
+    }
+
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
