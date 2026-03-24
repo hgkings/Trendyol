@@ -6,6 +6,7 @@ import { KarnetLogo } from '@/components/shared/KarnetLogo';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabaseClient';
+import { updateProfile } from '@/lib/api/profile';
 import {
   Eye, EyeOff, HelpCircle, ArrowRight, Check,
   TrendingUp, TestTube2, Plug,
@@ -151,10 +152,7 @@ function AuthPageContent() {
       if (result.success) {
         // Profili full_name ile güncelle (hata olursa sessizce geç)
         try {
-          const { data: { user: authUser } } = await supabase.auth.getUser();
-          if (authUser) {
-            await supabase.from('profiles').update({ full_name: trimmedName }).eq('id', authUser.id);
-          }
+          await updateProfile({ full_name: trimmedName });
         } catch {}
 
         // Oturum açıldı mı yoksa email doğrulaması mı gerekiyor?

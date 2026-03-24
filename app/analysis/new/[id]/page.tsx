@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Analysis } from '@/types';
-import { supabase } from '@/lib/supabaseClient';
+import { getAnalysis } from '@/lib/api/analyses';
 import { formatCurrency, formatPercent } from '@/components/shared/format';
 import { KPICard } from '@/components/shared/kpi-card';
 import { RiskBadge } from '@/components/shared/risk-badge';
@@ -55,14 +55,7 @@ export default function AnalysisDetailPage() {
 
     const fetchAnalysis = async () => {
         try {
-            const { data, error } = await supabase
-                .from('analyses')
-                .select('*')
-                .eq('id', id)
-                .eq('user_id', user?.id)
-                .single();
-
-            if (error) throw error;
+            const data = await getAnalysis(id as string);
 
             const mapped: Analysis = {
                 id: data.id,

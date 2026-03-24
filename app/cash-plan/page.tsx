@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatCurrency } from '@/components/shared/format';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabaseClient';
+import { getCashPlan, saveCashPlan } from '@/lib/api/cash-plan';
 import { Loader2, TrendingDown, TrendingUp, Calendar, AlertTriangle, Save, Lock, Unlock } from 'lucide-react';
 import { CashPlanRow } from '@/types';
 import { Switch } from '@/components/ui/switch';
@@ -67,12 +67,10 @@ export default function CashPlanPage() {
         setLoading(true);
 
         // Fetch existing plan
-        const { data, error } = await supabase
-            .from('cash_plan')
-            .select('*')
-            .eq('user_id', user.id);
-
-        if (error) {
+        let data: CashPlanRow[] = [];
+        try {
+            data = await getCashPlan();
+        } catch {
             toast.error('Veri yüklenemedi.');
             setLoading(false);
             return;
@@ -190,22 +188,19 @@ export default function CashPlanPage() {
         setSaving(true);
 
         // Upsert all rows
-        const { error } = await supabase.from('cash_plan').upsert(
-            rows.map(r => ({
-                user_id: user.id,
-                month: r.month,
-                opening_cash: r.opening_cash,
-                cash_in: r.cash_in,
-                cash_out: r.cash_out,
-                closing_cash: r.closing_cash
-            })),
-            { onConflict: 'user_id, month' }
-        );
-
-        if (error) {
-            toast.error('Kaydetme hatası: ' + error.message);
-        } else {
+        try {
+            await saveCashPlan(
+                rows.map(r => ({
+                    month: r.month,
+                    opening_cash: r.opening_cash,
+                    cash_in: r.cash_in,
+                    cash_out: r.cash_out,
+                    closing_cash: r.closing_cash
+                }))
+            );
             toast.success('Nakit planı kaydedildi.');
+        } catch {
+            toast.error('Kaydetme hatası.');
         }
         setSaving(false);
     };
