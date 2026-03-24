@@ -36,7 +36,7 @@ import {
 
 export default function AnalysisDetailPage() {
     const params = useParams();
-    const id = params?.id;
+    const id = params?.id as string;
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const [analysis, setAnalysis] = useState<Analysis | null>(null);
