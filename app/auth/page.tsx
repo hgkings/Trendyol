@@ -30,10 +30,18 @@ function translateError(err: string): string {
   if (e.includes('password') && (e.includes('characters') || e.includes('karakter'))) {
     return 'Şifre en az 8 karakter olmalıdır.';
   }
-  if (e.includes('kayit hatasi') || e.includes('kayıt hatası')) {
-    return 'Kayıt başarısız. Lütfen tekrar deneyin.';
+  if (e.includes('email address not authorized') || e.includes('not authorized')) {
+    return 'Bu e-posta adresi ile kayıt yapılamıyor.';
   }
-  return 'Bir hata oluştu. Lütfen tekrar deneyin.';
+  if (e.includes('smtp') || e.includes('email') && e.includes('send')) {
+    return 'Doğrulama e-postası gönderilemedi. SMTP ayarlarını kontrol edin.';
+  }
+  // "Kayit hatasi: [gerçek mesaj]" — asıl hatayı göster
+  if (e.includes('kayit hatasi')) {
+    const actualError = err.replace(/^kayit hatasi:\s*/i, '');
+    return `Kayıt başarısız: ${actualError}`;
+  }
+  return `Hata: ${err}`;
 }
 
 // ── Şifre güç hesaplayıcı ──
