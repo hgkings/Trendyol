@@ -11,7 +11,17 @@ export async function POST() {
     try {
         const { ctx, error, status } = await prepareSyncContext();
         if (!ctx) {
-            return NextResponse.json({ error }, { status });
+            const isSellerIdMissing = status === 400 && error?.toLowerCase().includes('seller');
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: isSellerIdMissing
+                        ? 'Satıcı ID eksik. Pazaryeri ayarlarından Satıcı ID bilgisini güncelleyin.'
+                        : error,
+                    ...(isSellerIdMissing && { code: 'MISSING_SUPPLIER_ID' }),
+                },
+                { status }
+            );
         }
 
         // Write running log
@@ -81,6 +91,6 @@ export async function POST() {
             }
         } catch { /* ignore logging errors */ }
 
-        return NextResponse.json({ error: 'Ürün senkronizasyonu başarısız.' }, { status: 500 });
+        return NextResponse.json({ error: 'Ürün senkronizasyonu başarısız.', detail: err?.message }, { status: 500 });
     }
 }

@@ -34,6 +34,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 
 type MarketplaceKey = 'trendyol' | 'hepsiburada';
 type ConnectionStatus = 'disconnected' | 'connected' | 'pending_test' | 'error';
+type DisplayStatus = ConnectionStatus | 'missing_info';
 
 const MARKETPLACE_CONFIG: Record<MarketplaceKey, {
     label: string;
@@ -46,6 +47,7 @@ const MARKETPLACE_CONFIG: Record<MarketplaceKey, {
     apiSecretPlaceholder: string;
     sellerIdLabel: string;
     helpText: string;
+    sellerIdErrorText: string;
     description: string;
     testCredentials: { apiKey: string; apiSecret: string; sellerId: string };
 }> = {
@@ -60,6 +62,7 @@ const MARKETPLACE_CONFIG: Record<MarketplaceKey, {
         apiSecretPlaceholder: 'API Secret giriniz',
         sellerIdLabel: 'Satıcı ID',
         helpText: 'Trendyol Satıcı Paneli → Entegrasyon → API Bilgileri sayfasından API Key, API Secret ve Satıcı ID bilgilerinizi alabilirsiniz.',
+        sellerIdErrorText: 'Satıcı ID zorunludur. Trendyol Satıcı Paneli → Hesabım → Mağaza Bilgileri\'nden bulabilirsiniz.',
         description: "Türkiye'nin en büyük pazaryeri",
         testCredentials: { apiKey: 'TRENDYOL_TEST', apiSecret: 'TRENDYOL_SECRET', sellerId: '123456' },
     },
@@ -74,6 +77,7 @@ const MARKETPLACE_CONFIG: Record<MarketplaceKey, {
         apiSecretPlaceholder: 'Merchant şifreniz',
         sellerIdLabel: 'Merchant ID',
         helpText: 'Hepsiburada Satıcı Paneli → Hesap Bilgileri → Entegrasyon Bilgileri sayfasından kullanıcı adı, şifre ve Merchant ID bilgilerinizi alabilirsiniz.',
+        sellerIdErrorText: 'Merchant ID zorunludur. Hepsiburada Satıcı Paneli → Hesap Bilgileri → Entegrasyon Bilgileri\'nden bulabilirsiniz.',
         description: "Yüksek hacimli satıcı pazaryeri",
         testCredentials: { apiKey: 'HB_TEST', apiSecret: 'HB_PASSWORD', sellerId: 'HB_MOCK_123' },
     },
@@ -110,6 +114,9 @@ export default function MarketplacePage() {
     const [apiSecret, setApiSecret] = useState('');
     const [sellerId, setSellerId] = useState('');
     const [storeName, setStoreName] = useState('');
+
+    // Seller ID validation error
+    const [sellerIdError, setSellerIdError] = useState('');
 
     // Show/hide password fields
     const [showApiKey, setShowApiKey] = useState(false);
@@ -158,6 +165,13 @@ export default function MarketplacePage() {
             return;
         }
 
+        if (!sellerId.trim()) {
+            setSellerIdError('Satıcı ID zorunludur.');
+            toast.error(mpConfig.sellerIdErrorText);
+            return;
+        }
+        setSellerIdError('');
+
         setSaving(true);
         setLastLog(null);
         try {
@@ -167,7 +181,7 @@ export default function MarketplacePage() {
                 body: JSON.stringify({
                     apiKey: apiKey.trim(),
                     apiSecret: apiSecret.trim(),
-                    sellerId: sellerId.trim() || undefined,
+                    sellerId: sellerId.trim(),
                     storeName: storeName.trim() || undefined,
                 }),
             });
@@ -298,7 +312,9 @@ export default function MarketplacePage() {
         }
     };
 
-    const isConnected = connection?.status === 'connected';
+    const isConnected = connection?.connected === true;
+    const isMissingInfo = isConnected && !connection?.seller_id?.trim();
+    const displayStatus: DisplayStatus = isMissingInfo ? 'missing_info' : (connection?.status || 'disconnected');
     const [normalizing, setNormalizing] = useState(false);
     const isSyncing = syncingProducts || syncingOrders || testing || normalizing || normalizingOrders;
 
@@ -347,7 +363,7 @@ export default function MarketplacePage() {
         }
     };
 
-    const statusConfig: Record<ConnectionStatus, { icon: React.ReactNode; label: string; color: string }> = {
+    const statusConfig: Record<DisplayStatus, { icon: React.ReactNode; label: string; color: string }> = {
         connected: {
             icon: <CheckCircle2 className="h-5 w-5" />,
             label: 'Bağlı',
@@ -368,10 +384,14 @@ export default function MarketplacePage() {
             label: 'Hata',
             color: 'text-red-400 bg-red-500/10 border-red-500/20',
         },
-
+        missing_info: {
+            icon: <AlertTriangle className="h-5 w-5" />,
+            label: 'Eksik Bilgi',
+            color: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
+        },
     };
 
-    const currentStatus = statusConfig[connection?.status || 'disconnected'] || statusConfig.disconnected;
+    const currentStatus = statusConfig[displayStatus] || statusConfig.disconnected;
 
     return (
         <DashboardLayout>
@@ -474,6 +494,19 @@ export default function MarketplacePage() {
                         ) : isConnected ? (
                             /* ─── Connected State ─── */
                             <div className="space-y-6">
+                                {/* Missing Seller ID Warning */}
+                                {isMissingInfo && (
+                                    <div className="flex items-start gap-3 rounded-lg border border-orange-500/30 bg-orange-500/10 p-4">
+                                        <AlertTriangle className="h-5 w-5 text-orange-400 shrink-0 mt-0.5" />
+                                        <div className="text-xs text-orange-400">
+                                            <p className="font-semibold">Satıcı ID eksik — senkronizasyon çalışmaz</p>
+                                            <p className="mt-0.5 opacity-90">
+                                                {mpConfig.sellerIdErrorText} Bağlantıyı kaldırıp Satıcı ID ile yeniden kaydedin.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                     <div className="rounded-lg border p-4 space-y-1">
                                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Mağaza Adı</p>
@@ -660,16 +693,22 @@ export default function MarketplacePage() {
                                     {/* Seller / Merchant ID */}
                                     <div className="space-y-2">
                                         <Label htmlFor="sellerId" className="text-sm font-medium">
-                                            {mpConfig.sellerIdLabel} <span className="text-muted-foreground text-xs">(opsiyonel)</span>
+                                            {mpConfig.sellerIdLabel} <span className="text-red-500">*</span>
                                         </Label>
                                         <Input
                                             id="sellerId"
                                             type="text"
                                             placeholder={`${mpConfig.sellerIdLabel} giriniz`}
                                             value={sellerId}
-                                            onChange={(e) => setSellerId(e.target.value)}
+                                            onChange={(e) => { setSellerId(e.target.value); if (sellerIdError) setSellerIdError(''); }}
                                             autoComplete="off"
+                                            required
+                                            aria-invalid={!!sellerIdError}
+                                            className={sellerIdError ? 'border-red-500 focus-visible:ring-red-500' : ''}
                                         />
+                                        {sellerIdError && (
+                                            <p className="text-xs text-red-500">{sellerIdError}</p>
+                                        )}
                                     </div>
 
                                     {/* Store Name */}
@@ -699,7 +738,7 @@ export default function MarketplacePage() {
 
                                 {/* Save Button */}
                                 <div className="flex justify-end">
-                                    <Button type="submit" disabled={saving || !apiKey || !apiSecret} className="gap-2 min-w-[200px]">
+                                    <Button type="submit" disabled={saving || !apiKey || !apiSecret || !sellerId} className="gap-2 min-w-[200px]">
                                         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Store className="h-4 w-4" />}
                                         Kaydet & Bağlantıyı Test Et
                                     </Button>

@@ -123,6 +123,13 @@ function sleep(ms: number): Promise<void> {
 export async function testConnection(
     creds: TrendyolCredentials
 ): Promise<{ success: boolean; message: string; storeName?: string }> {
+    if (!creds.sellerId || String(creds.sellerId).trim() === '') {
+        return {
+            success: false,
+            message: 'Satıcı ID eksik. Lütfen pazaryeri ayarlarından Satıcı ID bilgisini güncelleyin.',
+        };
+    }
+
     if (isMockMode(creds)) {
         return {
             success: true,
@@ -166,6 +173,10 @@ export async function fetchProducts(
     page = 0,
     size = 50
 ): Promise<TrendyolProductPage> {
+    if (!creds.sellerId || String(creds.sellerId).trim() === '') {
+        throw new Error('Satıcı ID eksik. Lütfen pazaryeri ayarlarından Satıcı ID bilgisini güncelleyin.');
+    }
+
     if (isMockMode(creds)) {
         return {
             content: MOCK_PRODUCTS,
@@ -227,6 +238,10 @@ export async function fetchOrders(
     page = 0,
     size = 50
 ): Promise<TrendyolOrderPage> {
+    if (!creds.sellerId || String(creds.sellerId).trim() === '') {
+        throw new Error('Satıcı ID eksik. Lütfen pazaryeri ayarlarından Satıcı ID bilgisini güncelleyin.');
+    }
+
     if (isMockMode(creds)) {
         return {
             content: MOCK_ORDERS,
