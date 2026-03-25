@@ -23,7 +23,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { formatCurrency } from '@/components/shared/format';
 import { toast } from 'sonner';
-import { Target, ArrowRight, Lock, Calculator, ChevronDown, ChevronUp, Info, AlertTriangle, AlertCircle, Loader2 } from 'lucide-react';
+import { Target, ArrowRight, Lock, Calculator, ChevronDown, ChevronUp, Info, AlertTriangle, AlertCircle } from 'lucide-react';
 import { isProUser } from '@/utils/access';
 
 const defaultInput: ProductInput = {
@@ -112,36 +112,6 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
 
   const [customRateMap, setCustomRateMap] = useState<Map<string, number>>(new Map());
   const [ratesLastUpdated, setRatesLastUpdated] = useState<string | null>(null);
-
-  const [trendyolKomisyonYukleniyor, setTrendyolKomisyonYukleniyor] = useState(false);
-  const [trendyolKomisyonKaynagi, setTrendyolKomisyonKaynagi] = useState(false);
-
-  const trendyoldenKomisyonCek = async () => {
-    setTrendyolKomisyonYukleniyor(true);
-    try {
-      const bitis = new Date();
-      const baslangic = new Date();
-      baslangic.setDate(baslangic.getDate() - 30);
-      const fmt = (d: Date) => d.toISOString().slice(0, 10);
-      const res = await fetch(`/api/marketplace/trendyol/finance?startDate=${fmt(baslangic)}&endDate=${fmt(bitis)}`);
-      if (!res.ok) throw new Error('Veri alınamadı');
-      const json = await res.json();
-      const settlements: Array<{ commissionAmount?: number; salesAmount?: number }> = json.data ?? [];
-      const toplamKomisyon = settlements.reduce((s, r) => s + (r.commissionAmount ?? 0), 0);
-      const toplamSatis = settlements.reduce((s, r) => s + (r.salesAmount ?? 0), 0);
-      if (toplamSatis > 0) {
-        const oran = parseFloat(((toplamKomisyon / toplamSatis) * 100).toFixed(2));
-        handleFieldChange('commission_pct', oran);
-        setTrendyolKomisyonKaynagi(true);
-      } else {
-        toast.info('Son 30 günde yeterli satış verisi bulunamadı.');
-      }
-    } catch {
-      toast.error('Trendyol komisyon verisi alınamadı.');
-    } finally {
-      setTrendyolKomisyonYukleniyor(false);
-    }
-  };
 
   // In demo mode, treat as free user unless simulated otherwise
   const isProUserFlag = isDemo ? false : isProUser(user);
@@ -622,24 +592,6 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
               <p className="text-amber-500">
                 Komisyon oranını yukarıdaki alandan manuel düzeltebilirsiniz.
               </p>
-              {input.marketplace === 'trendyol' && !isDemo && (
-                <div className="flex items-center gap-2 pt-1 border-t border-amber-500/20">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={trendyoldenKomisyonCek}
-                    disabled={trendyolKomisyonYukleniyor}
-                    className="h-7 text-xs px-2 border-amber-500/40 text-amber-400 hover:bg-amber-500/10"
-                  >
-                    {trendyolKomisyonYukleniyor && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
-                    Trendyol&apos;dan Çek
-                  </Button>
-                  {trendyolKomisyonKaynagi && (
-                    <span className="text-green-500">Trendyol verisinden hesaplandı ✓</span>
-                  )}
-                </div>
-              )}
             </div>
 
           </div>

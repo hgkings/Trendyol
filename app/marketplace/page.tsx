@@ -130,6 +130,10 @@ export default function MarketplacePage() {
     const [finansHata, setFinansHata] = useState<string | null>(null);
     const [seciliAralik, setSeciliAralik] = useState<'7' | '30' | '90'>('30');
 
+    // Komisyon çek
+    const [komisyonYukleniyor, setKomisyonYukleniyor] = useState(false);
+    const [komisyonSonucu, setKomisyonSonucu] = useState<{ oran: number } | null>(null);
+
     // Show/hide password fields
     const [showApiKey, setShowApiKey] = useState(false);
     const [showApiSecret, setShowApiSecret] = useState(false);
@@ -207,6 +211,37 @@ export default function MarketplacePage() {
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [connection, seciliAralik, selectedMarketplace]);
+
+    const komisyonCek = async () => {
+        if (selectedMarketplace !== 'trendyol') {
+            toast.info(`${mpConfig.label} için komisyon çekme özelliği yakında eklenecek.`);
+            return;
+        }
+        setKomisyonYukleniyor(true);
+        setKomisyonSonucu(null);
+        try {
+            const bitis = new Date();
+            const baslangic = new Date();
+            baslangic.setDate(bitis.getDate() - 30);
+            const fmt = (d: Date) => d.toISOString().slice(0, 10);
+            const res = await fetch(`/api/marketplace/trendyol/finance?startDate=${fmt(baslangic)}&endDate=${fmt(bitis)}`);
+            if (!res.ok) throw new Error('Finans verisi alınamadı');
+            const json = await res.json();
+            const rows: Array<{ commissionAmount?: number; salesAmount?: number }> = json.data ?? [];
+            const toplamKomisyon = rows.reduce((s, r) => s + (r.commissionAmount ?? 0), 0);
+            const toplamSatis = rows.reduce((s, r) => s + (r.salesAmount ?? 0), 0);
+            if (toplamSatis > 0) {
+                const oran = parseFloat(((toplamKomisyon / toplamSatis) * 100).toFixed(2));
+                setKomisyonSonucu({ oran });
+            } else {
+                toast.info('Son 30 günde yeterli satış verisi bulunamadı.');
+            }
+        } catch {
+            toast.error(`${mpConfig.label} komisyon verisi alınamadı.`);
+        } finally {
+            setKomisyonYukleniyor(false);
+        }
+    };
 
     const translateConnectionError = (status: number, message?: string): string => {
         if (status === 401) return 'API bilgileri hatalı, lütfen kontrol edin.';
@@ -650,6 +685,38 @@ export default function MarketplacePage() {
                                     </div>
                                 )}
 
+
+                                {/* ─── Komisyon Çek ─── */}
+                                <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-semibold">Gerçek Komisyon Oranı</p>
+                                            <p className="text-xs text-muted-foreground mt-0.5">Son 30 günlük ödeme verilerinden ortalama komisyon oranını hesaplar</p>
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={komisyonCek}
+                                            disabled={komisyonYukleniyor}
+                                            className="gap-2 shrink-0"
+                                        >
+                                            {komisyonYukleniyor
+                                                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                : <BarChart3 className="h-3.5 w-3.5" />
+                                            }
+                                            {mpConfig.label}&apos;dan Çek
+                                        </Button>
+                                    </div>
+                                    {komisyonSonucu && (
+                                        <div className="flex items-center gap-3 rounded-lg bg-primary/10 border border-primary/20 px-4 py-3">
+                                            <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                                            <div>
+                                                <p className="text-sm font-semibold text-primary">%{komisyonSonucu.oran}</p>
+                                                <p className="text-xs text-muted-foreground">Son 30 günde ortalama komisyon oranı — analizlerinizde bu oranı kullanabilirsiniz</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
 
                                 {/* ─── Finans Kartı — sadece Trendyol + bağlı + seller_id varsa ─── */}
                                 {connection?.status === 'connected' && connection?.seller_id && selectedMarketplace === 'trendyol' && (
