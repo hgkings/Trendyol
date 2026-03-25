@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useAlerts } from '@/contexts/alert-context';
 import { deleteAnalysis as storageDeleteAnalysis } from '@/lib/api/analyses';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
@@ -14,8 +15,46 @@ import { toast } from 'sonner';
 import { GeneralRiskCard } from '@/components/dashboard/general-risk-card';
 import { RecommendationsPanel } from '@/components/dashboard/recommendations-panel';
 
+interface TrendyolFinans {
+  toplamKomisyon: number;
+  toplamKargo: number;
+  toplamIade: number;
+  netKazanc: number;
+}
+
 export default function DashboardPage() {
   const { analyses, loading, refresh } = useAlerts();
+
+  const [trendyolFinans, setTrendyolFinans] = useState<TrendyolFinans | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const connRes = await fetch('/api/marketplace/trendyol');
+        if (!connRes.ok) return;
+        const conn = await connRes.json();
+        if (conn.status !== 'connected' || !conn.seller_id?.trim()) return;
+
+        const bitis = new Date();
+        const baslangic = new Date();
+        baslangic.setDate(baslangic.getDate() - 30);
+        const fmt = (d: Date) => d.toISOString().slice(0, 10);
+        const res = await fetch(`/api/marketplace/trendyol/finance?startDate=${fmt(baslangic)}&endDate=${fmt(bitis)}`);
+        if (!res.ok) return;
+        const json = await res.json();
+        const rows: Array<{ commissionAmount?: number; shippingAmount?: number; returnAmount?: number; netAmount?: number }> = json.data ?? [];
+        if (rows.length === 0) return;
+        setTrendyolFinans({
+          toplamKomisyon: rows.reduce((s, r) => s + (r.commissionAmount ?? 0), 0),
+          toplamKargo: rows.reduce((s, r) => s + (r.shippingAmount ?? 0), 0),
+          toplamIade: rows.reduce((s, r) => s + (r.returnAmount ?? 0), 0),
+          netKazanc: rows.reduce((s, r) => s + (r.netAmount ?? 0), 0),
+        });
+      } catch {
+        // sessizce geç
+      }
+    })();
+  }, []);
 
   const handleDelete = async (id: string) => {
     try {
@@ -101,6 +140,32 @@ export default function DashboardPage() {
           />
         </div>
 
+        {/* Trendyol Finansal Özet */}
+        {trendyolFinans && (
+          <div className="rounded-2xl border bg-card p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-foreground">Trendyol — Son 30 Gün</h2>
+              <span className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
+                <span className="h-1.5 w-1.5 rounded-full bg-green-500 inline-block" />
+                Canlı veri
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-xl bg-red-500/10 p-3 space-y-0.5">
+                <p className="text-xs text-muted-foreground">Komisyon</p>
+                <p className="text-base font-bold text-red-500">{formatCurrency(trendyolFinans.toplamKomisyon)}</p>
+              </div>
+              <div className="rounded-xl bg-orange-500/10 p-3 space-y-0.5">
+                <p className="text-xs text-muted-foreground">Kargo</p>
+                <p className="text-base font-bold text-orange-500">{formatCurrency(trendyolFinans.toplamKargo)}</p>
+              </div>
+              <div className="rounded-xl bg-primary/10 p-3 space-y-0.5">
+                <p className="text-xs text-muted-foreground">Net Kazanç</p>
+                <p className="text-base font-bold text-primary">{formatCurrency(trendyolFinans.netKazanc)}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Charts Section */}
         <div className="grid gap-6 lg:grid-cols-3">

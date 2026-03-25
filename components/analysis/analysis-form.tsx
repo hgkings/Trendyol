@@ -23,7 +23,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { formatCurrency } from '@/components/shared/format';
 import { toast } from 'sonner';
-import { Target, ArrowRight, Lock, Calculator, ChevronDown, ChevronUp, Info, AlertTriangle, AlertCircle } from 'lucide-react';
+import { Target, ArrowRight, Lock, Calculator, ChevronDown, ChevronUp, Info, AlertTriangle, AlertCircle, Loader2 } from 'lucide-react';
 import { isProUser } from '@/utils/access';
 
 const defaultInput: ProductInput = {
@@ -112,6 +112,51 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
 
   const [customRateMap, setCustomRateMap] = useState<Map<string, number>>(new Map());
   const [ratesLastUpdated, setRatesLastUpdated] = useState<string | null>(null);
+
+  const [trendyolKomisyonYukleniyor, setTrendyolKomisyonYukleniyor] = useState(false);
+  const [trendyolKomisyonKaynagi, setTrendyolKomisyonKaynagi] = useState(false);
+  const [trendyolBagliMi, setTrendyolBagliMi] = useState(false);
+
+  useEffect(() => {
+    if (input.marketplace !== 'trendyol' || isDemo) return;
+    (async () => {
+      try {
+        const res = await fetch('/api/marketplace/trendyol');
+        if (!res.ok) return;
+        const json = await res.json();
+        setTrendyolBagliMi(json.status === 'connected' && !!json.seller_id?.trim());
+      } catch {
+        // sessizce geç
+      }
+    })();
+  }, [input.marketplace, isDemo]);
+
+  const trendyoldenKomisyonCek = async () => {
+    setTrendyolKomisyonYukleniyor(true);
+    try {
+      const bitis = new Date();
+      const baslangic = new Date();
+      baslangic.setDate(baslangic.getDate() - 30);
+      const fmt = (d: Date) => d.toISOString().slice(0, 10);
+      const res = await fetch(`/api/marketplace/trendyol/finance?startDate=${fmt(baslangic)}&endDate=${fmt(bitis)}`);
+      if (!res.ok) throw new Error('Veri alınamadı');
+      const json = await res.json();
+      const settlements: Array<{ commissionAmount?: number; salesAmount?: number }> = json.data ?? [];
+      const toplamKomisyon = settlements.reduce((s, r) => s + (r.commissionAmount ?? 0), 0);
+      const toplamSatis = settlements.reduce((s, r) => s + (r.salesAmount ?? 0), 0);
+      if (toplamSatis > 0) {
+        const oran = parseFloat(((toplamKomisyon / toplamSatis) * 100).toFixed(2));
+        handleFieldChange('commission_pct', oran);
+        setTrendyolKomisyonKaynagi(true);
+      } else {
+        toast.info('Son 30 günde yeterli satış verisi bulunamadı.');
+      }
+    } catch {
+      toast.error('Trendyol komisyon verisi alınamadı.');
+    } finally {
+      setTrendyolKomisyonYukleniyor(false);
+    }
+  };
 
   // In demo mode, treat as free user unless simulated otherwise
   const isProUserFlag = isDemo ? false : isProUser(user);
@@ -740,6 +785,26 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
                     </div>
                     {errors[field.key] && (
                       <p className="text-xs text-red-500">{errors[field.key]}</p>
+                    )}
+                    {field.key === 'commission_pct' && input.marketplace === 'trendyol' && trendyolBagliMi && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={trendyoldenKomisyonCek}
+                          disabled={trendyolKomisyonYukleniyor}
+                          className="h-7 text-xs px-2"
+                        >
+                          {trendyolKomisyonYukleniyor ? (
+                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                          ) : null}
+                          Trendyol&apos;dan Çek
+                        </Button>
+                        {trendyolKomisyonKaynagi && (
+                          <span className="text-xs text-green-600">Trendyol verisinden hesaplandı ✓</span>
+                        )}
+                      </div>
                     )}
                   </div>
                 ))}
