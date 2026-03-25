@@ -622,6 +622,24 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
               <p className="text-amber-500">
                 Komisyon oranını yukarıdaki alandan manuel düzeltebilirsiniz.
               </p>
+              {input.marketplace === 'trendyol' && !isDemo && (
+                <div className="flex items-center gap-2 pt-1 border-t border-amber-500/20">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={trendyoldenKomisyonCek}
+                    disabled={trendyolKomisyonYukleniyor}
+                    className="h-7 text-xs px-2 border-amber-500/40 text-amber-400 hover:bg-amber-500/10"
+                  >
+                    {trendyolKomisyonYukleniyor && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+                    Trendyol&apos;dan Çek
+                  </Button>
+                  {trendyolKomisyonKaynagi && (
+                    <span className="text-green-500">Trendyol verisinden hesaplandı ✓</span>
+                  )}
+                </div>
+              )}
             </div>
 
           </div>
@@ -770,26 +788,6 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
                     </div>
                     {errors[field.key] && (
                       <p className="text-xs text-red-500">{errors[field.key]}</p>
-                    )}
-                    {field.key === 'commission_pct' && input.marketplace === 'trendyol' && !isDemo && (
-                      <div className="flex items-center gap-2 mt-1">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={trendyoldenKomisyonCek}
-                          disabled={trendyolKomisyonYukleniyor}
-                          className="h-7 text-xs px-2"
-                        >
-                          {trendyolKomisyonYukleniyor ? (
-                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                          ) : null}
-                          Trendyol&apos;dan Çek
-                        </Button>
-                        {trendyolKomisyonKaynagi && (
-                          <span className="text-xs text-green-600">Trendyol verisinden hesaplandı ✓</span>
-                        )}
-                      </div>
                     )}
                   </div>
                 ))}
