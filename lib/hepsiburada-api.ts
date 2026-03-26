@@ -1,35 +1,51 @@
 /**
  * Hepsiburada Merchant API Client — Server-only
  *
- * Base URL (listing): https://listing-external.hepsiburada.com
- * Base URL (orders/products): https://mpop-sit.hepsiburada.com (sandbox)
- *                             https://mpop.hepsiburada.com     (production)
- * Auth: Basic Base64(username:password) — internally stored as apiKey:apiSecret
- * Rate limit: Exponential backoff on 429/5xx (max 3 retries), 10s timeout
+ * Auth: HTTP Basic Auth — Authorization: Basic base64(username:password)
+ * Env: HEPSIBURADA_USERNAME, HEPSIBURADA_PASSWORD, HEPSIBURADA_MERCHANT_ID
+ *
+ * Base URLs:
+ *   OMS (orders/claims): https://oms-external.hepsiburada.com
+ *   FIN (finance):       https://mpfinance-external.hepsiburada.com
+ *   LIST (products):     https://listing-external.hepsiburada.com
+ *
+ * SIT ortamı: HEPSIBURADA_ENV=sit → *-sit.hepsiburada.com
+ *
+ * Rate limit: 10.000 req / 10s
+ *   429 → X-RateLimit-Reset header'ından saniye oku, bekle, max 3 retry
  *
  * Mock mode: apiKey === "HB_TEST" — gerçek API çağrısı yapılmaz.
- *
- * Status mapping:
- *   "Created"   → "beklemede"
- *   "Shipped"   → "kargoda"
- *   "Delivered" → "tamamlandı"
- *   "Cancelled" → "iptal"
  *
  * NEVER log credentials, auth headers, or tokens.
  */
 
-const BASE_URL = 'https://mpop.hepsiburada.com';
+// ─── Base URLs ──────────────────────────────────────────────
+
+const HB_OMS =
+    process.env.HEPSIBURADA_ENV === 'sit'
+        ? 'https://oms-external-sit.hepsiburada.com'
+        : 'https://oms-external.hepsiburada.com';
+
+const HB_FIN =
+    process.env.HEPSIBURADA_ENV === 'sit'
+        ? 'https://mpfinance-external-sit.hepsiburada.com'
+        : 'https://mpfinance-external.hepsiburada.com';
+
+const HB_LIST =
+    process.env.HEPSIBURADA_ENV === 'sit'
+        ? 'https://listing-external-sit.hepsiburada.com'
+        : 'https://listing-external.hepsiburada.com';
+
 const MAX_RETRIES = 3;
-const INITIAL_BACKOFF_MS = 1000;
 const TIMEOUT_MS = 10000;
 
 export const HB_TEST_KEY = 'HB_TEST';
 
 /**
  * HepsiburadaCredentials
- * apiKey    = Hepsiburada merchant username
- * apiSecret = Hepsiburada merchant password
- * merchantId = Hepsiburada merchant ID (used in API query params)
+ * apiKey    = Hepsiburada merchant username (HEPSIBURADA_USERNAME)
+ * apiSecret = Hepsiburada merchant password (HEPSIBURADA_PASSWORD)
+ * merchantId = Hepsiburada merchant ID — GUID format (HEPSIBURADA_MERCHANT_ID)
  */
 export interface HepsiburadaCredentials {
     apiKey: string;
@@ -47,31 +63,26 @@ export const HB_STATUS_MAP: Record<string, string> = {
 // ─── Mock Data ───────────────────────────────────────────────
 
 const MOCK_PRODUCTS = [
-    { id: 'HB-001', sku: 'SONY-WH1000XM5', name: 'Sony WH-1000XM5 Kablosuz Kulaklık', price: 8499, originalPrice: 9999, availableStock: 34, categoryName: 'Elektronik > Kulaklık' },
-    { id: 'HB-002', sku: 'ADIDAS-UB22-42', name: 'Adidas Ultraboost 22 Spor Ayakkabı', price: 2199, originalPrice: 2799, availableStock: 56, categoryName: 'Spor > Koşu Ayakkabısı' },
-    { id: 'HB-003', sku: 'TEFAL-CP6000', name: 'Tefal Comfort Pressure Cooker 6L', price: 1299, originalPrice: 1599, availableStock: 18, categoryName: 'Ev & Yaşam > Mutfak Aletleri' },
-    { id: 'HB-004', sku: 'MAVI-101-32', name: 'Mavi Jeans 101 Slim Fit Pantolon', price: 699, originalPrice: 899, availableStock: 89, categoryName: 'Giyim > Erkek > Kot Pantolon' },
-    { id: 'HB-005', sku: 'DYSON-V11', name: 'Dyson V11 Kablosuz Süpürge', price: 14999, originalPrice: 16999, availableStock: 7, categoryName: 'Ev & Yaşam > Süpürge' },
+    { merchantSku: 'SONY-WH1000XM5', hepsiburadaSku: 'HB-SKU-001', urunAdi: 'Sony WH-1000XM5 Kablosuz Kulaklık', fiyat: 8499, stok: 34 },
+    { merchantSku: 'ADIDAS-UB22-42', hepsiburadaSku: 'HB-SKU-002', urunAdi: 'Adidas Ultraboost 22 Spor Ayakkabı', fiyat: 2199, stok: 56 },
+    { merchantSku: 'TEFAL-CP6000', hepsiburadaSku: 'HB-SKU-003', urunAdi: 'Tefal Comfort Pressure Cooker 6L', fiyat: 1299, stok: 18 },
+    { merchantSku: 'MAVI-101-32', hepsiburadaSku: 'HB-SKU-004', urunAdi: 'Mavi Jeans 101 Slim Fit Pantolon', fiyat: 699, stok: 89 },
+    { merchantSku: 'DYSON-V11', hepsiburadaSku: 'HB-SKU-005', urunAdi: 'Dyson V11 Kablosuz Süpürge', fiyat: 14999, stok: 7 },
 ];
 
 const MOCK_ORDERS = [
-    { orderId: 'HB-ORD-001', orderDate: '2026-03-01T10:00:00Z', status: 'Delivered', totalPrice: 8499, commission: 765, shippingAmount: 0, netEarning: 7734 },
-    { orderId: 'HB-ORD-002', orderDate: '2026-03-02T14:30:00Z', status: 'Delivered', totalPrice: 2199, commission: 242, shippingAmount: 29.9, netEarning: 1927.1 },
-    { orderId: 'HB-ORD-003', orderDate: '2026-03-04T09:15:00Z', status: 'Shipped', totalPrice: 1299, commission: 143, shippingAmount: 0, netEarning: 1156 },
-    { orderId: 'HB-ORD-004', orderDate: '2026-03-06T16:45:00Z', status: 'Shipped', totalPrice: 699, commission: 91, shippingAmount: 29.9, netEarning: 578.1 },
-    { orderId: 'HB-ORD-005', orderDate: '2026-03-08T11:20:00Z', status: 'Created', totalPrice: 14999, commission: 1350, shippingAmount: 0, netEarning: 13649 },
-    { orderId: 'HB-ORD-006', orderDate: '2026-03-09T13:00:00Z', status: 'Cancelled', totalPrice: 2199, commission: 0, shippingAmount: 0, netEarning: 0 },
-    { orderId: 'HB-ORD-007', orderDate: '2026-03-11T08:30:00Z', status: 'Delivered', totalPrice: 8499, commission: 765, shippingAmount: 0, netEarning: 7734 },
-    { orderId: 'HB-ORD-008', orderDate: '2026-03-13T17:00:00Z', status: 'Delivered', totalPrice: 1299, commission: 143, shippingAmount: 29.9, netEarning: 1126.1 },
-    { orderId: 'HB-ORD-009', orderDate: '2026-03-15T12:10:00Z', status: 'Shipped', totalPrice: 14999, commission: 1350, shippingAmount: 0, netEarning: 13649 },
-    { orderId: 'HB-ORD-010', orderDate: '2026-03-17T09:45:00Z', status: 'Created', totalPrice: 699, commission: 91, shippingAmount: 29.9, netEarning: 578.1 },
+    { siparisNo: 'HB-ORD-001', siparisTarihi: '2026-03-01T10:00:00Z', musteriAdi: 'Test Müşteri', hepsiburadaSku: 'HB-SKU-001', birimFiyat: 8499, adet: 1, toplamFiyat: 8499 },
+    { siparisNo: 'HB-ORD-002', siparisTarihi: '2026-03-02T14:30:00Z', musteriAdi: 'Test Müşteri 2', hepsiburadaSku: 'HB-SKU-002', birimFiyat: 2199, adet: 1, toplamFiyat: 2199 },
+    { siparisNo: 'HB-ORD-003', siparisTarihi: '2026-03-04T09:15:00Z', musteriAdi: 'Test Müşteri 3', hepsiburadaSku: 'HB-SKU-003', birimFiyat: 1299, adet: 2, toplamFiyat: 2598 },
 ];
 
-const MOCK_COMMISSION_RATES: HBCommissionRate[] = [
-    { categoryId: 1, categoryName: 'Elektronik', commissionRate: 9 },
-    { categoryId: 2, categoryName: 'Spor', commissionRate: 11 },
-    { categoryId: 3, categoryName: 'Ev & Yaşam', commissionRate: 13 },
-    { categoryId: 4, categoryName: 'Giyim', commissionRate: 16 },
+const MOCK_FINANCE_RECORDS = [
+    { hepsiburadaSku: 'HB-SKU-001', paketNo: 'PKG-001', siparisNo: 'HB-ORD-001', toplamTutar: 8499, vergiTutari: 1529.82, netTutar: 6969.18, aciklama: 'Payment', gelirMi: true, faturaMi: true },
+    { hepsiburadaSku: 'HB-SKU-001', paketNo: 'PKG-001', siparisNo: 'HB-ORD-001', toplamTutar: 765, vergiTutari: 137.7, netTutar: 627.3, aciklama: 'Komisyon', gelirMi: false, faturaMi: true },
+];
+
+const MOCK_CLAIMS = [
+    { talepId: 'CLM-001', siparisNo: 'HB-ORD-001', hepsiburadaSku: 'HB-SKU-001', talepTipi: 'Return', talepDurumu: 'Approved', talepNedeni: 'Ürün hasarlı', adet: 1, talepTarihi: '2026-03-10T10:00:00Z', birimFiyat: 8499 },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -80,54 +91,115 @@ function isMockMode(creds: HepsiburadaCredentials): boolean {
     return creds.apiKey === HB_TEST_KEY;
 }
 
+/**
+ * HTTP Basic Auth header üretir.
+ * 'Basic ' + Base64(username:password)
+ */
+export function getAuthHeader(creds: HepsiburadaCredentials): string {
+    return 'Basic ' + Buffer.from(creds.apiKey + ':' + creds.apiSecret).toString('base64');
+}
+
 function buildHeaders(creds: HepsiburadaCredentials): Record<string, string> {
-    // apiKey = username, apiSecret = password (Hepsiburada Basic Auth)
-    const token = Buffer.from(`${creds.apiKey}:${creds.apiSecret}`).toString('base64');
     return {
-        'Authorization': `Basic ${token}`,
+        'Authorization': getAuthHeader(creds),
         'Content-Type': 'application/json',
         'Accept': 'application/json',
     };
 }
 
-async function fetchWithRetry(url: string, headers: Record<string, string>): Promise<Response> {
-    let lastError: Error | null = null;
+/**
+ * HB tarih formatı: 'yyyy-MM-dd HH:mm'
+ * Trendyol'daki ms timestamp DEĞİL — HB string format kullanır.
+ */
+export function formatHbDate(date: Date): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const h = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+    return `${y}-${m}-${d} ${h}:${min}`;
+}
 
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-        try {
-            const res = await fetch(url, {
-                headers,
-                method: 'GET',
-                signal: AbortSignal.timeout(TIMEOUT_MS),
-            });
-
-            if (res.ok || (res.status >= 400 && res.status < 500 && res.status !== 429)) {
-                return res;
-            }
-
-            if (res.status === 429 || res.status >= 500) {
-                const backoff = INITIAL_BACKOFF_MS * Math.pow(2, attempt);
-                console.log(`[hepsiburada-api] Status ${res.status}, retry ${attempt + 1}/${MAX_RETRIES} after ${backoff}ms`);
-                await sleep(backoff);
-                continue;
-            }
-
-            return res;
-        } catch (err: any) {
-            lastError = err;
-            if (attempt < MAX_RETRIES) {
-                const backoff = INITIAL_BACKOFF_MS * Math.pow(2, attempt);
-                console.log(`[hepsiburada-api] Network error, retry ${attempt + 1}/${MAX_RETRIES} after ${backoff}ms`);
-                await sleep(backoff);
-            }
-        }
-    }
-
-    throw lastError || new Error('Max retries exceeded');
+/**
+ * HB finans API tarih formatı: 'yyyy-M-d' (sıfır pad YOK)
+ */
+export function formatFinDate(date: Date): string {
+    return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
 }
 
 function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * HB API fetch wrapper — 429 rate limit handling.
+ * 429 gelirse X-RateLimit-Reset header'ından bekleme süresi okunur.
+ * Max 3 retry, sonra throw.
+ */
+async function hbFetch(
+    url: string,
+    options: { headers: Record<string, string>; method?: string },
+    retry = 0
+): Promise<Response> {
+    try {
+        const res = await fetch(url, {
+            method: options.method || 'GET',
+            headers: options.headers,
+            signal: AbortSignal.timeout(TIMEOUT_MS),
+        });
+
+        if (res.ok || (res.status >= 400 && res.status < 500 && res.status !== 429)) {
+            return res;
+        }
+
+        if (res.status === 429) {
+            if (retry >= MAX_RETRIES) {
+                throw new Error(`Hepsiburada rate limit aşıldı — ${MAX_RETRIES} deneme sonrası başarısız`);
+            }
+            const resetSeconds = parseInt(res.headers.get('X-RateLimit-Reset') || '10', 10);
+            console.log(`[hepsiburada-api] 429 rate limit, ${resetSeconds}s bekleniyor (retry ${retry + 1}/${MAX_RETRIES})`);
+            await sleep(resetSeconds * 1000);
+            return hbFetch(url, options, retry + 1);
+        }
+
+        if (res.status >= 500) {
+            if (retry >= MAX_RETRIES) {
+                throw new Error(`Hepsiburada sunucu hatası HTTP ${res.status} — ${MAX_RETRIES} deneme sonrası başarısız`);
+            }
+            const backoff = 1000 * Math.pow(2, retry);
+            console.log(`[hepsiburada-api] HTTP ${res.status}, retry ${retry + 1}/${MAX_RETRIES} after ${backoff}ms`);
+            await sleep(backoff);
+            return hbFetch(url, options, retry + 1);
+        }
+
+        return res;
+    } catch (err: any) {
+        if (err?.message?.includes('rate limit') || err?.message?.includes('sunucu hatası')) {
+            throw err;
+        }
+        if (retry >= MAX_RETRIES) {
+            throw err;
+        }
+        const backoff = 1000 * Math.pow(2, retry);
+        console.log(`[hepsiburada-api] Network error, retry ${retry + 1}/${MAX_RETRIES} after ${backoff}ms`);
+        await sleep(backoff);
+        return hbFetch(url, options, retry + 1);
+    }
+}
+
+// ─── Error Messages ─────────────────────────────────────────
+
+const HB_ERROR_MESSAGES: Record<number, string> = {
+    400: 'Gönderilen bilgiler hatalı. Merchant ID ve kimlik bilgilerini kontrol edin.',
+    401: 'Kimlik bilgileri hatalı. Hepsiburada kullanıcı adı ve şifresini kontrol edin.',
+    403: 'Erişim reddedildi. Merchant ID doğruluğunu kontrol edin.',
+    404: 'Merchant ID ile eşleşen mağaza bulunamadı.',
+    429: 'Çok fazla istek gönderildi. Lütfen biraz bekleyip tekrar deneyin.',
+    500: 'Hepsiburada sisteminde geçici bir sorun var. Birkaç dakika sonra tekrar deneyin.',
+};
+
+function getHbErrorMessage(status: number): string {
+    return HB_ERROR_MESSAGES[status] ?? `Hepsiburada hatası (HTTP ${status})`;
 }
 
 // ─── Test Connection ──────────────────────────────────────────
@@ -138,26 +210,25 @@ export async function testConnection(
     if (isMockMode(creds)) {
         return {
             success: true,
-            message: 'Bağlantı başarılı. Toplam 5 ürün bulundu. (Test Modu)',
+            message: 'Bağlantı başarılı. (Test Modu)',
             storeName: 'Hepsiburada Test Mağazası',
         };
     }
 
     try {
-        const url = `${BASE_URL}/product/api/products/get-all-products?merchantId=${creds.merchantId}&offset=0&limit=1`;
+        const url = `${HB_OMS}/orders/merchantid/${creds.merchantId}?offset=0&limit=1`;
         const headers = buildHeaders(creds);
-        const res = await fetchWithRetry(url, headers);
+        const res = await hbFetch(url, { headers });
 
         if (res.ok) {
-            const data = await res.json();
-            const total = data?.totalCount ?? data?.totalElements ?? '?';
-            return {
-                success: true,
-                message: `Bağlantı başarılı. Toplam ${total} ürün bulundu.`,
-            };
+            return { success: true, message: 'Bağlantı başarılı' };
         }
 
-        return { success: false, message: `Bağlantı hatası: HTTP ${res.status}` };
+        if (res.status === 401) {
+            return { success: false, message: 'Kimlik bilgileri hatalı' };
+        }
+
+        return { success: false, message: `HTTP ${res.status}` };
     } catch (err: any) {
         return { success: false, message: `Bağlantı hatası: ${err?.message || 'Bilinmeyen hata'}` };
     }
@@ -173,10 +244,13 @@ export interface HepsiburadaProductPage {
     size: number;
 }
 
+/**
+ * Tek sayfa ürün çeker (backward compat — sync-products route kullanıyor).
+ */
 export async function fetchProducts(
     creds: HepsiburadaCredentials,
     page = 0,
-    size = 50
+    size = 100
 ): Promise<HepsiburadaProductPage> {
     if (isMockMode(creds)) {
         return {
@@ -189,40 +263,66 @@ export async function fetchProducts(
     }
 
     const offset = page * size;
-    const url = `${BASE_URL}/product/api/products/get-all-products?merchantId=${creds.merchantId}&offset=${offset}&limit=${size}`;
+    const url = `${HB_LIST}/listings/merchantid/${creds.merchantId}?offset=${offset}&limit=${size}`;
     const headers = buildHeaders(creds);
-    const res = await fetchWithRetry(url, headers);
+    const res = await hbFetch(url, { headers });
 
-    if (!res.ok) throw new Error(`Hepsiburada ürün API hatası: HTTP ${res.status}`);
+    if (!res.ok) throw new Error(getHbErrorMessage(res.status));
 
     const data = await res.json();
-    const products = data?.products || data?.content || [];
-    const total = data?.totalCount || data?.totalElements || 0;
+    const items: any[] = data?.listings || data?.items || data || [];
+
     return {
-        content: products,
-        totalElements: total,
-        totalPages: Math.ceil(total / size),
+        content: items.map(mapProduct),
+        totalElements: items.length < size ? offset + items.length : offset + size + 1,
+        totalPages: items.length < size ? page + 1 : page + 2,
         page,
         size,
     };
 }
 
-export async function getProductBySku(
-    creds: HepsiburadaCredentials,
-    sku: string
-): Promise<any | null> {
+/**
+ * Tüm ürünleri çeker — offset pagination, 100'er 100'er.
+ * Max güvenlik sınırı: 50 sayfa (5000 ürün).
+ */
+export async function fetchAllProducts(
+    creds: HepsiburadaCredentials
+): Promise<{ items: any[]; totalCount: number }> {
     if (isMockMode(creds)) {
-        return MOCK_PRODUCTS.find(p => p.sku === sku) ?? null;
+        return { items: MOCK_PRODUCTS, totalCount: MOCK_PRODUCTS.length };
     }
 
-    const url = `${BASE_URL}/product/api/products/get-all-products?merchantId=${creds.merchantId}&sku=${encodeURIComponent(sku)}&offset=0&limit=1`;
     const headers = buildHeaders(creds);
-    const res = await fetchWithRetry(url, headers);
+    const allItems: any[] = [];
+    const PAGE_SIZE = 100;
+    const MAX_PAGES = 50;
 
-    if (!res.ok) throw new Error(`Hepsiburada SKU sorgulama hatası: HTTP ${res.status}`);
+    for (let page = 0; page < MAX_PAGES; page++) {
+        const offset = page * PAGE_SIZE;
+        const url = `${HB_LIST}/listings/merchantid/${creds.merchantId}?offset=${offset}&limit=${PAGE_SIZE}`;
+        const res = await hbFetch(url, { headers });
 
-    const data = await res.json();
-    return (data?.products || data?.content)?.[0] ?? null;
+        if (!res.ok) throw new Error(getHbErrorMessage(res.status));
+
+        const data = await res.json();
+        const items: any[] = data?.listings || data?.items || data || [];
+        allItems.push(...items.map(mapProduct));
+
+        if (items.length < PAGE_SIZE) break;
+    }
+
+    return { items: allItems, totalCount: allItems.length };
+}
+
+function mapProduct(raw: any): any {
+    return {
+        merchantSku: raw.merchantSku,
+        hepsiburadaSku: raw.hepsiburadaSku,
+        urunAdi: raw.productName,
+        fiyat: raw.price,
+        stok: raw.availableStock,
+        ...raw,
+    };
 }
 
 // ─── Orders ──────────────────────────────────────────────────
@@ -235,12 +335,15 @@ export interface HepsiburadaOrderPage {
     size: number;
 }
 
+/**
+ * Tek sayfa sipariş çeker (backward compat — sync-orders route kullanıyor).
+ */
 export async function fetchOrders(
     creds: HepsiburadaCredentials,
-    startDate: number,   // epoch millis
-    endDate: number,     // epoch millis
+    startDate: number,
+    endDate: number,
     page = 0,
-    size = 50
+    size = 100
 ): Promise<HepsiburadaOrderPage> {
     if (isMockMode(creds)) {
         return {
@@ -253,43 +356,272 @@ export async function fetchOrders(
     }
 
     const offset = page * size;
-    const startISO = new Date(startDate).toISOString();
-    const endISO = new Date(endDate).toISOString();
-    const url = `${BASE_URL}/order/api/orders?merchantId=${creds.merchantId}&offset=${offset}&limit=${size}&beginDate=${startISO}&endDate=${endISO}`;
+    const start = formatHbDate(new Date(startDate));
+    const end = formatHbDate(new Date(endDate));
+    const url = `${HB_OMS}/orders/merchantid/${creds.merchantId}?offset=${offset}&limit=${size}&begindate=${encodeURIComponent(start)}&enddate=${encodeURIComponent(end)}`;
     const headers = buildHeaders(creds);
-    const res = await fetchWithRetry(url, headers);
+    const res = await hbFetch(url, { headers });
 
-    if (!res.ok) throw new Error(`Hepsiburada sipariş API hatası: HTTP ${res.status}`);
+    if (!res.ok) throw new Error(getHbErrorMessage(res.status));
 
     const data = await res.json();
-    const orders = data?.orders || data?.content || [];
-    const total = data?.totalCount || data?.totalElements || 0;
+    const orders: any[] = data?.data || data?.orders || data?.content || [];
+
     return {
-        content: orders,
-        totalElements: total,
-        totalPages: Math.ceil(total / size),
+        content: orders.map(mapOrder),
+        totalElements: orders.length < size ? offset + orders.length : offset + size + 1,
+        totalPages: orders.length < size ? page + 1 : page + 2,
         page,
         size,
     };
 }
 
-export async function getOrderDetail(
+/**
+ * Tüm siparişleri çeker — 30 günlük pencereler + offset pagination.
+ * Max offset güvenlik sınırı: 5000.
+ */
+export async function fetchAllOrders(
     creds: HepsiburadaCredentials,
-    orderId: string
-): Promise<any | null> {
-    if (isMockMode(creds)) {
-        return MOCK_ORDERS.find(o => o.orderId === orderId) ?? null;
+    startDate: Date,
+    endDate: Date,
+    status?: string
+): Promise<any[]> {
+    if (isMockMode(creds)) return MOCK_ORDERS;
+
+    const headers = buildHeaders(creds);
+    const allOrders: any[] = [];
+    const WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 gün
+    const PAGE_SIZE = 100;
+    const MAX_OFFSET = 5000;
+
+    let windowStart = startDate.getTime();
+    const finalEnd = endDate.getTime();
+
+    while (windowStart < finalEnd) {
+        const windowEnd = Math.min(windowStart + WINDOW_MS, finalEnd);
+        const beginStr = formatHbDate(new Date(windowStart));
+        const endStr = formatHbDate(new Date(windowEnd));
+
+        let offset = 0;
+        while (offset < MAX_OFFSET) {
+            let url = `${HB_OMS}/orders/merchantid/${creds.merchantId}?offset=${offset}&limit=${PAGE_SIZE}&begindate=${encodeURIComponent(beginStr)}&enddate=${encodeURIComponent(endStr)}`;
+            if (status) {
+                url += `&status=${encodeURIComponent(status)}`;
+            }
+
+            const res = await hbFetch(url, { headers });
+            if (!res.ok) throw new Error(getHbErrorMessage(res.status));
+
+            const data = await res.json();
+            const orders: any[] = data?.data || data?.orders || data?.content || [];
+            allOrders.push(...orders.map(mapOrder));
+
+            if (orders.length < PAGE_SIZE) break;
+            offset += PAGE_SIZE;
+        }
+
+        windowStart = windowEnd;
     }
 
-    const url = `${BASE_URL}/order/api/orders/${orderId}`;
-    const headers = buildHeaders(creds);
-    const res = await fetchWithRetry(url, headers);
-
-    if (!res.ok) throw new Error(`Hepsiburada sipariş detay hatası: HTTP ${res.status}`);
-    return res.json();
+    return allOrders;
 }
 
-// ─── Commission Rates ────────────────────────────────────────
+function mapOrder(raw: any): any {
+    const lineItems = (raw.lineItems || raw.lines || []).map((li: any) => ({
+        hepsiburadaSku: li.sku,
+        birimFiyat: li.price?.amount ?? li.unitPrice ?? 0,
+        adet: li.quantity ?? 1,
+        toplamFiyat: li.totalPrice?.amount ?? li.totalAmount ?? 0,
+        ...li,
+    }));
+
+    return {
+        siparisNo: raw.orderNumber,
+        siparisTarihi: raw.orderDate,
+        musteriAdi: raw.customer?.name ?? '',
+        lineItems,
+        ...raw,
+    };
+}
+
+// ─── Finance Records ─────────────────────────────────────────
+
+/**
+ * Finans kayıtlarını çeker — 30 günlük pencereler + offset pagination.
+ */
+export async function getFinanceRecords(
+    creds: HepsiburadaCredentials,
+    startDate: Date,
+    endDate: Date,
+    types = 'Payment,Commission,Return'
+): Promise<{ records: any[]; toplamlar: { toplamGelir: number; toplamGider: number; toplamKomisyon: number; toplamIade: number } }> {
+    if (isMockMode(creds)) {
+        return {
+            records: MOCK_FINANCE_RECORDS,
+            toplamlar: { toplamGelir: 6969.18, toplamGider: 627.3, toplamKomisyon: 627.3, toplamIade: 0 },
+        };
+    }
+
+    const headers = buildHeaders(creds);
+    const allRecords: any[] = [];
+    const WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+    const PAGE_SIZE = 100;
+
+    let windowStart = startDate.getTime();
+    const finalEnd = endDate.getTime();
+
+    while (windowStart < finalEnd) {
+        const windowEnd = Math.min(windowStart + WINDOW_MS, finalEnd);
+        const beginStr = formatFinDate(new Date(windowStart));
+        const endStr = formatFinDate(new Date(windowEnd));
+
+        let offset = 0;
+        while (true) {
+            const url =
+                `${HB_FIN}/invoices/merchantid/${creds.merchantId}/transactiontype/${encodeURIComponent(types)}` +
+                `?startDate=${encodeURIComponent(beginStr)}&endDate=${encodeURIComponent(endStr)}` +
+                `&useInvoiceDate=false&offset=${offset}&limit=${PAGE_SIZE}`;
+
+            const res = await hbFetch(url, { headers });
+            if (!res.ok) throw new Error(getHbErrorMessage(res.status));
+
+            const data = await res.json();
+            const items: any[] = data?.data || data?.invoices || data || [];
+            allRecords.push(...items.map(mapFinanceRecord));
+
+            if (items.length < PAGE_SIZE) break;
+            offset += PAGE_SIZE;
+        }
+
+        windowStart = windowEnd;
+    }
+
+    const toplamGelir = allRecords
+        .filter(r => r.gelirMi)
+        .reduce((sum, r) => sum + r.netTutar, 0);
+
+    const toplamGider = allRecords
+        .filter(r => !r.gelirMi)
+        .reduce((sum, r) => sum + r.netTutar, 0);
+
+    const toplamKomisyon = allRecords
+        .filter(r => (r.aciklama || '').toLowerCase().includes('kom'))
+        .reduce((sum, r) => sum + r.netTutar, 0);
+
+    const toplamIade = allRecords
+        .filter(r => {
+            const desc = (r.aciklama || '').toUpperCase();
+            return desc.includes('İADE') || desc.includes('IADE');
+        })
+        .reduce((sum, r) => sum + r.netTutar, 0);
+
+    return {
+        records: allRecords,
+        toplamlar: { toplamGelir, toplamGider, toplamKomisyon, toplamIade },
+    };
+}
+
+function mapFinanceRecord(raw: any): any {
+    const parseAmount = (val: any): number => {
+        if (typeof val === 'number') return val;
+        if (typeof val === 'string') return parseFloat(val.replace(',', '.')) || 0;
+        return 0;
+    };
+
+    return {
+        hepsiburadaSku: raw.sku,
+        paketNo: raw.packageNumber,
+        siparisNo: raw.orderNumber,
+        toplamTutar: parseAmount(raw.totalAmount),
+        vergiTutari: parseAmount(raw.taxAmount),
+        netTutar: parseAmount(raw.netAmount),
+        aciklama: raw.invoiceExplanation,
+        gelirMi: raw.isIncome,
+        faturaMi: raw.isInvoice,
+        ...raw,
+    };
+}
+
+// ─── Claims (İade Talepleri) ─────────────────────────────────
+
+/**
+ * İade taleplerini çeker — offset pagination.
+ */
+export async function getClaims(
+    creds: HepsiburadaCredentials,
+    startDate: Date,
+    endDate: Date
+): Promise<{ iadeListesi: any[]; ozet: { toplamTalep: number; toplamIadeTutari: number; tipDagilimi: Record<string, number> } }> {
+    if (isMockMode(creds)) {
+        return {
+            iadeListesi: MOCK_CLAIMS,
+            ozet: {
+                toplamTalep: 1,
+                toplamIadeTutari: 8499,
+                tipDagilimi: { Return: 1 },
+            },
+        };
+    }
+
+    const headers = buildHeaders(creds);
+    const allClaims: any[] = [];
+    const PAGE_SIZE = 100;
+    const beginStr = formatHbDate(startDate);
+    const endStr = formatHbDate(endDate);
+
+    let offset = 0;
+    while (true) {
+        const url =
+            `${HB_OMS}/claims/merchantid/${creds.merchantId}` +
+            `?offset=${offset}&limit=${PAGE_SIZE}` +
+            `&begindate=${encodeURIComponent(beginStr)}&enddate=${encodeURIComponent(endStr)}`;
+
+        const res = await hbFetch(url, { headers });
+        if (!res.ok) throw new Error(getHbErrorMessage(res.status));
+
+        const data = await res.json();
+        const items: any[] = data?.data || data?.claims || data || [];
+        allClaims.push(...items.map(mapClaim));
+
+        if (items.length < PAGE_SIZE) break;
+        offset += PAGE_SIZE;
+    }
+
+    const tipDagilimi: Record<string, number> = {};
+    let toplamIadeTutari = 0;
+
+    for (const claim of allClaims) {
+        const tip = claim.talepTipi || 'Bilinmeyen';
+        tipDagilimi[tip] = (tipDagilimi[tip] || 0) + 1;
+        toplamIadeTutari += (claim.birimFiyat || 0) * (claim.adet || 1);
+    }
+
+    return {
+        iadeListesi: allClaims,
+        ozet: {
+            toplamTalep: allClaims.length,
+            toplamIadeTutari,
+            tipDagilimi,
+        },
+    };
+}
+
+function mapClaim(raw: any): any {
+    return {
+        talepId: raw.claimId,
+        siparisNo: raw.orderNumber,
+        hepsiburadaSku: raw.sku,
+        talepTipi: raw.claimType,
+        talepDurumu: raw.claimStatus,
+        talepNedeni: raw.claimReason,
+        adet: raw.quantity ?? 1,
+        talepTarihi: raw.claimDate,
+        birimFiyat: raw.price?.amount ?? raw.unitPrice ?? 0,
+        ...raw,
+    };
+}
+
+// ─── Backward Compat Exports ─────────────────────────────────
 
 export interface HBCommissionRate {
     categoryId: number;
@@ -299,20 +631,54 @@ export interface HBCommissionRate {
 
 export async function getCommissionRates(
     creds: HepsiburadaCredentials,
-    categoryId?: number
+    _categoryId?: number
 ): Promise<HBCommissionRate[]> {
     if (isMockMode(creds)) {
-        return categoryId
-            ? MOCK_COMMISSION_RATES.filter(c => c.categoryId === categoryId)
-            : MOCK_COMMISSION_RATES;
+        return [
+            { categoryId: 1, categoryName: 'Elektronik', commissionRate: 9 },
+            { categoryId: 2, categoryName: 'Spor', commissionRate: 11 },
+            { categoryId: 3, categoryName: 'Ev & Yaşam', commissionRate: 13 },
+            { categoryId: 4, categoryName: 'Giyim', commissionRate: 16 },
+        ];
     }
 
-    const url = `${BASE_URL}/product/api/categories/get-all-categories${categoryId ? `?categoryId=${categoryId}` : ''}`;
-    const headers = buildHeaders(creds);
-    const res = await fetchWithRetry(url, headers);
+    return [];
+}
 
-    if (!res.ok) throw new Error(`Hepsiburada komisyon oranları hatası: HTTP ${res.status}`);
+export async function getProductBySku(
+    creds: HepsiburadaCredentials,
+    sku: string
+): Promise<any | null> {
+    if (isMockMode(creds)) {
+        return MOCK_PRODUCTS.find(p => p.merchantSku === sku) ?? null;
+    }
+
+    const url = `${HB_LIST}/listings/merchantid/${creds.merchantId}?offset=0&limit=1&merchantSku=${encodeURIComponent(sku)}`;
+    const headers = buildHeaders(creds);
+    const res = await hbFetch(url, { headers });
+
+    if (!res.ok) throw new Error(getHbErrorMessage(res.status));
 
     const data = await res.json();
-    return data.commissions || data || [];
+    const items: any[] = data?.listings || data?.items || data || [];
+    return items[0] ? mapProduct(items[0]) : null;
+}
+
+export async function getOrderDetail(
+    creds: HepsiburadaCredentials,
+    orderId: string
+): Promise<any | null> {
+    if (isMockMode(creds)) {
+        return MOCK_ORDERS.find(o => o.siparisNo === orderId) ?? null;
+    }
+
+    const url = `${HB_OMS}/orders/merchantid/${creds.merchantId}?offset=0&limit=1&orderNumber=${encodeURIComponent(orderId)}`;
+    const headers = buildHeaders(creds);
+    const res = await hbFetch(url, { headers });
+
+    if (!res.ok) throw new Error(getHbErrorMessage(res.status));
+
+    const data = await res.json();
+    const orders: any[] = data?.data || data?.orders || data?.content || [];
+    return orders[0] ? mapOrder(orders[0]) : null;
 }
