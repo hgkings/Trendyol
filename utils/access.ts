@@ -14,6 +14,8 @@ import { User } from '@/types';
  * 4. pro_expires_at is future → pro still active
  * 5. pro_expires_at is past → pro expired
  */
+const PRO_PLANS: string[] = ['pro', 'pro_monthly', 'pro_yearly'];
+
 export function isProUser(user: User | null | undefined): boolean {
     if (!user) return false;
 
@@ -21,7 +23,7 @@ export function isProUser(user: User | null | undefined): boolean {
     if (user.plan === 'admin') return true;
 
     // Check plan + expiration (NULL-safe: null means no expiry)
-    if (user.plan === 'pro') {
+    if (PRO_PLANS.includes(user.plan)) {
         // If pro_expires_at is null/undefined → pro is active (no expiry set)
         if (!user.pro_expires_at) return true;
 

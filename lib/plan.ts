@@ -43,7 +43,7 @@ export async function checkAnalysisLimit(userId: string): Promise<boolean> {
     const userPlan = profile.plan || 'free';
 
     // PRO users bypass ALL limits
-    if (userPlan === 'pro') {
+    if (['pro', 'pro_monthly', 'pro_yearly'].includes(userPlan)) {
         if (process.env.NODE_ENV === 'development') {
             console.log('[Plan Limit Check] PRO active, no limits:', { userId });
         }
