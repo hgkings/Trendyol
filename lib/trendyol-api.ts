@@ -25,6 +25,11 @@ const PRODUCT_BASE_URL = process.env.TRENDYOL_ENV === 'stage'
     ? 'https://stageapi.trendyol.com/stagesapigw/integration/product/sellers'
     : 'https://apigw.trendyol.com/integration/product/sellers';
 
+// İade (Claim) API'si
+const CLAIM_BASE_URL = process.env.TRENDYOL_ENV === 'stage'
+    ? 'https://stageapi.trendyol.com/stagesapigw/integration/claim/sellers'
+    : 'https://apigw.trendyol.com/integration/claim/sellers';
+
 const MAX_RETRIES = 3;
 const INITIAL_BACKOFF_MS = 1000;
 const TIMEOUT_MS = 10000;
@@ -627,6 +632,106 @@ export async function getOtherFinancials(
 
         mevcutBaslangic = new Date(mevcutBitis);
         mevcutBaslangic.setDate(mevcutBaslangic.getDate() + 1);
+    }
+
+    return results;
+}
+
+// ─── İade (Claims) API ────────────────────────────────────────
+
+export interface TrendyolClaimLine {
+    claimId: string;
+    orderId: string;
+    orderNumber: string;
+    claimType: string;
+    claimReason: string;
+    claimDate: string | null;
+    status: string;
+    amount: number;
+    quantity: number;
+    productName: string;
+    barcode: string;
+}
+
+export interface TrendyolClaim {
+    claimId: string;
+    orderId: string;
+    orderNumber: string;
+    claimType: string;
+    claimReason: string;
+    claimDate: string | null;
+    status: string;
+    totalAmount: number;
+    lines: TrendyolClaimLine[];
+}
+
+export async function fetchAllClaims(
+    creds: TrendyolCredentials,
+    startDate: Date,
+    endDate: Date
+): Promise<TrendyolClaim[]> {
+    if (isMockMode(creds)) return [];
+
+    const headers = buildHeaders(creds);
+    const results: TrendyolClaim[] = [];
+    const WINDOW_DAYS = 13;
+    const PAGE_SIZE = 200;
+    const MAX_PAGES = 20;
+
+    let windowStart = new Date(startDate);
+
+    while (windowStart <= endDate) {
+        const windowEnd = new Date(windowStart);
+        windowEnd.setDate(windowEnd.getDate() + WINDOW_DAYS);
+        if (windowEnd > endDate) windowEnd.setTime(endDate.getTime());
+
+        const startTs = windowStart.getTime();
+        const endTs = windowEnd.getTime();
+
+        for (let page = 0; page < MAX_PAGES; page++) {
+            const url = `${CLAIM_BASE_URL}/${creds.sellerId}/claims?startDate=${startTs}&endDate=${endTs}&page=${page}&size=${PAGE_SIZE}`;
+            const res = await fetchWithRetry(url, headers);
+            if (!res.ok) break;
+
+            const data = await res.json();
+            const content: any[] = data.content || [];
+            if (content.length === 0) break;
+
+            content.forEach((item: any) => {
+                results.push({
+                    claimId: item.id ?? item.claimId ?? '',
+                    orderId: item.orderId ?? '',
+                    orderNumber: item.orderNumber ?? '',
+                    claimType: item.claimType ?? '',
+                    claimReason: item.claimIssueReasonText ?? item.reason ?? '',
+                    claimDate: item.creationDate
+                        ? new Date(item.creationDate).toISOString()
+                        : null,
+                    status: item.status ?? '',
+                    totalAmount: item.refundAmount ?? item.amount ?? 0,
+                    lines: (item.claimLines || item.lines || []).map((l: any): TrendyolClaimLine => ({
+                        claimId: item.id ?? '',
+                        orderId: item.orderId ?? '',
+                        orderNumber: item.orderNumber ?? '',
+                        claimType: item.claimType ?? '',
+                        claimReason: l.claimIssueReasonText ?? item.claimIssueReasonText ?? '',
+                        claimDate: item.creationDate
+                            ? new Date(item.creationDate).toISOString()
+                            : null,
+                        status: l.status ?? item.status ?? '',
+                        amount: l.refundAmount ?? l.amount ?? 0,
+                        quantity: l.quantity ?? 1,
+                        productName: l.productName ?? l.name ?? '',
+                        barcode: l.barcode ?? '',
+                    })),
+                });
+            });
+
+            if (!data.totalPages || page + 1 >= data.totalPages) break;
+        }
+
+        windowStart = new Date(windowEnd);
+        windowStart.setDate(windowStart.getDate() + 1);
     }
 
     return results;
