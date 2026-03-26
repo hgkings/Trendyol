@@ -138,6 +138,9 @@ export default function MarketplacePage() {
     // Webhook
     const [webhookKuruluyor, setWebhookKuruluyor] = useState(false);
 
+    // Askıdaki siparişler
+    const [askidakiSiparis, setAskidakiSiparis] = useState<number>(0);
+
     // Show/hide password fields
     const [showApiKey, setShowApiKey] = useState(false);
     const [showApiSecret, setShowApiSecret] = useState(false);
@@ -215,6 +218,19 @@ export default function MarketplacePage() {
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [connection, seciliAralik, selectedMarketplace]);
+
+    useEffect(() => {
+        if (connection?.status === 'connected' && selectedMarketplace === 'trendyol') {
+            fetch('/api/marketplace/trendyol/unsupplied-orders')
+                .then((r) => r.json())
+                .then((data) => {
+                    if (typeof data.toplam === 'number') setAskidakiSiparis(data.toplam);
+                })
+                .catch(() => {});
+        } else {
+            setAskidakiSiparis(0);
+        }
+    }, [connection, selectedMarketplace]);
 
     const komisyonCek = async () => {
         if (selectedMarketplace !== 'trendyol') {
@@ -620,6 +636,21 @@ export default function MarketplacePage() {
                                             <p className="font-semibold">Satıcı ID eksik — senkronizasyon çalışmaz</p>
                                             <p className="mt-0.5 opacity-90">
                                                 {mpConfig.sellerIdErrorText} Bağlantıyı kaldırıp Satıcı ID ile yeniden kaydedin.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Askıdaki Sipariş Uyarısı */}
+                                {askidakiSiparis > 0 && selectedMarketplace === 'trendyol' && (
+                                    <div className="flex items-center gap-3 rounded-xl border border-orange-500/30 bg-orange-500/10 p-4">
+                                        <AlertTriangle className="h-5 w-5 text-orange-500 shrink-0" />
+                                        <div>
+                                            <p className="text-sm font-semibold text-orange-400">
+                                                {askidakiSiparis} Askıdaki Sipariş
+                                            </p>
+                                            <p className="text-xs text-muted-foreground mt-0.5">
+                                                Tedarik edilemeyen siparişleriniz var. Trendyol panelinden kontrol edin.
                                             </p>
                                         </div>
                                     </div>

@@ -207,6 +207,31 @@ function handleTrendyolError(status: number, endpoint: string): never {
     throw new Error(getTrendyolErrorMessage(status));
 }
 
+/**
+ * Trendyol timestamp → ISO string dönüşümü.
+ *
+ * Trendyol iki farklı format kullanır:
+ *  - orderDate   → GMT+3 epoch ms (Trendyol dökümanı)
+ *  - createdDate → UTC  epoch ms
+ *
+ * JavaScript Date constructor her iki durumda da doğru çalışır
+ * (epoch ms her zaman UTC bazlıdır). fieldType parametresi
+ * kodun okunabilirliği ve gelecekte format farklılaşması için tutulur.
+ */
+export function trendyolTariheDonustur(
+    timestamp: number | null | undefined,
+    _fieldType: 'orderDate' | 'createdDate' | 'other' = 'other'
+): string | null {
+    if (!timestamp) return null;
+    try {
+        const date = new Date(timestamp);
+        if (isNaN(date.getTime())) return null;
+        return date.toISOString();
+    } catch {
+        return null;
+    }
+}
+
 // ─── Test Connection ──────────────────────────────────────────
 
 export async function testConnection(
@@ -392,6 +417,38 @@ export async function fetchAllOrders(
     return all;
 }
 
+// Trendyol UnSupplied = tedarik edilemeyen / askıdaki siparişler.
+// Normal tarih aralığı sorgusu dışında gelir; status filtresi yeterli.
+export async function fetchAskidakiSiparisler(
+    creds: TrendyolCredentials
+): Promise<any[]> {
+    if (isMockMode(creds)) return [];
+
+    const headers = buildHeaders(creds);
+    const tumSiparisler: any[] = [];
+    let page = 0;
+    const MAX_PAGES = 10; // max 500 sipariş (10 × 50)
+
+    while (page < MAX_PAGES) {
+        await checkOrderRateLimit();
+        const url =
+            `${ORDER_BASE_URL}/${creds.sellerId}/orders` +
+            `?status=UnSupplied&orderByField=PackageLastModifiedDate` +
+            `&orderByDirection=DESC&size=50&page=${page}`;
+        const res = await fetchWithRetry(url, headers, checkOrderRateLimit);
+        if (!res.ok) break;
+
+        const data = await res.json();
+        const content: any[] = data.content || [];
+        tumSiparisler.push(...content);
+
+        if (!data.totalPages || page + 1 >= data.totalPages) break;
+        page++;
+    }
+
+    return tumSiparisler;
+}
+
 export async function getOrderDetail(
     creds: TrendyolCredentials,
     orderId: string
@@ -547,8 +604,8 @@ async function fetchSettlementsChunk(
         saticiHakedis: item.sellerRevenue ?? 0,
         alacak: item.credit ?? 0,
         borc: item.debt ?? 0,
-        odemeTarihi: item.paymentDate ? new Date(item.paymentDate).toISOString() : null,
-        islemTarihi: item.transactionDate ? new Date(item.transactionDate).toISOString() : null,
+        odemeTarihi: trendyolTariheDonustur(item.paymentDate, 'createdDate'),
+        islemTarihi: trendyolTariheDonustur(item.transactionDate, 'createdDate'),
         odemeNo: item.paymentOrderId ?? 0,
     }));
 }
@@ -704,9 +761,7 @@ export async function fetchAllClaims(
                     orderNumber: item.orderNumber ?? '',
                     claimType: item.claimType ?? '',
                     claimReason: item.claimIssueReasonText ?? item.reason ?? '',
-                    claimDate: item.creationDate
-                        ? new Date(item.creationDate).toISOString()
-                        : null,
+                    claimDate: trendyolTariheDonustur(item.creationDate, 'createdDate'),
                     status: item.status ?? '',
                     totalAmount: item.refundAmount ?? item.amount ?? 0,
                     lines: (item.claimLines || item.lines || []).map((l: any): TrendyolClaimLine => ({
