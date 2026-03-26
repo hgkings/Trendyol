@@ -1,7 +1,7 @@
 import * as analysesDal from '@/dal/analyses'
 import * as profilesDal from '@/dal/profiles'
 import { Analysis, RiskLevel } from '@/types'
-import { PLAN_LIMITS } from '@/config/plans'
+import { getPlanLimits } from '@/config/plans'
 
 interface AnalysisRow {
   id: string
@@ -66,10 +66,12 @@ export async function createAnalysis(
 
     if (userPlan !== 'pro' && userPlan !== 'admin') {
       const currentCount = await analysesDal.getAnalysisCount(userId)
-      if (currentCount >= PLAN_LIMITS.free.maxProducts) {
+      const limits = getPlanLimits(userPlan as string)
+      if (currentCount >= limits.maxProducts) {
+        const limitLabel = limits.maxProducts === Infinity ? 'Sınırsız' : String(limits.maxProducts)
         return {
           success: false,
-          error: `Ücretsiz plan limiti aşıldı (Maksimum ${PLAN_LIMITS.free.maxProducts} analiz). Pro plana geçerek sınırsız analiz yapabilirsiniz.`,
+          error: `Plan limiti aşıldı (Maksimum ${limitLabel} analiz). Planınızı yükselterek daha fazla analiz yapabilirsiniz.`,
         }
       }
     }

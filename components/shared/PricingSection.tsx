@@ -25,6 +25,8 @@ interface PricingTier {
   icon: React.ReactNode
   /** Called when the CTA button is clicked */
   onAction?: () => void
+  /** Custom label for the CTA button */
+  actionLabel?: string
 }
 
 interface PricingSectionProps {
@@ -43,6 +45,10 @@ function PricingSection({ tiers, className, onBillingChange }: PricingSectionPro
     onBillingChange?.(yearly)
   }
 
+  const colClass = tiers.length === 3
+    ? "grid-cols-1 md:grid-cols-3"
+    : "grid-cols-1 md:grid-cols-2"
+
   return (
     <section
       className={cn(
@@ -52,7 +58,7 @@ function PricingSection({ tiers, className, onBillingChange }: PricingSectionPro
         className,
       )}
     >
-      <div className="w-full max-w-5xl mx-auto">
+      <div className="w-full max-w-6xl mx-auto">
         <div className="flex flex-col items-center gap-4 mb-12">
           <div className="inline-flex items-center p-1.5 bg-[rgba(255,255,255,0.04)] rounded-full border border-[rgba(255,255,255,0.06)]">
             {["Monthly", "Yearly"].map((period) => (
@@ -72,7 +78,7 @@ function PricingSection({ tiers, className, onBillingChange }: PricingSectionPro
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className={cn("grid gap-8", colClass)}>
           {tiers.map((tier) => (
             <div
               key={tier.name}
@@ -164,17 +170,8 @@ function PricingSection({ tiers, className, onBillingChange }: PricingSectionPro
                   onClick={tier.onAction}
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
-                    {tier.highlight ? (
-                      <>
-                        Pro&apos;ya Geç
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    ) : (
-                      <>
-                        Ücretsiz Başla
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
+                    {tier.actionLabel ?? (tier.highlight ? "Pro'ya Geç" : "Ücretsiz Başla")}
+                    <ArrowRight className="w-4 h-4" />
                   </span>
                 </Button>
               </div>

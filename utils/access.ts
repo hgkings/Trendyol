@@ -46,3 +46,13 @@ export function isProUser(user: User | null | undefined): boolean {
 
     return false;
 }
+
+/**
+ * Returns true if the user is on the starter plan (and not pro/admin).
+ * Pro and admin users get everything starter has, so check isProUser separately
+ * if you need to distinguish between starter and pro.
+ */
+export function isStarterUser(user: User | null | undefined): boolean {
+    if (!user) return false;
+    return user.plan === 'starter';
+}

@@ -1,5 +1,5 @@
 export type Marketplace = 'trendyol' | 'hepsiburada' | 'n11' | 'amazon_tr' | 'custom';
-export type PlanType = 'free' | 'pro' | 'pro_monthly' | 'pro_yearly' | 'admin';
+export type PlanType = 'free' | 'starter' | 'pro' | 'pro_monthly' | 'pro_yearly' | 'admin';
 export type RiskLevel = 'safe' | 'moderate' | 'risky' | 'dangerous';
 
 export interface User {

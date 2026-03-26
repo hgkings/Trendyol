@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     try {
         const { plan } = await req.json();
 
-        if (plan !== 'pro_monthly' && plan !== 'pro_yearly') {
+        if (!['pro_monthly', 'pro_yearly', 'starter_monthly', 'starter_yearly'].includes(plan)) {
             return NextResponse.json({ error: 'Geçersiz plan' }, { status: 400 });
         }
 
@@ -61,7 +61,13 @@ export async function POST(req: Request) {
         const adminSupabase = createClient(supabaseUrl, serviceKey);
 
         const testPrice = process.env.PAYTR_TEST_PRICE ? parseFloat(process.env.PAYTR_TEST_PRICE) : null;
-        const amount = testPrice ?? (plan === 'pro_yearly' ? PRICING.proYearly : PRICING.proMonthly);
+        const planAmountMap: Record<string, number> = {
+            pro_monthly: PRICING.pro.monthly,
+            pro_yearly: PRICING.pro.annual,
+            starter_monthly: PRICING.starter.monthly,
+            starter_yearly: PRICING.starter.annual,
+        };
+        const amount = testPrice ?? planAmountMap[plan];
         const amountKurus = Math.round(amount * 100);
 
         // Generate secure one-time token (96 hex chars = 48 random bytes)
@@ -92,7 +98,13 @@ export async function POST(req: Request) {
         }
 
         const callbackId = payment.id.replace(/-/g, '');
-        const planName = plan === 'pro_yearly' ? 'Karnet Pro Yillik' : 'Karnet Pro Aylik';
+        const planNameMap: Record<string, string> = {
+            pro_monthly: 'Karnet Pro Aylik',
+            pro_yearly: 'Karnet Pro Yillik',
+            starter_monthly: 'Karnet Baslangic Aylik',
+            starter_yearly: 'Karnet Baslangic Yillik',
+        };
+        const planName = planNameMap[plan];
         const currency = 'TL';
         const maxInstallment = '1';
         const linkType = 'product';
@@ -157,19 +169,20 @@ export async function POST(req: Request) {
 
         console.log(`[PayTR] ✅ Link oluşturuldu: ${paymentUrl}, callback_id=${callbackId}`);
 
-        // Test modunda callback gelmez — otomatik pro aktif et
+        // Test modunda callback gelmez — otomatik plan aktif et
         const isTestMode = process.env.PAYTR_TEST_MODE === '1';
         if (isTestMode) {
-            const daysToAdd = plan === 'pro_yearly' ? 365 : 30;
-            const proUntil = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000).toISOString();
+            const daysToAdd = (plan === 'pro_yearly' || plan === 'starter_yearly') ? 365 : 30;
+            const planUntil = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000).toISOString();
+            const activePlan = plan.startsWith('starter') ? 'starter' : 'pro';
             const { error: payErr } = await adminSupabase.from('payments').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', payment.id);
             if (payErr) console.error('[PayTR] 🧪 Test modu payments update hatası:', JSON.stringify(payErr));
             const { error: profErr } = await adminSupabase.from('profiles').update({
-                plan: 'pro', is_pro: true, plan_type: plan,
-                pro_until: proUntil, pro_started_at: new Date().toISOString(), pro_expires_at: proUntil,
+                plan: activePlan, is_pro: activePlan === 'pro', plan_type: plan,
+                pro_until: planUntil, pro_started_at: new Date().toISOString(), pro_expires_at: planUntil,
             }).eq('id', user.id);
             if (profErr) console.error('[PayTR] 🧪 Test modu profiles update hatası:', JSON.stringify(profErr));
-            else console.log(`[PayTR] 🧪 Test modu: Pro otomatik aktif edildi, user=${user.id}`);
+            else console.log(`[PayTR] 🧪 Test modu: ${activePlan} otomatik aktif edildi, user=${user.id}`);
         }
 
         return NextResponse.json({ success: true, paymentId: payment.id, paymentUrl, token: secureToken });

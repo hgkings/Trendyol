@@ -42,15 +42,15 @@ export async function checkAnalysisLimit(userId: string): Promise<boolean> {
 
     const userPlan = profile.plan || 'free';
 
-    // PRO users bypass ALL limits
-    if (['pro', 'pro_monthly', 'pro_yearly'].includes(userPlan)) {
+    // PRO/Admin users bypass ALL limits
+    if (['pro', 'pro_monthly', 'pro_yearly', 'admin'].includes(userPlan)) {
         if (process.env.NODE_ENV === 'development') {
-            console.log('[Plan Limit Check] PRO active, no limits:', { userId });
+            console.log('[Plan Limit Check] PRO/Admin active, no limits:', { userId });
         }
         return true;
     }
 
-    // Count analyses for FREE users
+    // Count analyses for limited plans (free/starter)
     const { count, error } = await supabase
         .from('analyses')
         .select('*', { count: 'exact', head: true })
@@ -61,12 +61,13 @@ export async function checkAnalysisLimit(userId: string): Promise<boolean> {
         return true; // Don't block on DB errors
     }
 
-    const limit = PLAN_LIMITS.free.maxProducts;
+    const limits = getPlanLimits(userPlan);
+    const limit = limits.maxProducts;
     const currentCount = count || 0;
     const allowed = currentCount < limit;
 
     if (process.env.NODE_ENV === 'development') {
-        console.log('[Plan Limit Check] FREE user check:', {
+        console.log('[Plan Limit Check] limited user check:', {
             userId,
             plan: userPlan,
             currentCount,

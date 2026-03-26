@@ -103,16 +103,20 @@ export async function POST(req: Request) {
                 console.log('[PayTR Callback] ✅ Payment güncellendi');
             }
 
-            // ── STEP 6: Profili Pro yap ─────────────────────────
+            // ── STEP 6: Profili güncelle (plan tipine göre) ──────
             const planType = payment.plan || 'pro_monthly';
-            const daysToAdd = planType === 'pro_yearly' ? 365 : 30;
+            const isStarterPlan = planType === 'starter_monthly' || planType === 'starter_yearly';
+            const isYearlyPlan = planType === 'pro_yearly' || planType === 'starter_yearly';
+            const daysToAdd = isYearlyPlan ? 365 : 30;
             const proUntil = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000).toISOString();
+
+            const activePlan = isStarterPlan ? 'starter' : 'pro';
 
             const { error: profileErr } = await supabase
                 .from('profiles')
                 .update({
-                    plan: 'pro',
-                    is_pro: true,
+                    plan: activePlan,
+                    is_pro: !isStarterPlan,
                     plan_type: planType,
                     pro_until: proUntil,
                     pro_started_at: new Date().toISOString(),
@@ -124,7 +128,7 @@ export async function POST(req: Request) {
             if (profileErr) {
                 console.error('[PayTR Callback] ❌ Profil güncelleme hatası:', JSON.stringify(profileErr));
             } else {
-                console.log(`[PayTR Callback] ✅ Profil Pro yapıldı: user_id=${payment.user_id}, plan_type=${planType}, pro_until=${proUntil}`);
+                console.log(`[PayTR Callback] ✅ Profil güncellendi: user_id=${payment.user_id}, plan=${activePlan}, plan_type=${planType}, pro_until=${proUntil}`);
 
                 // Pro aktivasyon emaili gönder (ödeme akışını etkilemez, hata olsa bile devam eder)
                 try {

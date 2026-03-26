@@ -6,13 +6,13 @@ import { useAuth } from '@/contexts/auth-context';
 import { Navbar } from '@/components/layout/navbar';
 import { Button } from '@/components/ui/button';
 import {
-  Check, X, Crown, Loader2, RefreshCw,
+  Check, X, Crown, Loader2, RefreshCw, Zap,
   CheckCircle2, XCircle, ChevronDown, ChevronUp, ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PLAN_LIMITS } from '@/config/plans';
 import { PRICING } from '@/config/pricing';
-import { isProUser } from '@/utils/access';
+import { isProUser, isStarterUser } from '@/utils/access';
 import { toast } from 'sonner';
 import { PricingSection } from '@/components/shared/PricingSection';
 import type { PricingTier } from '@/components/shared/PricingSection';
@@ -22,41 +22,44 @@ type BillingCycle = 'monthly' | 'yearly';
 
 // ─── constants ───────────────────────────────────────────────────────────────
 const FREE_LIMIT = PLAN_LIMITS.free.maxProducts;
-const MONTHLY_PRICE = PRICING.proMonthly;          // 229
-const YEARLY_PRICE  = PRICING.proYearly;           // 2290
+const STARTER_LIMIT = PLAN_LIMITS.starter.maxProducts;
+const STARTER_MONTHLY = PRICING.starter.monthly;
+const STARTER_YEARLY  = PRICING.starter.annual;
+const PRO_MONTHLY     = PRICING.pro.monthly;
+const PRO_YEARLY      = PRICING.pro.annual;
 
-const COMPARISON_ROWS: { label: string; free: string | boolean; pro: string | boolean }[] = [
-  { label: 'Ürün analizi',                      free: `${FREE_LIMIT} ürün`,  pro: 'Sınırsız' },
-  { label: 'Temel kâr hesaplama',               free: true,    pro: true    },
-  { label: 'PRO Muhasebe Modu (KDV ayrıştırma)', free: false,  pro: true    },
-  { label: 'Hassasiyet analizi',                free: false,   pro: true    },
-  { label: 'Pazaryeri karşılaştırması',         free: false,   pro: true    },
-  { label: 'Nakit akışı tahmini',               free: false,   pro: true    },
-  { label: 'CSV içe aktarma',                   free: false,   pro: true    },
-  { label: 'CSV & rapor dışa aktarma',          free: false,   pro: true    },
-  { label: 'Trendyol API entegrasyonu',         free: false,   pro: true    },
-  { label: 'Hepsiburada API entegrasyonu',      free: false,   pro: true    },
-  { label: 'PDF rapor',                         free: '1/ay',  pro: 'Sınırsız' },
-  { label: 'Öncelikli e-posta desteği',         free: false,   pro: true    },
-  { label: 'Yeni özellikler erken erişim',      free: false,   pro: true    },
+const COMPARISON_ROWS: { label: string; free: string | boolean; starter: string | boolean; pro: string | boolean }[] = [
+  { label: 'Ürün analizi',                        free: `${FREE_LIMIT} ürün`,      starter: `${STARTER_LIMIT} ürün`, pro: 'Sınırsız' },
+  { label: 'Temel kâr hesaplama',                 free: true,    starter: true,    pro: true    },
+  { label: 'PRO Muhasebe Modu (KDV ayrıştırma)',  free: false,   starter: true,    pro: true    },
+  { label: 'Hassasiyet analizi',                  free: false,   starter: true,    pro: true    },
+  { label: 'Başa-baş noktası analizi',            free: false,   starter: true,    pro: true    },
+  { label: 'CSV içe / dışa aktarma',              free: false,   starter: true,    pro: true    },
+  { label: 'Pazaryeri karşılaştırması',           free: false,   starter: false,   pro: true    },
+  { label: 'Nakit akışı tahmini',                 free: false,   starter: false,   pro: true    },
+  { label: 'Trendyol / Hepsiburada API',          free: false,   starter: false,   pro: true    },
+  { label: 'PDF rapor',                           free: false,   starter: '5/ay',  pro: 'Sınırsız' },
+  { label: 'Haftalık e-posta raporu',             free: false,   starter: false,   pro: true    },
+  { label: 'Öncelikli destek',                    free: false,   starter: false,   pro: true    },
+  { label: 'Rakip takibi',                        free: false,   starter: false,   pro: true    },
 ];
 
 const FAQ_ITEMS: { q: string; a: string }[] = [
   {
-    q: 'Ücretsiz plandan Pro\'ya geçince verilerim kalır mı?',
+    q: 'Ücretsiz plandan Başlangıç veya Pro\'ya geçince verilerim kalır mı?',
     a: 'Evet, tüm analizleriniz ve verileriniz eksiksiz korunur. Plan yükseltmesi mevcut verilerinizi hiçbir şekilde etkilemez.',
   },
   {
     q: 'İptal etmek için ne yapmalıyım?',
-    a: 'İstediğiniz zaman ayarlar sayfasından aboneliğinizi iptal edebilirsiniz. İptal sonrası dönem sonuna kadar Pro özelliklerini kullanmaya devam edersiniz.',
+    a: 'İstediğiniz zaman ayarlar sayfasından aboneliğinizi iptal edebilirsiniz. İptal sonrası dönem sonuna kadar plan özelliklerini kullanmaya devam edersiniz.',
   },
   {
     q: 'Ödeme güvenli mi?',
     a: 'Ödemeler PayTR güvencesiyle gerçekleştirilir. Kart bilgileriniz Kârnet sunucularında saklanmaz; doğrudan PayTR\'ın PCI-DSS sertifikalı altyapısında işlenir.',
   },
   {
-    q: 'Yıllık planı aylığa çevirebilir miyim?',
-    a: 'Evet, mevcut dönem sonunda plan tipinizi değiştirebilirsiniz. Ayarlar sayfasından plan yönetimine ulaşabilirsiniz.',
+    q: 'Başlangıç\'tan Pro\'ya geçebilir miyim?',
+    a: 'Evet, mevcut dönem sonunda veya hemen yükselterek Pro planına geçebilirsiniz. Ayarlar sayfasından plan yönetimine ulaşabilirsiniz.',
   },
   {
     q: '7 gün iade garantisi nasıl çalışır?',
@@ -100,7 +103,8 @@ function PricingContent() {
   const [billing, setBilling] = useState<BillingCycle>(
     searchParams.get('billing') === 'yearly' ? 'yearly' : 'monthly',
   );
-  const [loading, setLoading] = useState(false);
+  const [loadingPro, setLoadingPro] = useState(false);
+  const [loadingStarter, setLoadingStarter] = useState(false);
 
   const isAnnual = billing === 'yearly';
   const paymentStatus = searchParams.get('payment'); // 'success' | 'fail' | null
@@ -113,17 +117,17 @@ function PricingContent() {
       if (!res.ok) return false;
       const data = await res.json();
       const plan = data?.plan || data?.profile?.plan || '';
-      return plan === 'pro' || plan.startsWith('pro_');
+      return plan === 'pro' || plan.startsWith('pro_') || plan === 'starter' || plan.startsWith('starter_');
     } catch {
       return false;
     }
   }, []);
 
-  // Poll for Pro activation after successful payment
+  // Poll for plan activation after successful payment
   useEffect(() => {
     if (paymentStatus !== 'success' || !user) return;
     if (pollState !== 'idle') return;
-    if (isProUser(user)) { setPollState('active'); toast.success('Pro planınız zaten aktif!'); return; }
+    if (isProUser(user) || isStarterUser(user)) { setPollState('active'); toast.success('Planınız zaten aktif!'); return; }
 
     setPollState('polling');
     toast.success('Ödeme başarılı ✅ Planınız kontrol ediliyor...');
@@ -131,10 +135,10 @@ function PricingContent() {
     const poll = async () => {
       attempt++;
       setPollCount(attempt);
-      const isPro = await refreshProfile();
-      if (isPro) {
+      const isActive = await refreshProfile();
+      if (isActive) {
         setPollState('active');
-        toast.success('Pro planınız aktif edildi!');
+        toast.success('Planınız aktif edildi!');
         setTimeout(() => window.location.href = '/pricing', 1500);
         return;
       }
@@ -148,15 +152,14 @@ function PricingContent() {
     if (paymentStatus === 'fail') toast.error('Ödeme başarısız ❌ Tekrar deneyebilirsiniz.');
   }, [paymentStatus]);
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = async (planType: 'pro_monthly' | 'pro_yearly') => {
     if (!user) { window.location.href = '/auth'; return; }
-    setLoading(true);
+    setLoadingPro(true);
     try {
-      const selectedPlan = isAnnual ? 'pro_yearly' : 'pro_monthly';
       const res = await fetch('/api/paytr/create-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: selectedPlan }),
+        body: JSON.stringify({ plan: planType }),
       });
       const data = await res.json();
       if (data.paymentUrl) {
@@ -166,10 +169,37 @@ function PricingContent() {
         window.location.href = `/basari?${params.toString()}`;
       } else {
         toast.error(data.error || 'Ödeme başlatılamadı.');
-        setLoading(false);
+        setLoadingPro(false);
       }
     } catch {
-      setLoading(false);
+      setLoadingPro(false);
+    }
+  };
+
+  // NOTE: Starter payments require create-payment route to accept 'starter_monthly'/'starter_yearly'.
+  // Currently that route only accepts pro plans. Wire this up when the route is updated.
+  const handleStarterUpgrade = async () => {
+    if (!user) { window.location.href = '/auth'; return; }
+    setLoadingStarter(true);
+    try {
+      const planType = isAnnual ? 'starter_yearly' : 'starter_monthly';
+      const res = await fetch('/api/paytr/create-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: planType }),
+      });
+      const data = await res.json();
+      if (data.paymentUrl) {
+        window.open(data.paymentUrl, '_blank');
+        const params = new URLSearchParams({ paymentId: data.paymentId });
+        if (data.token) params.set('token', data.token);
+        window.location.href = `/basari?${params.toString()}`;
+      } else {
+        toast.error(data.error || 'Ödeme başlatılamadı.');
+        setLoadingStarter(false);
+      }
+    } catch {
+      setLoadingStarter(false);
     }
   };
 
@@ -189,7 +219,7 @@ function PricingContent() {
             {pollState === 'active' ? (
               <><CheckCircle2 className="h-6 w-6 text-emerald-400 shrink-0" />
                 <div><p className="font-semibold text-emerald-400">Plan Aktif ✅</p>
-                  <p className="text-sm text-emerald-500">Pro planınız başarıyla aktif edildi!</p></div></>
+                  <p className="text-sm text-emerald-500">Planınız başarıyla aktif edildi!</p></div></>
             ) : pollState === 'pending' ? (
               <><Loader2 className="h-6 w-6 text-amber-400 shrink-0" />
                 <div className="flex-1">
@@ -198,8 +228,8 @@ function PricingContent() {
                 </div>
                 <Button size="sm" variant="outline" className="shrink-0" onClick={async () => {
                   setPollState('polling'); setPollCount(0);
-                  const isPro = await refreshProfile();
-                  if (isPro) { setPollState('active'); toast.success('Plan aktif ✅'); setTimeout(() => window.location.href = '/pricing', 1500); }
+                  const isActive = await refreshProfile();
+                  if (isActive) { setPollState('active'); toast.success('Plan aktif ✅'); setTimeout(() => window.location.href = '/pricing', 1500); }
                   else { setPollState('pending'); toast.info('Henüz aktif değil, biraz daha bekleyin.'); }
                 }}>
                   <RefreshCw className="h-4 w-4 mr-1" />Yenile
@@ -235,46 +265,68 @@ function PricingContent() {
         {/* ─ Plan Cards — PricingSection ───────────────────────────────────── */}
         {(() => {
           const freeTier: PricingTier = {
-            name: 'Başlangıç',
+            name: 'Ücretsiz',
             price: { monthly: 0, yearly: 0 },
-            description: 'Yeni başlayanlar ve denemek isteyenler için ideal.',
+            description: 'Yeni başlayanlar ve denemek isteyenler için.',
             icon: <span className="text-xl">🚀</span>,
+            actionLabel: 'Ücretsiz Başla',
             onAction: () => { window.location.href = user ? '/dashboard' : '/auth'; },
             features: [
               { name: `${FREE_LIMIT} ürüne kadar analiz`, description: 'Kayıt edilebilir ürün sayısı', included: true },
               { name: 'Temel kâr hesaplama', description: 'Komisyon, kargo, KDV dahil', included: true },
-              { name: '4 pazaryeri desteği', description: 'Trendyol, HB, Amazon, N11', included: true },
-              { name: 'PDF rapor (1 adet/ay)', description: 'Aylık tek rapor', included: true },
-              { name: 'Sınırsız ürün analizi', description: 'Pro planında sınırsız', included: false },
-              { name: 'CSV içe / dışa aktarma', description: 'Pro planında aktif', included: false },
-              { name: 'PRO Muhasebe Modu', description: 'KDV ayrıştırma', included: false },
-              { name: 'Hassasiyet & nakit akışı', description: 'Gelişmiş analizler', included: false },
+              { name: 'PRO Muhasebe Modu', description: 'Başlangıç ve üstü planlarda', included: false },
+              { name: 'CSV içe / dışa aktarma', description: 'Başlangıç ve üstü planlarda', included: false },
+              { name: 'Hassasiyet analizi', description: 'Başlangıç ve üstü planlarda', included: false },
+              { name: 'Pazaryeri karşılaştırması', description: 'Pro planında aktif', included: false },
+              { name: 'Nakit akışı tahmini', description: 'Pro planında aktif', included: false },
             ],
           };
 
-          const proTier: PricingTier = {
-            name: 'Pro',
-            price: { monthly: MONTHLY_PRICE, yearly: YEARLY_PRICE },
-            description: 'Ciddi satıcılar için tüm özellikler — kurucu üye fırsatı.',
+          const currentUserIsStarter = user && isStarterUser(user);
+          const starterTier: PricingTier = {
+            name: 'Başlangıç',
+            price: { monthly: STARTER_MONTHLY, yearly: STARTER_YEARLY },
+            description: 'Küçük ve orta ölçekli satıcılar için.',
             highlight: true,
-            badge: 'EN ÇOK TERCİH EDİLEN',
-            icon: <Crown className="h-5 w-5" />,
-            onAction: user && isProUser(user) ? undefined : handleUpgrade,
+            badge: 'EN POPÜLER',
+            icon: <Zap className="h-5 w-5" />,
+            actionLabel: currentUserIsStarter ? 'Mevcut Plan' : 'Başlangıç\'a Geç',
+            onAction: currentUserIsStarter ? undefined : handleStarterUpgrade,
             features: [
-              { name: 'Sınırsız ürün analizi', description: 'Dilediğiniz kadar analiz', included: true },
+              { name: `${STARTER_LIMIT} ürüne kadar analiz`, description: 'Kayıt edilebilir ürün sayısı', included: true },
               { name: 'PRO Muhasebe Modu', description: 'KDV ayrıştırma, net kâr', included: true },
               { name: 'Hassasiyet analizi', description: 'Senaryo bazlı projeksiyon', included: true },
+              { name: 'Başa-baş noktası analizi', description: 'Break-even hesaplama', included: true },
+              { name: 'CSV içe / dışa aktarma', description: 'Excel ile tam entegrasyon', included: true },
+              { name: 'PDF rapor (5 adet/ay)', description: 'Aylık 5 rapor', included: true },
+              { name: 'Pazaryeri karşılaştırması', description: 'Pro planında aktif', included: false },
+              { name: 'Nakit akışı & API entegrasyonu', description: 'Pro planında aktif', included: false },
+            ],
+          };
+
+          const currentUserIsPro = user && isProUser(user);
+          const proTier: PricingTier = {
+            name: 'Profesyonel',
+            price: { monthly: PRO_MONTHLY, yearly: PRO_YEARLY },
+            description: 'Büyük ölçekli ve profesyonel satıcılar için.',
+            icon: <Crown className="h-5 w-5" />,
+            actionLabel: currentUserIsPro ? 'Mevcut Plan' : 'Pro\'ya Geç',
+            onAction: currentUserIsPro ? undefined : () => handleUpgrade(isAnnual ? 'pro_yearly' : 'pro_monthly'),
+            features: [
+              { name: 'Sınırsız ürün analizi', description: 'Dilediğiniz kadar analiz', included: true },
               { name: 'Pazaryeri karşılaştırması', description: 'Trendyol vs HB vs Amazon', included: true },
               { name: 'Nakit akışı tahmini', description: 'Aylık cashflow projeksiyonu', included: true },
-              { name: 'CSV içe / dışa aktarma', description: 'Excel ile tam entegrasyon', included: true },
               { name: 'API entegrasyonu', description: 'Trendyol & Hepsiburada', included: true },
-              { name: 'Sınırsız PDF rapor + öncelikli destek', description: 'Kurucu üye fiyatı garantili', included: true },
+              { name: 'Sınırsız PDF rapor', description: 'İstediğin kadar rapor', included: true },
+              { name: 'Haftalık e-posta raporu', description: 'Otomatik haftalık özet', included: true },
+              { name: 'Rakip takibi', description: 'Otomatik fiyat izleme', included: true },
+              { name: 'Öncelikli destek', description: 'Hızlı yanıt garantisi', included: true },
             ],
           };
 
           return (
             <PricingSection
-              tiers={[freeTier, proTier]}
+              tiers={[freeTier, starterTier, proTier]}
               className="!py-0"
               onBillingChange={(isYearly) => setBilling(isYearly ? 'yearly' : 'monthly')}
             />
@@ -282,21 +334,25 @@ function PricingContent() {
         })()}
 
         {/* ─ Comparison Table ───────────────────────────────────────────────── */}
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl font-bold text-center mb-8">Özellik Karşılaştırması</h2>
           <div className="rounded-2xl border border-[rgba(255,255,255,0.06)] overflow-hidden">
             {/* Header */}
-            <div className="grid grid-cols-3 bg-[rgba(255,255,255,0.03)] border-b border-[rgba(255,255,255,0.06)]">
+            <div className="grid grid-cols-4 bg-[rgba(255,255,255,0.03)] border-b border-[rgba(255,255,255,0.06)]">
               <div className="p-4 text-sm font-semibold text-[rgba(255,255,255,0.5)]">Özellik</div>
               <div className="p-4 text-sm font-semibold text-center border-l border-[rgba(255,255,255,0.06)]">Ücretsiz</div>
+              <div className="p-4 text-sm font-semibold text-center border-l border-[rgba(255,255,255,0.06)] text-amber-400">Başlangıç</div>
               <div className="p-4 text-sm font-semibold text-center border-l border-[rgba(255,255,255,0.06)] text-amber-400">Pro</div>
             </div>
             {/* Rows */}
             {COMPARISON_ROWS.map((row, i) => (
-              <div key={row.label} className={cn('grid grid-cols-3 border-b border-[rgba(255,255,255,0.04)] last:border-b-0', i % 2 === 0 ? 'bg-transparent' : 'bg-[rgba(255,255,255,0.02)]')}>
+              <div key={row.label} className={cn('grid grid-cols-4 border-b border-[rgba(255,255,255,0.04)] last:border-b-0', i % 2 === 0 ? 'bg-transparent' : 'bg-[rgba(255,255,255,0.02)]')}>
                 <div className="p-3.5 text-sm text-[rgba(255,255,255,0.7)]">{row.label}</div>
                 <div className="p-3.5 text-center border-l border-[rgba(255,255,255,0.06)] flex items-center justify-center">
                   <CellValue val={row.free} />
+                </div>
+                <div className="p-3.5 text-center border-l border-[rgba(255,255,255,0.06)] flex items-center justify-center">
+                  <CellValue val={row.starter} />
                 </div>
                 <div className="p-3.5 text-center border-l border-[rgba(255,255,255,0.06)] flex items-center justify-center">
                   <CellValue val={row.pro} />
@@ -353,10 +409,10 @@ function PricingContent() {
                 size="lg"
                 className="rounded-xl h-12 px-8 text-white"
                 style={{ background: 'linear-gradient(135deg, #D97706, #92400E)' }}
-                onClick={handleUpgrade}
-                disabled={loading}
+                onClick={() => handleUpgrade(isAnnual ? 'pro_yearly' : 'pro_monthly')}
+                disabled={loadingPro || loadingStarter}
               >
-                {loading
+                {loadingPro
                   ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Yönlendiriliyor…</>
                   : "Pro'ya Geç →"}
               </Button>
