@@ -102,7 +102,7 @@ export async function POST(req: Request) {
             }
         } catch { /* ignore logging errors */ }
 
-        console.log('Trendyol URL:', `https://api.trendyol.com/sapigw/suppliers/{supplierId}/orders`);
+        console.log('Trendyol URL:', `https://apigw.trendyol.com/integration/order/sellers/{sellerId}/orders`);
         return NextResponse.json({ error: 'Sipariş senkronizasyonu başarısız.', detail: err?.message }, { status: 500 });
     }
 }

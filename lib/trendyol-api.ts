@@ -11,10 +11,14 @@
  * NEVER log credentials, auth headers, or tokens.
  */
 
-// SORUN 4: prod vs stage env — TRENDYOL_ENV=stage ile test ortamı kullanılır
 const BASE_URL = process.env.TRENDYOL_ENV === 'stage'
     ? 'https://stageapi.trendyol.com/stagesapigw'
     : 'https://api.trendyol.com/sapigw';
+
+// Sipariş API'si yeni domain ve path kullanıyor (Trendyol dok. güncellemesi)
+const ORDER_BASE_URL = process.env.TRENDYOL_ENV === 'stage'
+    ? 'https://stageapi.trendyol.com/stagesapigw/integration/order/sellers'
+    : 'https://apigw.trendyol.com/integration/order/sellers';
 
 const MAX_RETRIES = 3;
 const INITIAL_BACKOFF_MS = 1000;
@@ -302,7 +306,7 @@ export async function fetchOrders(
         };
     }
 
-    const url = `${BASE_URL}/suppliers/${creds.sellerId}/orders?startDate=${startDate}&endDate=${endDate}&page=${page}&size=${size}`;
+    const url = `${ORDER_BASE_URL}/${creds.sellerId}/orders?startDate=${startDate}&endDate=${endDate}&orderByField=PackageLastModifiedDate&orderByDirection=DESC&page=${page}&size=${size}`;
     const headers = buildHeaders(creds);
     const res = await fetchWithRetry(url, headers);
 
@@ -326,7 +330,7 @@ export async function getOrderDetail(
         return MOCK_ORDERS.find(o => o.orderId === orderId) ?? null;
     }
 
-    const url = `${BASE_URL}/suppliers/${creds.sellerId}/orders/${orderId}`;
+    const url = `${ORDER_BASE_URL}/${creds.sellerId}/orders/${orderId}`;
     const headers = buildHeaders(creds);
     const res = await fetchWithRetry(url, headers);
 
@@ -433,16 +437,50 @@ export async function checkBatchStatus(
 }
 
 // ─── Finance / Cari Hesap Ekstresi ───────────────────────────
+// Trendyol kuralı: startDate - endDate arası max 15 gün olabilir.
+// Daha uzun aralıklar için 14 günlük pencerelere bölerek çağrı yapılır.
 
 export interface SellerSettlement {
-    siparisId: string | number;
-    satisTutari: number;
+    siparisId: string;
+    paketId: number;
+    barkod: string;
+    islemTipi: string;
+    komisyonOrani: number;
     komisyonTutari: number;
-    kargoTutari: number;
-    iadeTutari: number;
-    netTutar: number;
-    tarih: string;
-    durum: string;
+    saticiHakedis: number;
+    alacak: number;
+    borc: number;
+    odemeTarihi: string | null;
+    islemTarihi: string | null;
+    odemeNo: number;
+}
+
+async function fetchSettlementsChunk(
+    creds: TrendyolCredentials,
+    headers: Record<string, string>,
+    startDate: string,
+    endDate: string
+): Promise<SellerSettlement[]> {
+    const url = `${BASE_URL}/suppliers/${creds.sellerId}/finance/che/seller-settlements?startDate=${startDate}&endDate=${endDate}`;
+    const res = await fetchWithRetry(url, headers);
+
+    if (!res.ok) handleTrendyolError(res.status, url);
+
+    const data = await res.json();
+    return (data.content || []).map((item: any): SellerSettlement => ({
+        siparisId: item.orderNumber ?? '',
+        paketId: item.shipmentPackageId ?? 0,
+        barkod: item.barcode ?? '',
+        islemTipi: item.transactionType ?? '',
+        komisyonOrani: item.commissionRate ?? 0,
+        komisyonTutari: item.commissionAmount ?? 0,
+        saticiHakedis: item.sellerRevenue ?? 0,
+        alacak: item.credit ?? 0,
+        borc: item.debt ?? 0,
+        odemeTarihi: item.paymentDate ? new Date(item.paymentDate).toISOString() : null,
+        islemTarihi: item.transactionDate ? new Date(item.transactionDate).toISOString() : null,
+        odemeNo: item.paymentOrderId ?? 0,
+    }));
 }
 
 export async function getSellerSettlements(
@@ -452,21 +490,27 @@ export async function getSellerSettlements(
 ): Promise<SellerSettlement[]> {
     if (isMockMode(creds)) return [];
 
-    const url = `${BASE_URL}/suppliers/${creds.sellerId}/finance/che/seller-settlements?startDate=${startDate}&endDate=${endDate}`;
     const headers = buildHeaders(creds);
-    const res = await fetchWithRetry(url, headers);
+    const results: SellerSettlement[] = [];
 
-    if (!res.ok) handleTrendyolError(res.status, url);
+    const baslangic = new Date(startDate);
+    const bitis = new Date(endDate);
+    let mevcutBaslangic = new Date(baslangic);
 
-    const data = await res.json();
-    return (data.content || []).map((item: any): SellerSettlement => ({
-        siparisId: item.shipmentPackageId,
-        satisTutari: item.amount ?? 0,
-        komisyonTutari: item.commissionFee ?? 0,
-        kargoTutari: item.deliveryFee ?? 0,
-        iadeTutari: item.refundAmount ?? 0,
-        netTutar: item.netAmount ?? 0,
-        tarih: item.settlementDate,
-        durum: item.transactionType,
-    }));
+    while (mevcutBaslangic <= bitis) {
+        const mevcutBitis = new Date(mevcutBaslangic);
+        mevcutBitis.setDate(mevcutBitis.getDate() + 14);
+        if (mevcutBitis > bitis) mevcutBitis.setTime(bitis.getTime());
+
+        const start = mevcutBaslangic.toISOString().split('T')[0];
+        const end = mevcutBitis.toISOString().split('T')[0];
+
+        const chunk = await fetchSettlementsChunk(creds, headers, start, end);
+        results.push(...chunk);
+
+        mevcutBaslangic = new Date(mevcutBitis);
+        mevcutBaslangic.setDate(mevcutBaslangic.getDate() + 1);
+    }
+
+    return results;
 }

@@ -17,9 +17,8 @@ import { RecommendationsPanel } from '@/components/dashboard/recommendations-pan
 
 interface TrendyolFinans {
   toplamKomisyon: number;
-  toplamKargo: number;
-  toplamIade: number;
-  netKazanc: number;
+  toplamHakedis: number;
+  toplamAlacak: number;
 }
 
 export default function DashboardPage() {
@@ -42,13 +41,12 @@ export default function DashboardPage() {
         const res = await fetch(`/api/marketplace/trendyol/finance?startDate=${fmt(baslangic)}&endDate=${fmt(bitis)}`);
         if (!res.ok) return;
         const json = await res.json();
-        const rows: Array<{ commissionAmount?: number; shippingAmount?: number; returnAmount?: number; netAmount?: number }> = json.data ?? [];
+        const rows: Array<{ komisyonTutari?: number; saticiHakedis?: number; alacak?: number }> = json.data ?? [];
         if (rows.length === 0) return;
         setTrendyolFinans({
-          toplamKomisyon: rows.reduce((s, r) => s + (r.commissionAmount ?? 0), 0),
-          toplamKargo: rows.reduce((s, r) => s + (r.shippingAmount ?? 0), 0),
-          toplamIade: rows.reduce((s, r) => s + (r.returnAmount ?? 0), 0),
-          netKazanc: rows.reduce((s, r) => s + (r.netAmount ?? 0), 0),
+          toplamKomisyon: rows.reduce((s, r) => s + (r.komisyonTutari ?? 0), 0),
+          toplamHakedis: rows.reduce((s, r) => s + (r.saticiHakedis ?? 0), 0),
+          toplamAlacak: rows.reduce((s, r) => s + (r.alacak ?? 0), 0),
         });
       } catch {
         // sessizce geç
@@ -155,13 +153,13 @@ export default function DashboardPage() {
                 <p className="text-xs text-muted-foreground">Komisyon</p>
                 <p className="text-base font-bold text-red-500">{formatCurrency(trendyolFinans.toplamKomisyon)}</p>
               </div>
-              <div className="rounded-xl bg-orange-500/10 p-3 space-y-0.5">
-                <p className="text-xs text-muted-foreground">Kargo</p>
-                <p className="text-base font-bold text-orange-500">{formatCurrency(trendyolFinans.toplamKargo)}</p>
+              <div className="rounded-xl bg-blue-500/10 p-3 space-y-0.5">
+                <p className="text-xs text-muted-foreground">Hakediş</p>
+                <p className="text-base font-bold text-blue-500">{formatCurrency(trendyolFinans.toplamHakedis)}</p>
               </div>
               <div className="rounded-xl bg-primary/10 p-3 space-y-0.5">
-                <p className="text-xs text-muted-foreground">Net Kazanç</p>
-                <p className="text-base font-bold text-primary">{formatCurrency(trendyolFinans.netKazanc)}</p>
+                <p className="text-xs text-muted-foreground">Alacak</p>
+                <p className="text-base font-bold text-primary">{formatCurrency(trendyolFinans.toplamAlacak)}</p>
               </div>
             </div>
           </div>

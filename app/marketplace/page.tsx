@@ -121,9 +121,9 @@ export default function MarketplacePage() {
     // Finans kartı state'leri
     const [finansData, setFinansData] = useState<{
         toplamKomisyon: number;
-        toplamKargo: number;
-        toplamIade: number;
-        toplamNet: number;
+        toplamHakedis: number;
+        toplamAlacak: number;
+        toplamBorc: number;
         kayitSayisi: number;
     } | null>(null);
     const [finansYukleniyor, setFinansYukleniyor] = useState(false);
@@ -187,11 +187,11 @@ export default function MarketplacePage() {
             const toplamlar = (data as any[]).reduce(
                 (acc, item) => ({
                     toplamKomisyon: acc.toplamKomisyon + (item.komisyonTutari || 0),
-                    toplamKargo: acc.toplamKargo + (item.kargoTutari || 0),
-                    toplamIade: acc.toplamIade + (item.iadeTutari || 0),
-                    toplamNet: acc.toplamNet + (item.netTutar || 0),
+                    toplamHakedis: acc.toplamHakedis + (item.saticiHakedis || 0),
+                    toplamAlacak: acc.toplamAlacak + (item.alacak || 0),
+                    toplamBorc: acc.toplamBorc + (item.borc || 0),
                 }),
-                { toplamKomisyon: 0, toplamKargo: 0, toplamIade: 0, toplamNet: 0 }
+                { toplamKomisyon: 0, toplamHakedis: 0, toplamAlacak: 0, toplamBorc: 0 }
             );
             setFinansData({ ...toplamlar, kayitSayisi: data.length });
         } catch (error: any) {
@@ -227,12 +227,14 @@ export default function MarketplacePage() {
             const res = await fetch(`/api/marketplace/trendyol/finance?startDate=${fmt(baslangic)}&endDate=${fmt(bitis)}`);
             if (!res.ok) throw new Error('Finans verisi alınamadı');
             const json = await res.json();
-            const rows: Array<{ commissionAmount?: number; salesAmount?: number }> = json.data ?? [];
-            const toplamKomisyon = rows.reduce((s, r) => s + (r.commissionAmount ?? 0), 0);
-            const toplamSatis = rows.reduce((s, r) => s + (r.salesAmount ?? 0), 0);
-            if (toplamSatis > 0) {
-                const oran = parseFloat(((toplamKomisyon / toplamSatis) * 100).toFixed(2));
-                setKomisyonSonucu({ oran });
+            const rows: Array<{ komisyonOrani?: number; komisyonTutari?: number; saticiHakedis?: number }> = json.data ?? [];
+            // komisyonOrani direkt yüzde olarak geliyor; ortalamasını al
+            const oranlıRows = rows.filter(r => (r.komisyonOrani ?? 0) > 0);
+            if (oranlıRows.length > 0) {
+                const ortalamaOran = parseFloat(
+                    (oranlıRows.reduce((s, r) => s + (r.komisyonOrani ?? 0), 0) / oranlıRows.length).toFixed(2)
+                );
+                setKomisyonSonucu({ oran: ortalamaOran });
             } else {
                 toast.info('Son 30 günde yeterli satış verisi bulunamadı.');
             }
@@ -780,21 +782,21 @@ export default function MarketplacePage() {
                                                         </p>
                                                     </div>
                                                     <div className="rounded-lg bg-muted/50 p-3 text-center">
-                                                        <p className="text-xs text-muted-foreground mb-1">Kargo Kesintisi</p>
-                                                        <p className="text-lg font-bold text-orange-500">
-                                                            ₺{finansData.toplamKargo.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        <p className="text-xs text-muted-foreground mb-1">Satıcı Hakediş</p>
+                                                        <p className="text-lg font-bold text-blue-500">
+                                                            ₺{finansData.toplamHakedis.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </p>
                                                     </div>
                                                     <div className="rounded-lg bg-muted/50 p-3 text-center">
-                                                        <p className="text-xs text-muted-foreground mb-1">İade Kesintisi</p>
-                                                        <p className="text-lg font-bold text-yellow-500">
-                                                            ₺{finansData.toplamIade.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        <p className="text-xs text-muted-foreground mb-1">Toplam Borç</p>
+                                                        <p className="text-lg font-bold text-orange-500">
+                                                            ₺{finansData.toplamBorc.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </p>
                                                     </div>
                                                     <div className="rounded-lg bg-primary/10 border border-primary/20 p-3 text-center">
-                                                        <p className="text-xs text-muted-foreground mb-1">Net Ödeme</p>
+                                                        <p className="text-xs text-muted-foreground mb-1">Toplam Alacak</p>
                                                         <p className="text-lg font-bold text-primary">
-                                                            ₺{finansData.toplamNet.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                            ₺{finansData.toplamAlacak.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </p>
                                                     </div>
                                                 </div>
