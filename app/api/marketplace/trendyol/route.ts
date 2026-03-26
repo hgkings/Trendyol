@@ -15,7 +15,7 @@ export async function GET() {
 
         const { data: connection } = await supabase
             .from('marketplace_connections')
-            .select('id, marketplace, status, store_name, seller_id, last_sync_at, created_at')
+            .select('id, marketplace, status, store_name, seller_id, last_sync_at, created_at, webhook_active')
             .eq('user_id', user.id)
             .eq('marketplace', 'trendyol')
             .maybeSingle();
@@ -31,6 +31,7 @@ export async function GET() {
             store_name: connection.store_name,
             seller_id: connection.seller_id,
             last_sync_at: connection.last_sync_at,
+            webhook_active: connection.webhook_active ?? false,
         });
     } catch (err: any) {
         console.error('[marketplace/trendyol GET] Error:', err?.message);

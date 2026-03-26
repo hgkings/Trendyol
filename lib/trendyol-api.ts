@@ -736,3 +736,50 @@ export async function fetchAllClaims(
 
     return results;
 }
+
+// ─── Webhook Yönetimi ────────────────────────────────────────
+
+export interface WebhookRegistration {
+    webhookId: string;
+    url: string;
+    eventTypes: number[];
+}
+
+export async function registerWebhook(
+    creds: TrendyolCredentials,
+    webhookUrl: string,
+    eventTypeIds: number[] = [1, 2, 6]
+): Promise<WebhookRegistration> {
+    if (isMockMode(creds)) {
+        return { webhookId: 'mock-webhook-id', url: webhookUrl, eventTypes: eventTypeIds };
+    }
+
+    await checkRateLimit();
+    const headers = buildHeaders(creds);
+    const url = `${BASE_URL}/suppliers/${creds.sellerId}/webhooks`;
+
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            url: webhookUrl,
+            authenticationType: 'BASIC_AUTH',
+            username: creds.apiKey,
+            password: creds.apiSecret,
+            webhookEventTypes: eventTypeIds.map((id) => ({ id })),
+        }),
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+
+    if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Webhook kayıt hatası: HTTP ${res.status} — ${text.slice(0, 200)}`);
+    }
+
+    const data = await res.json().catch(() => ({}));
+    return {
+        webhookId: String(data.id ?? data.webhookId ?? ''),
+        url: webhookUrl,
+        eventTypes: eventTypeIds,
+    };
+}

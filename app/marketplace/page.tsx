@@ -90,6 +90,7 @@ interface ConnectionState {
     store_name?: string;
     seller_id?: string;
     last_sync_at?: string;
+    webhook_active?: boolean;
 }
 
 export default function MarketplacePage() {
@@ -133,6 +134,9 @@ export default function MarketplacePage() {
     // Komisyon çek
     const [komisyonYukleniyor, setKomisyonYukleniyor] = useState(false);
     const [komisyonSonucu, setKomisyonSonucu] = useState<{ oran: number } | null>(null);
+
+    // Webhook
+    const [webhookKuruluyor, setWebhookKuruluyor] = useState(false);
 
     // Show/hide password fields
     const [showApiKey, setShowApiKey] = useState(false);
@@ -408,6 +412,24 @@ export default function MarketplacePage() {
         }
     };
 
+    const webhookKur = async () => {
+        setWebhookKuruluyor(true);
+        try {
+            const res = await fetch('/api/marketplace/trendyol/webhook-register', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                toast.success('Webhook kuruldu! Artık siparişler otomatik gelecek.');
+                fetchStatus();
+            } else {
+                toast.error(data.error || 'Webhook kurulumu başarısız.');
+            }
+        } catch {
+            toast.error('Webhook kurulumu sırasında hata oluştu.');
+        } finally {
+            setWebhookKuruluyor(false);
+        }
+    };
+
     const isConnected = connection?.connected === true;
     const isMissingInfo = isConnected && !connection?.seller_id?.trim();
     const displayStatus: DisplayStatus = isMissingInfo ? 'missing_info' : (connection?.status || 'disconnected');
@@ -668,6 +690,39 @@ export default function MarketplacePage() {
                                         Siparişleri İşle (Metrik Üret)
                                     </Button>
                                 </div>
+
+                                {/* Webhook */}
+                                {selectedMarketplace === 'trendyol' && (
+                                    <div className="rounded-xl border border-dashed border-orange-500/30 bg-orange-500/5 p-4 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm font-semibold text-foreground">Otomatik Bildirimler</p>
+                                                <p className="text-xs text-muted-foreground mt-0.5">
+                                                    Webhook kurulunca siparişler anında Kârnet&apos;e gelir.
+                                                </p>
+                                            </div>
+                                            {connection?.webhook_active ? (
+                                                <span className="flex items-center gap-1.5 text-xs text-emerald-500 font-medium">
+                                                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse inline-block" />
+                                                    Aktif
+                                                </span>
+                                            ) : (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-9 gap-2 border-orange-500/40 text-orange-500 hover:bg-orange-500/10"
+                                                    onClick={webhookKur}
+                                                    disabled={webhookKuruluyor || isSyncing}
+                                                >
+                                                    {webhookKuruluyor
+                                                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                        : <RefreshCw className="h-3.5 w-3.5" />}
+                                                    {webhookKuruluyor ? 'Kuruluyor…' : 'Webhook Kur'}
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Metrics Panel */}
                                 {orderMetrics && (
