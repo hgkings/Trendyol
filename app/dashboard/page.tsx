@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useAlerts } from '@/contexts/alert-context';
 import { deleteAnalysis as storageDeleteAnalysis } from '@/lib/api/analyses';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
@@ -26,14 +27,17 @@ export default function DashboardPage() {
   const { analyses, loading, refresh } = useAlerts();
 
   const [trendyolFinans, setTrendyolFinans] = useState<TrendyolFinans | null>(null);
+  const [trendyolBagli, setTrendyolBagli] = useState<boolean | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
         const connRes = await fetch('/api/marketplace/trendyol');
-        if (!connRes.ok) return;
+        if (!connRes.ok) { setTrendyolBagli(false); return; }
         const conn = await connRes.json();
-        if (conn.status !== 'connected' || !conn.seller_id?.trim()) return;
+        const bagli = conn.status === 'connected' && !!conn.seller_id?.trim();
+        setTrendyolBagli(bagli);
+        if (!bagli) return;
 
         const bitis = new Date();
         const baslangic = new Date();
@@ -61,7 +65,7 @@ export default function DashboardPage() {
           toplamIadeSayisi,
         });
       } catch {
-        // sessizce geç
+        setTrendyolBagli(false);
       }
     })();
   }, []);
@@ -149,6 +153,35 @@ export default function DashboardPage() {
             icon={Star}
           />
         </div>
+
+        {/* Trendyol — Bağlı Değilse Teşvik Kartı */}
+        {trendyolBagli === false && (
+          <Link href="/marketplace">
+            <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-6 hover:bg-muted/40 hover:border-primary/40 transition-all cursor-pointer group">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🔗</span>
+                  <p className="text-sm font-semibold text-foreground">Trendyol Bağlantısı</p>
+                </div>
+                <span className="text-xs bg-orange-500/15 text-orange-400 px-2 py-1 rounded-full font-medium">
+                  Bağlı Değil
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Mağazanı bağla — komisyon, kargo ve iade verilerin otomatik gelsin.
+              </p>
+              <div className="space-y-2 mb-4">
+                {['📊 Komisyon verisi otomatik', '💸 Gerçek net kâr hesabı', '📦 İade oranı otomatik'].map((item) => (
+                  <p key={item} className="text-xs text-muted-foreground">{item}</p>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 text-primary text-sm font-medium group-hover:gap-3 transition-all">
+                <span>Trendyol&apos;u Bağla</span>
+                <span>→</span>
+              </div>
+            </div>
+          </Link>
+        )}
 
         {/* Trendyol Finansal Özet */}
         {trendyolFinans && (
