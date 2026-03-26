@@ -922,6 +922,69 @@ export default function MarketplacePage() {
                                     </div>
                                 )}
 
+                                {/* Sonraki Adımlar */}
+                                {connection?.seller_id && (
+                                    <div className="space-y-3">
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                            Şimdi ne yapabilirsin?
+                                        </p>
+
+                                        <Link href="/analysis/new">
+                                            <div className="flex items-center justify-between bg-primary/10 border border-primary/30 rounded-xl p-4 hover:bg-primary/15 transition-colors cursor-pointer group">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-2xl">🎯</span>
+                                                    <div>
+                                                        <p className="text-sm font-semibold text-foreground">Yeni Analiz Oluştur</p>
+                                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                                            Komisyon verisi otomatik dolacak — sen sadece ürün adı ve maliyet gir.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <span className="text-muted-foreground group-hover:text-primary transition-colors text-lg">→</span>
+                                            </div>
+                                        </Link>
+
+                                        <Link href="/products">
+                                            <div className="flex items-center justify-between bg-muted/40 border border-border rounded-xl p-4 hover:bg-muted/60 transition-colors cursor-pointer group">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-2xl">📦</span>
+                                                    <div>
+                                                        <p className="text-sm font-semibold text-foreground">Ürünleri Kârnet&apos;e Aktar</p>
+                                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                                            Trendyol ürünlerini Kârnet&apos;e çek, toplu analiz yap.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <span className="text-muted-foreground group-hover:text-foreground transition-colors text-lg">→</span>
+                                            </div>
+                                        </Link>
+
+                                        <Link href="/dashboard">
+                                            <div className="flex items-center justify-between bg-muted/40 border border-border rounded-xl p-4 hover:bg-muted/60 transition-colors cursor-pointer group">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-2xl">📊</span>
+                                                    <div>
+                                                        <p className="text-sm font-semibold text-foreground">Dashboard&apos;u Gör</p>
+                                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                                            Bu ayki komisyon, iade ve net hakediş özetini görüntüle.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <span className="text-muted-foreground group-hover:text-foreground transition-colors text-lg">→</span>
+                                            </div>
+                                        </Link>
+
+                                        <div className="flex items-start gap-2 pt-1">
+                                            <span className="text-yellow-500 text-sm">💡</span>
+                                            <p className="text-xs text-muted-foreground">
+                                                Yeni analiz oluştururken{' '}
+                                                <span className="text-primary font-medium">Trendyol&apos;dan Çek</span>
+                                                {' '}butonuna bas — komisyon oranı otomatik dolacak.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Disconnect Button */}
                                 <div className="flex justify-end">
                                     <Button variant="destructive" size="sm" onClick={handleDisconnect} disabled={disconnecting || isSyncing} className="gap-2">
