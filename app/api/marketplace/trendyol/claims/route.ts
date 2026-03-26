@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
         const toplamIadeSayisi = iadeler.length;
         const toplamIadeTutari = iadeler.reduce((acc, iade) => {
-            return acc + iade.lines.reduce((s, l) => s + (l.price * l.quantity), 0);
+            return acc + iade.lines.reduce((s, l) => s + (l.amount * l.quantity), 0);
         }, 0);
 
         const nedenDagilimi: Record<string, number> = {};
@@ -34,19 +34,19 @@ export async function GET(request: NextRequest) {
         });
 
         const formatlanmis = iadeler.map(iade => ({
-            iadeId: iade.id,
+            iadeId: iade.claimId,
             siparisNo: iade.orderNumber,
-            iadeTarihi: new Date(iade.claimDate).toISOString(),
+            iadeTarihi: iade.claimDate,
             iadeTipi: iade.claimType,
-            iadeDurumu: iade.claimStatus,
+            iadeDurumu: iade.status,
             urunler: iade.lines.map(line => ({
                 urunAdi: line.productName,
                 barkod: line.barcode,
                 adet: line.quantity,
-                fiyat: line.price,
+                fiyat: line.amount,
                 neden: line.claimReason,
             })),
-            toplamTutar: iade.lines.reduce((s, l) => s + (l.price * l.quantity), 0),
+            toplamTutar: iade.totalAmount,
         }));
 
         return NextResponse.json({
