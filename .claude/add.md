@@ -39,6 +39,7 @@ BU SIRALAMA DEGISMEZ. GOREV ALMADAN ONCE BU 3 ADIM TAMAMLANMALI.
 | Ajan Adi | Platform | Son Gorev | Son Aktif |
 |----------|----------|-----------|-----------|
 | Terminal Claude | Claude Code CLI (Opus 4.6) | Guvenlik denetimi + runtime fix | 2026-03-31 |
+| Eklenti 1 | Claude Code VSCode Extension (Opus 4.6) | cash-plan + break-even premium tasarim + logout fix | 2026-03-30 |
 
 ---
 
@@ -47,7 +48,7 @@ BU SIRALAMA DEGISMEZ. GOREV ALMADAN ONCE BU 3 ADIM TAMAMLANMALI.
 ### Guvenlik Iyilestirme Plani (Adim 2-9)
 | # | Gorev | Zorluk | Durum |
 |---|-------|--------|-------|
-| 2 | npm audit + bagimlilk guncelleme | Kolay | BEKLIYOR |
+| 2 | npm audit + bagimlilk guncelleme | Kolay | ✅ YAPILDI (Terminal Claude, 03-31) |
 | 3 | Admin 2FA (Supabase MFA) | Orta | BEKLIYOR |
 | 4 | User-ID bazli rate limiting | Orta | BEKLIYOR |
 | 5 | Cloudflare WAF entegrasyonu | Orta | BEKLIYOR |
@@ -67,10 +68,21 @@ BU SIRALAMA DEGISMEZ. GOREV ALMADAN ONCE BU 3 ADIM TAMAMLANMALI.
 
 ## SON DEGISIKLIKLER (en yeniden eskiye)
 
+### 2026-03-30 (Eklenti 1 — VSCode Extension)
+
+| Tarih | Ajan | Ozet | Dosyalar | Commit |
+|-------|------|------|----------|--------|
+| 03-30 | Eklenti 1 | Nakit Plani sayfasi premium tasarim — area chart, 4 ozet kart (en dusuk kasa + risk + nakit pisti + ort. net), senaryo karsilastirma (kotumser/normal/iyimser), stok simulasyonu ay secimi, floating save bar, akilli oneriler paneli, Framer Motion animasyonlar | app/cash-plan/page.tsx | b171544 |
+| 03-30 | Eklenti 1 | Basabas sayfasi premium tasarim — gelir/maliyet kesisim grafigi, 4 KPI kart, fiyat hassasiyet slider (-30%/+30%), gunluk hedef kirilimi + progress bar, katki payi gostergesi, akilli oneriler, floating save bar | app/break-even/page.tsx | b171544 |
+| 03-30 | Eklenti 1 | Logout fix — cikis yapinca bos sayfa yerine anasayfaya yonlendirme | contexts/auth-context.tsx | b171544 |
+| 03-30 | Eklenti 1 | karnet-context skill olusturuldu — proje baglami, mimari, bilinen sorunlar, gelistirme kurallari | .claude/skills/karnet-context/SKILL.md | b171544 |
+
 ### 2026-03-31
 
 | Tarih | Ajan | Ozet | Dosyalar | Commit |
 |-------|------|------|----------|--------|
+| 03-31 | Terminal Claude | npm audit — Next.js 13.5.1→13.5.11, 18→5 zafiyet | package.json, package-lock.json | 0433c7a |
+| 03-31 | Terminal Claude | add.md + CLAUDE.md multi-agent protokol | .claude/add.md, .claude/CLAUDE.md | 9ee993d, c228775 |
 | 03-31 | Terminal Claude | Runtime UX duzeltmeleri — timeout, unmount, hata gosterimi | auth/page.tsx, dashboard/page.tsx, alert-context.tsx, settings/page.tsx, marketplace/page.tsx | 22f4b90 |
 | 03-31 | Terminal Claude | auditLog cagrilari 10 kritik endpoint'e eklendi | paytr/callback, create-payment, user/delete, admin/users, admin/activate-payment, cron/check-expiry, trendyol/webhook, helpers.ts, gateway.adapter.ts, audit.ts | b8afea6 |
 | 03-31 | Terminal Claude | Kalan 6 guvenlik bulgusu — Zod, CSP, audit log, debug guard, rate limit | 15 dosya, audit_logs migration | 00ac34b |
