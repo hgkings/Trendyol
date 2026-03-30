@@ -7,24 +7,46 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 export type AuditAction =
   | 'auth.login'
+  | 'auth.login_failed'
   | 'auth.logout'
   | 'auth.register'
   | 'auth.password_reset'
+  | 'auth.oauth'
   | 'analysis.create'
   | 'analysis.update'
   | 'analysis.delete'
+  | 'analysis.upsertFull'
+  | 'analysis.list'
   | 'marketplace.connect'
   | 'marketplace.disconnect'
   | 'marketplace.sync'
+  | 'marketplace.normalizeTrendyol'
+  | 'marketplace.normalizeHepsiburada'
   | 'payment.create'
   | 'payment.callback'
+  | 'payment.callback_failed'
+  | 'payment.verify'
+  | 'payment.listPayments'
+  | 'payment.activatePaymentManually'
+  | 'payment.checkPayment'
   | 'admin.activate_payment'
   | 'admin.user_update'
+  | 'admin.stats_view'
+  | 'admin.user_search'
   | 'support.ticket_create'
   | 'support.ticket_reply'
+  | 'support.ticket_delete'
   | 'email.send'
   | 'user.delete_account'
+  | 'user.profile_update'
+  | 'user.checkProExpiry'
+  | 'product.manualMatch'
+  | 'product.bulkMatch'
   | 'security.cron_auth_fail'
+  | 'security.rate_limit_hit'
+  | 'security.webhook_invalid_sig'
+  // Gateway generic — serviceName.method formatinda
+  | string
 
 interface AuditEntry {
   action: AuditAction
@@ -36,7 +58,7 @@ interface AuditEntry {
 
 /**
  * Audit log kaydi olusturur.
- * DB'ye yazma fire-and-forget — hata olursa sessizce gecer (ana istegi bloklamamali).
+ * DB'ye yazma fire-and-forget — hata olursa sessizce gecer.
  */
 export async function auditLog(entry: AuditEntry): Promise<void> {
   const logEntry = {
@@ -58,7 +80,6 @@ export async function auditLog(entry: AuditEntry): Promise<void> {
 
 /**
  * Trace ID uretir — her istegi takip etmek icin.
- * Format: trc_{timestamp}_{random}
  */
 export function generateTraceId(): string {
   const timestamp = Date.now().toString(36)

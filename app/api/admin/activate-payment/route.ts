@@ -1,4 +1,5 @@
 import { requireAdmin, callGatewayV1Format, errorResponse } from '@/lib/api/helpers'
+import { auditLog, generateTraceId } from '@/lib/security/audit'
 import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
@@ -21,6 +22,13 @@ export async function POST(req: Request) {
         { status: 422 }
       )
     }
+
+    void auditLog({
+      action: 'admin.activate_payment',
+      userId: auth.id,
+      traceId: generateTraceId(),
+      metadata: { paymentId: parsed.data.paymentId },
+    })
 
     return callGatewayV1Format('payment', 'activatePaymentManually', parsed.data, auth.id)
   } catch (error) {

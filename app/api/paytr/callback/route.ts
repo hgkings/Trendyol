@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import crypto from 'crypto';
 import { emailService } from '@/lib/email/emailService';
+import { auditLog, generateTraceId } from '@/lib/security/audit';
 
 export async function POST(req: Request) {
     try {
@@ -95,6 +96,13 @@ export async function POST(req: Request) {
                 .eq('id', payment.user_id);
 
             if (!profileErr) {
+                void auditLog({
+                    action: 'payment.callback',
+                    userId: payment.user_id,
+                    traceId: generateTraceId(),
+                    metadata: { paymentId: payment.id, plan: planType, status: 'paid', merchant_oid },
+                })
+
                 // Pro aktivasyon emaili gönder (ödeme akışını etkilemez, hata olsa bile devam eder)
                 try {
                     const { data: userProfile } = await supabase
@@ -114,11 +122,18 @@ export async function POST(req: Request) {
                 }
             }
         } else {
+            void auditLog({
+                action: 'payment.callback_failed',
+                userId: payment.user_id,
+                traceId: generateTraceId(),
+                metadata: { paymentId: payment.id, status: 'failed', merchant_oid },
+            })
+
             await supabase
                 .from('payments')
                 .update({
                     status: 'failed',
-                    raw_payload: payload as any,
+                    raw_payload: payload as Record<string, unknown>,
                 })
                 .eq('id', payment.id);
         }

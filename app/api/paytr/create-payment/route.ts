@@ -3,6 +3,7 @@ import { PRICING } from '@/config/pricing';
 import crypto from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient as createServerSupabase } from '@/lib/supabase/server';
+import { auditLog, generateTraceId } from '@/lib/security/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -158,6 +159,13 @@ export async function POST(req: Request) {
                 pro_until: planUntil, pro_started_at: new Date().toISOString(), pro_expires_at: planUntil,
             }).eq('id', user.id);
         }
+
+        void auditLog({
+          action: 'payment.create',
+          userId: user.id,
+          traceId: generateTraceId(),
+          metadata: { plan, paymentId: payment.id },
+        })
 
         return NextResponse.json({ success: true, paymentId: payment.id, paymentUrl, token: secureToken });
 

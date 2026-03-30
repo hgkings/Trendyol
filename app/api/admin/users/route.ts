@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { requireAdmin, callGatewayV1Format, errorResponse } from '@/lib/api/helpers'
+import { auditLog, generateTraceId } from '@/lib/security/audit'
 import { z } from 'zod'
 
 const UpdateUserPlanSchema = z.object({
@@ -38,6 +39,13 @@ export async function PATCH(req: NextRequest) {
         { status: 422 }
       )
     }
+
+    void auditLog({
+      action: 'admin.user_update',
+      userId: auth.id,
+      traceId: generateTraceId(),
+      metadata: { targetUserId: parsed.data.userId, newPlan: parsed.data.plan },
+    })
 
     // Admin kendi planini degistiremez
     if (parsed.data.userId === auth.id) {

@@ -58,7 +58,7 @@ class GatewayAdapter {
 
       // Audit log — fire-and-forget (await yok, response'u yavaşlatmaz)
       void auditLog({
-        action: `${serviceName}.${method}` as Parameters<typeof auditLog>[0]['action'],
+        action: `${serviceName}.${method}`,
         userId,
         traceId,
         metadata: { method },
@@ -75,7 +75,7 @@ class GatewayAdapter {
     } catch (error: unknown) {
       // Audit log — fire-and-forget
       void auditLog({
-        action: `${serviceName}.${method}` as Parameters<typeof auditLog>[0]['action'],
+        action: `${serviceName}.${method}`,
         userId,
         traceId,
         metadata: {

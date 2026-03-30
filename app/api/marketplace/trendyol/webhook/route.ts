@@ -9,6 +9,7 @@
  */
 
 import { callGatewayV1Format } from '@/lib/api/helpers'
+import { auditLog, generateTraceId } from '@/lib/security/audit'
 import type { ServiceName } from '@/lib/gateway/types'
 import crypto from 'crypto'
 
@@ -31,8 +32,21 @@ export async function POST(request: Request) {
       .digest('hex')
 
     if (!signature || signature !== expectedSig) {
+      void auditLog({
+        action: 'security.webhook_invalid_sig',
+        userId: null,
+        traceId: generateTraceId(),
+        metadata: { source: 'trendyol', signature: signature?.substring(0, 8) },
+      })
       return Response.json({ error: 'Gecersiz imza' }, { status: 401 })
     }
+
+    void auditLog({
+      action: 'marketplace.sync',
+      userId: null,
+      traceId: generateTraceId(),
+      metadata: { source: 'trendyol_webhook' },
+    })
 
     let payload: unknown
     try {

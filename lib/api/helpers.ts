@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { auditLog, generateTraceId } from '@/lib/security/audit'
 import crypto from 'crypto'
 
 interface AuthUser {
@@ -65,6 +66,12 @@ export function requireCronSecret(request: Request): true | Response {
   const expected = `Bearer ${cronSecret}`
   if (!cronSecret || !authHeader || authHeader.length !== expected.length
     || !crypto.timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected))) {
+    void auditLog({
+      action: 'security.cron_auth_fail',
+      userId: null,
+      traceId: generateTraceId(),
+      ip: request.headers.get('x-forwarded-for') ?? 'unknown',
+    })
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
