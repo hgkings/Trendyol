@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireAuth } from '@/lib/api/helpers';
 import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 
@@ -71,18 +71,20 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return new NextResponse('Unauthorized', { status: 401 });
+    const authResult = await requireAuth();
+    if (authResult instanceof Response) return new NextResponse('Unauthorized', { status: 401 });
 
-    const { data: row, error } = await supabase
-      .from('analyses')
-      .select('*')
-      .eq('id', params.id)
-      .eq('user_id', user.id)
-      .single();
+    // Gateway uzerinden analiz verisini getir
+    const { initializeServices } = await import('@/services/registry');
+    initializeServices();
+    const { gateway } = await import('@/lib/gateway/gateway.adapter');
+    const result = await gateway.handle('analysis', 'getById', { id: params.id }, authResult.id);
 
-    if (error || !row) return new NextResponse('Analiz bulunamadı', { status: 404 });
+    if (!result.success || !result.data) {
+      return new NextResponse('Analiz bulunamadı', { status: 404 });
+    }
+
+    const row = result.data as Record<string, unknown>;
 
     const inp = (row.inputs ?? {}) as Record<string, unknown>;
     const out = (row.outputs ?? {}) as Record<string, unknown>;

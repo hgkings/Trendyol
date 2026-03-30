@@ -5,6 +5,7 @@
 // ----------------------------------------------------------------
 
 import { ServiceError } from '@/lib/gateway/types'
+import { emailService } from '@/lib/email/emailService'
 import type { UserRepository } from '@/repositories/user.repository'
 import type { ProfileRow } from '@/lib/db/types'
 
@@ -326,6 +327,84 @@ export class UserLogic {
 
     const result = await this.userRepo.deleteAllUserData(userId)
     return { success: true, deletedTables: result.deletedTables }
+  }
+
+  /**
+   * Cron: Pro suresi dolacak/dolmus kullanicilari kontrol eder.
+   * 1) 7 gun sonra dolacaklar → uyari emaili
+   * 2) 1 gun sonra dolacaklar → uyari emaili
+   * 3) Suresi dolmuslar → is_pro=false, plan=free, email
+   */
+  async checkProExpiry(
+    traceId: string,
+    _payload: unknown,
+    _userId: string
+  ): Promise<{ warned7: number; warned1: number; expired: number; errors: string[] }> {
+    const results = { warned7: 0, warned1: 0, expired: 0, errors: [] as string[] }
+
+    // 1. 7 gun sonra dolacaklar
+    try {
+      const users7 = await this.userRepo.findExpiring(7)
+      for (const user of users7) {
+        try {
+          const expiresDate = new Date(user.pro_expires_at as string).toLocaleDateString('tr-TR')
+          await emailService.sendProExpiryWarning(
+            { email: user.email, name: user.full_name ?? undefined, id: user.id },
+            { daysLeft: 7, expiresAt: expiresDate }
+          )
+          results.warned7++
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Bilinmeyen hata'
+          results.errors.push(`7 günlük uyarı başarısız (${user.email}): ${msg}`)
+        }
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Bilinmeyen hata'
+      results.errors.push(`7 günlük sorgu başarısız: ${msg}`)
+    }
+
+    // 2. 1 gun sonra dolacaklar
+    try {
+      const users1 = await this.userRepo.findExpiring(1)
+      for (const user of users1) {
+        try {
+          const expiresDate = new Date(user.pro_expires_at as string).toLocaleDateString('tr-TR')
+          await emailService.sendProExpiryWarning(
+            { email: user.email, name: user.full_name ?? undefined, id: user.id },
+            { daysLeft: 1, expiresAt: expiresDate }
+          )
+          results.warned1++
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Bilinmeyen hata'
+          results.errors.push(`1 günlük uyarı başarısız (${user.email}): ${msg}`)
+        }
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Bilinmeyen hata'
+      results.errors.push(`1 günlük sorgu başarısız: ${msg}`)
+    }
+
+    // 3. Suresi dolmuslar → is_pro=false, plan=free
+    try {
+      const expiredUsers = await this.userRepo.findExpired()
+      for (const user of expiredUsers) {
+        try {
+          await this.userRepo.update(user.id, { is_pro: false, plan: 'free' })
+          await emailService.sendProExpired(
+            { email: user.email, name: user.full_name ?? undefined, id: user.id }
+          )
+          results.expired++
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Bilinmeyen hata'
+          results.errors.push(`Süre dolumu işlemi başarısız (${user.email}): ${msg}`)
+        }
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Bilinmeyen hata'
+      results.errors.push(`Süresi dolmuş sorgu başarısız: ${msg}`)
+    }
+
+    return results
   }
 
   /**

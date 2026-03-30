@@ -422,6 +422,76 @@ export class PaymentLogic {
   }
 
   /**
+   * Admin: Sayfalanmis odeme listesi — opsiyonel status filtresi.
+   * Kullanici email bilgisi eklenir.
+   */
+  async listPayments(
+    _traceId: string,
+    payload: unknown,
+    _userId: string
+  ): Promise<{ payments: unknown[]; total: number; page: number; limit: number }> {
+    const { status, page = 1, limit = 20 } = payload as { status?: string; page?: number; limit?: number }
+    return this.paymentRepo.findPaginatedWithProfiles({ status, page, limit })
+  }
+
+  /**
+   * Admin: Odemeyi manuel aktif eder — payment + profil gunceller.
+   */
+  async activatePaymentManually(
+    traceId: string,
+    payload: unknown,
+    _userId: string
+  ): Promise<{ success: boolean; user_id: string; pro_until: string }> {
+    const { paymentId } = payload as { paymentId: string }
+
+    if (!paymentId) {
+      throw new ServiceError('paymentId gerekli', {
+        code: 'MISSING_PAYMENT_ID',
+        statusCode: 400,
+        traceId,
+      })
+    }
+
+    const payment = await this.paymentRepo.findById(paymentId)
+    if (!payment) {
+      throw new ServiceError('Ödeme bulunamadı', {
+        code: 'PAYMENT_NOT_FOUND',
+        statusCode: 404,
+        traceId,
+      })
+    }
+
+    const planType = payment.plan || 'pro_monthly'
+    const isYearly = planType === 'pro_yearly' || planType === 'starter_yearly'
+    const durationDays = isYearly ? 365 : 30
+    const now = new Date()
+    const proUntil = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000).toISOString()
+
+    const isPro = ['pro', 'pro_monthly', 'pro_yearly'].includes(planType)
+
+    await this.paymentRepo.updatePaymentAndProfile(
+      payment.id,
+      payment.user_id,
+      {
+        status: 'paid',
+        paid_at: now.toISOString(),
+        provider_order_id: payment.provider_order_id,
+        raw_payload: { manual_activation: true },
+      },
+      {
+        plan: isPro ? 'pro' : 'starter',
+        is_pro: isPro,
+        plan_type: planType,
+        pro_started_at: now.toISOString(),
+        pro_expires_at: proUntil,
+        pro_renewal: false,
+      }
+    )
+
+    return { success: true, user_id: payment.user_id, pro_until: proUntil }
+  }
+
+  /**
    * Plan listesini dondurur.
    */
   async getPlans(
