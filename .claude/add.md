@@ -66,7 +66,28 @@ BU SIRALAMA DEGISMEZ. GOREV ALMADAN ONCE BU 3 ADIM TAMAMLANMALI.
 
 ---
 
+## ⚠️ BEKLEYEN DEPLOY (GERI ALINMIS)
+
+Auth proxy kodu local'de hazir ve test edildi ama production'a DEPLOY EDILMEDI.
+- Commit `c2303c1` auth proxy'yi ekledi
+- Commit `b60d117` geri aldi (revert)
+- GitHub ve Vercel'de eski kod calisiyor
+- Tekrar deploy icin: revert'i geri al veya yeni commit at, sonra push et
+- Kapsam: server-side login/register proxy, rate limiting, MFA iyilestirme, isim kayit fix
+
+**Hilmi hazir oldugunda tekrar push edilecek.**
+
+---
+
 ## SON DEGISIKLIKLER (en yeniden eskiye)
+
+### 2026-03-31 (Terminal Claude — Auth Security Proxy) ⚠️ REVERTED
+
+| Tarih | Ajan | Ozet | Dosyalar | Commit |
+|-------|------|------|----------|--------|
+| 03-31 | Terminal Claude | Server-side auth proxy — login/register rate limiting (IP+email), audit log, MFA, cookie session, user enumeration korumasi, SSRF fix | app/api/auth/login/route.ts, app/api/auth/register/route.ts, lib/auth.ts, contexts/auth-context.tsx, app/auth/page.tsx | c2303c1 (REVERTED b60d117) |
+| 03-31 | Terminal Claude | MFA/2FA iyilestirme — settings'te durum kontrolu, aktif/pasif gosterim, devre disi birakma | components/auth/mfa-setup.tsx | c2303c1 (REVERTED b60d117) |
+| 03-31 | Terminal Claude | Rate limit — admin (10/15dk) + analysis (30/dk) limiter | lib/security/rate-limit.ts, lib/gateway/types.ts | c2303c1 (REVERTED b60d117) |
 
 ### 2026-03-30 (Eklenti 1 — VSCode Extension)
 
