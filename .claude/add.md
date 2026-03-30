@@ -50,12 +50,13 @@ BU SIRALAMA DEGISMEZ. GOREV ALMADAN ONCE BU 3 ADIM TAMAMLANMALI.
 |---|-------|--------|-------|
 | 2 | npm audit + bagimlilk guncelleme | Kolay | ✅ YAPILDI (Terminal Claude, 03-31) |
 | 3 | Admin 2FA (Supabase MFA) | Orta | ✅ YAPILDI (Terminal Claude, 03-31) |
-| 4 | User-ID bazli rate limiting | Orta | BEKLIYOR |
+| 4 | User-ID bazli rate limiting + Auth proxy | Orta | ⚠️ HAZIR — deploy bekliyor (c2303c1 reverted) |
 | 5 | Cloudflare WAF entegrasyonu | Orta | BEKLIYOR |
 | 6 | Monitoring/Alerting sistemi | Orta-Zor | BEKLIYOR |
 | 7 | Otomatik secret rotation | Zor | BEKLIYOR |
 | 8 | Backup/disaster recovery testi | Zor | BEKLIYOR |
 | 9 | SOC2/KVKK compliance framework | Cok Zor | BEKLIYOR |
+| 10 | Cookie gizlilik bildirimi + yonetim sistemi | Orta | BEKLIYOR |
 
 ### Supabase Manuel SQL (Hilmi tarafindan calistirildi)
 | SQL | Amac | Durum |
