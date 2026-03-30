@@ -3,7 +3,10 @@ import { Notification } from '@/types'
 export async function getNotifications(): Promise<Notification[]> {
   const res = await fetch('/api/notifications')
   if (!res.ok) return []
-  return res.json()
+  const json = await res.json()
+  // Gateway { success, data } veya direkt array dönebilir
+  const rows = Array.isArray(json) ? json : (json.data ?? [])
+  return rows as Notification[]
 }
 
 export async function upsertNotifications(notifications: Partial<Notification>[]): Promise<void> {

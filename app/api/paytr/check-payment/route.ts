@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,14 +12,7 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'paymentId gerekli' }, { status: 400 });
         }
 
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-        if (!supabaseUrl || !serviceKey) {
-            return NextResponse.json({ error: 'Config eksik' }, { status: 500 });
-        }
-
-        const supabase = createClient(supabaseUrl, serviceKey);
+        const supabase = createAdminClient();
 
         // Ödeme kaydını bul
         const { data: payment } = await supabase
@@ -39,11 +32,9 @@ export async function GET(req: Request) {
 
         // PayTR Link API durum-sorgu Link API callback_id'lerini desteklemiyor.
         // Pro aktivasyonu yalnızca callback route üzerinden gerçekleşir.
-        console.log('[PayTR Check] payment.status:', payment.status, 'provider_order_id:', payment.provider_order_id);
         return NextResponse.json({ isPro: false, paymentStatus: payment.status });
 
-    } catch (error: any) {
-        console.error('[PayTR Check] Hata:', error?.message || error);
+    } catch {
         return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 });
     }
 }

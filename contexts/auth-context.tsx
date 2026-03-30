@@ -3,7 +3,9 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { User } from '@/types';
 import { fetchProfile, login as authLogin, register as authRegister, logout as authLogout, updateUserPlan, updateProfile as authUpdateProfile } from '@/lib/auth';
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@/lib/supabase/client';
+
+const supabase = createClient();
 
 interface AuthContextType {
   user: User | null;

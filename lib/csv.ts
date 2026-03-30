@@ -101,32 +101,141 @@ export function parseCSV(text: string): { data: ProductInput[]; errors: string[]
   return { data, errors, missingColumns };
 }
 
-export function analysesToCSV(analyses: { input: ProductInput; result: { unit_net_profit: number; margin_pct: number; monthly_net_profit: number }; risk: { level: string } }[]): string {
+interface AnalysisForExport {
+  input: ProductInput;
+  result: {
+    unit_net_profit: number;
+    margin_pct: number;
+    monthly_net_profit: number;
+    monthly_revenue: number;
+    commission_amount: number;
+    vat_amount: number;
+    expected_return_loss: number;
+    unit_total_cost: number;
+    unit_variable_cost: number;
+    breakeven_price: number;
+    sale_price_excl_vat: number;
+    service_fee_amount: number;
+    monthly_total_cost: number;
+  };
+  risk: { level: string; score: number };
+  createdAt?: string;
+}
+
+function num(v: unknown): number {
+  if (typeof v === 'number') return v;
+  if (typeof v === 'string') return parseFloat(v) || 0;
+  return 0;
+}
+
+// Turk Excel formatinda sayi: 1.234,56
+function fmtNum(v: number, decimals = 2): string {
+  const parts = v.toFixed(decimals).split('.');
+  // Binlik ayrac (nokta)
+  const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  if (decimals === 0) return intPart;
+  return `${intPart},${parts[1]}`;
+}
+
+function csvSafe(val: string | number): string {
+  const s = String(val);
+  if (s.includes(';') || s.includes('"') || s.includes('\n')) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
+const RISK_TR: Record<string, string> = {
+  safe: 'Dusuk', moderate: 'Orta', risky: 'Yuksek', dangerous: 'Kritik',
+};
+
+export function analysesToCSV(analyses: AnalysisForExport[]): string {
   const headers = [
-    'Pazaryeri', 'Ürün', 'Aylık Satış', 'Maliyet', 'Satış Fiyatı',
-    'Komisyon %', 'Kargo', 'Paketleme', 'Reklam', 'İade %', 'KDV %',
-    'Birim Kâr', 'Marj %', 'Aylık Kâr', 'Risk',
+    // Temel Bilgiler
+    'Urun Adi',
+    'Pazaryeri',
+    'Tarih',
+    // Fiyat & Satis
+    'Satis Fiyati (TL)',
+    'Satis Fiyati KDV Haric (TL)',
+    'Aylik Satis Adedi',
+    // Maliyetler
+    'Urun Maliyeti (TL)',
+    'Kargo (TL)',
+    'Paketleme (TL)',
+    'Reklam Birim (TL)',
+    'Diger Gider (TL)',
+    // Oranlar
+    'Komisyon %',
+    'KDV %',
+    'Iade %',
+    // Hesaplanan Kesintiler
+    'Komisyon Tutari (TL)',
+    'KDV Tutari (TL)',
+    'Iade Kaybi (TL)',
+    'Servis Bedeli (TL)',
+    // Toplam Maliyet
+    'Degisken Maliyet (TL)',
+    'Toplam Birim Maliyet (TL)',
+    // Kar Metrikleri
+    'Birim Net Kar (TL)',
+    'Kar Marji %',
+    'Basabas Fiyati (TL)',
+    // Aylik Projeksiyon
+    'Aylik Ciro (TL)',
+    'Aylik Toplam Maliyet (TL)',
+    'Aylik Net Kar (TL)',
+    'Yillik Tahmini Kar (TL)',
+    // Risk
+    'Risk Skoru',
+    'Risk Seviyesi',
+    // Durum
+    'Durum',
   ];
 
-  const rows = analyses.map((a) => [
-    a.input.marketplace,
-    a.input.product_name,
-    a.input.monthly_sales_volume,
-    a.input.product_cost,
-    a.input.sale_price,
-    a.input.commission_pct,
-    a.input.shipping_cost,
-    a.input.packaging_cost,
-    a.input.ad_cost_per_sale,
-    a.input.return_rate_pct,
-    a.input.vat_pct,
-    a.result.unit_net_profit.toFixed(2),
-    a.result.margin_pct.toFixed(1),
-    a.result.monthly_net_profit.toFixed(2),
-    a.risk.level,
-  ]);
+  const rows = analyses.map((a) => {
+    const inp = a.input;
+    const res = a.result;
+    const monthlyProfit = num(res.monthly_net_profit);
+    const unitProfit = num(res.unit_net_profit);
 
-  return [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    return [
+      csvSafe(inp.product_name || 'Isimsiz'),
+      inp.marketplace || 'trendyol',
+      a.createdAt ? new Date(a.createdAt).toLocaleDateString('tr-TR') : '',
+      fmtNum(num(inp.sale_price)),
+      fmtNum(num(res.sale_price_excl_vat)),
+      fmtNum(num(inp.monthly_sales_volume), 0),
+      fmtNum(num(inp.product_cost)),
+      fmtNum(num(inp.shipping_cost)),
+      fmtNum(num(inp.packaging_cost)),
+      fmtNum(num(inp.ad_cost_per_sale)),
+      fmtNum(num(inp.other_cost)),
+      fmtNum(num(inp.commission_pct), 0),
+      fmtNum(num(inp.vat_pct), 0),
+      fmtNum(num(inp.return_rate_pct), 0),
+      fmtNum(num(res.commission_amount)),
+      fmtNum(num(res.vat_amount)),
+      fmtNum(num(res.expected_return_loss)),
+      fmtNum(num(res.service_fee_amount)),
+      fmtNum(num(res.unit_variable_cost)),
+      fmtNum(num(res.unit_total_cost)),
+      fmtNum(unitProfit),
+      fmtNum(num(res.margin_pct), 1),
+      fmtNum(num(res.breakeven_price)),
+      fmtNum(num(res.monthly_revenue)),
+      fmtNum(num(res.monthly_total_cost)),
+      fmtNum(monthlyProfit),
+      fmtNum(monthlyProfit * 12),
+      fmtNum(num(a.risk.score), 0),
+      RISK_TR[a.risk.level] || a.risk.level,
+      unitProfit > 0 ? 'Karli' : unitProfit === 0 ? 'Basabas' : 'Zarar',
+    ];
+  });
+
+  // BOM ekle — Excel Turkce karakterleri dogru gostersin
+  const bom = '\uFEFF';
+  return bom + [headers.join(';'), ...rows.map((r) => r.join(';'))].join('\n');
 }
 
 export function analysesToJSON(analyses: unknown[]): string {

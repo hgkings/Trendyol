@@ -1,44 +1,61 @@
-import { Shield, Zap, Target, CreditCard } from 'lucide-react';
+import { Shield, Lock, Eye, KeyRound, Database, ShieldOff } from 'lucide-react';
 
 export function TrustCards() {
   const cards = [
     {
+      icon: Lock,
+      title: "AES-256 Şifreleme",
+      desc: "Pazaryeri API anahtarlarınız askeri düzey şifreleme ile korunur. Şifreler sunucuda bile düz metin olarak saklanmaz."
+    },
+    {
       icon: Shield,
-      title: "Veri Güvenliği",
-      desc: "Verileriniz şifreli sunucularda saklanır, asla üçüncü taraflarla paylaşılmaz."
+      title: "Katmanlı Güvenlik",
+      desc: "9 katmanlı mimari sayesinde verilerinize sadece yetkili katmanlar erişebilir. Hiçbir kullanıcı verisi açık katmanda işlenmez."
     },
     {
-      icon: Zap,
-      title: "Anlık Hesaplama",
-      desc: "Tüm maliyet kalemleri saniyeler içinde hesaplanır, manuel işlem gerekmez."
+      icon: Eye,
+      title: "Satır Düzeyinde Koruma",
+      desc: "Her kullanıcı sadece kendi verilerini görebilir. Veritabanı seviyesinde erişim kontrolü ile korunur."
     },
     {
-      icon: Target,
-      title: "Gerçek Veriler",
-      desc: "Komisyon, kargo ve KDV oranları güncel pazaryeri verilerine göre hesaplanır."
+      icon: KeyRound,
+      title: "Güvenli Kimlik Doğrulama",
+      desc: "JWT tabanlı oturum yönetimi, şifrelenmiş cookie'ler ve otomatik oturum yenileme ile hesabınız güvende."
     },
     {
-      icon: CreditCard,
-      title: "Kolay Başlangıç",
-      desc: "Kredi kartı gerekmez. 5 dakikada hesap aç, hemen analiz yapmaya başla."
+      icon: Database,
+      title: "Günlük Yedekleme",
+      desc: "Verileriniz her gün otomatik yedeklenir. Olası bir aksaklıkta bile verileriniz kaybolmaz."
+    },
+    {
+      icon: ShieldOff,
+      title: "Sıfır Veri Paylaşımı",
+      desc: "Verileriniz asla üçüncü taraflarla paylaşılmaz, reklam amacıyla kullanılmaz. Verilerinizin tek sahibi sizsiniz."
     }
   ];
 
   return (
     <section className="py-16">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-10 space-y-2">
-          <h2 className="text-3xl font-extrabold tracking-tight" style={{ letterSpacing: '-0.5px' }}>Güvenli ve Güvenilir Altyapı</h2>
-          <p className="text-[rgba(255,255,255,0.5)]">Verileriniz güvende, hesaplamalarınız doğru</p>
+        <div className="text-center mb-10 space-y-3">
+          <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: '#34D399' }}>
+            Güvenlik
+          </p>
+          <h2 className="text-3xl font-extrabold tracking-tight" style={{ letterSpacing: '-0.5px' }}>
+            Verileriniz Bizimle Güvende
+          </h2>
+          <p className="text-[rgba(255,255,255,0.5)] max-w-2xl mx-auto">
+            Banka düzeyinde şifreleme ve katmanlı güvenlik mimarisi ile verilerinizi koruyoruz
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
           {cards.map((card, idx) => (
             <div
               key={idx}
-              className="rounded-2xl p-6 border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] hover:border-amber-500/20 hover:shadow-md transition-all duration-300 flex flex-col items-start text-left"
+              className="rounded-2xl p-6 border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] hover:border-emerald-500/20 hover:shadow-md transition-all duration-300 flex flex-col items-start text-left"
             >
-              <div className="bg-amber-500/8 border border-amber-500/12 text-amber-400 p-3 rounded-xl mb-4">
+              <div className="bg-emerald-500/8 border border-emerald-500/15 text-emerald-400 p-3 rounded-xl mb-4">
                 <card.icon className="h-6 w-6" />
               </div>
               <h3 className="text-lg font-bold mb-2">{card.title}</h3>

@@ -53,7 +53,7 @@ import { analysesToJSON, analysesToCSV } from '@/lib/csv';
 import { ProLockedSection } from '@/components/shared/pro-locked-section';
 import { UpgradeModal } from '@/components/shared/upgrade-modal';
 import { isProUser } from '@/utils/access';
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@/lib/supabase/client';
 import { CollapsibleCard } from '@/components/shared/collapsible-card';
 
 export default function AnalysisResultPage() {
@@ -178,6 +178,7 @@ export default function AnalysisResultPage() {
     }
 
     try {
+      const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
         toast.error('Oturum bulunamadı. Lütfen tekrar giriş yapın.');

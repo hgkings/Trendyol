@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail } from '@/lib/email/smtp'
-import { emailRateLimit, getIp } from '@/lib/rate-limit'
+import { checkRateLimit } from '@/lib/security/rate-limit'
+import { getIp } from '@/lib/api/helpers'
 
 export const dynamic = 'force-dynamic'
 
 async function handler(request: Request) {
   const ip = getIp(request)
-  const { success } = await emailRateLimit.limit(ip)
-  if (!success) {
+  const rateLimitResult = await checkRateLimit('email', ip)
+  if (!rateLimitResult.success) {
     return NextResponse.json(
       { error: 'Çok fazla istek. Lütfen bekleyin.' },
       { status: 429 }

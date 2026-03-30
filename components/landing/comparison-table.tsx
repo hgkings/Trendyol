@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, X, Minus } from 'lucide-react';
+import { Check, X, Crown } from 'lucide-react';
 
 const rows = [
   { label: 'Gerçek net kâr',       karnet: 'yes',     excel: 'no',  rakip: 'partial' },
@@ -27,11 +27,10 @@ function Cell({ value }: { value: string }) {
   }
   if (value === 'pro') {
     return (
-      <span className="inline-flex items-center gap-1">
+      <span className="inline-flex items-center justify-center">
         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/12">
           <Check className="h-4 w-4 text-emerald-400" strokeWidth={2.5} />
         </span>
-        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-amber-500/12 text-amber-400 leading-none">PRO</span>
       </span>
     );
   }

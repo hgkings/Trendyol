@@ -8,7 +8,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@/lib/supabase/client';
 import { KarnetLogo } from '@/components/shared/KarnetLogo';
 import { Mail } from 'lucide-react';
 
@@ -40,6 +40,7 @@ function VerifyEmailContent() {
     setResendError('');
     setResendSuccess(false);
 
+    const supabase = createClient();
     const { error } = await supabase.auth.resend({ type: 'signup', email });
 
     if (error) {

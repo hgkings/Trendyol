@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAdmin } from '@/lib/admin-auth'
-import * as paymentsDal from '@/dal/payments'
-import * as profilesDal from '@/dal/profiles'
+import { requireAdmin } from '@/lib/api/helpers'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function GET(req: NextRequest) {
-  const auth = await verifyAdmin()
-  if (!auth.authorized) return auth.response
+  const auth = await requireAdmin()
+  if (auth instanceof Response) return auth
 
   const { searchParams } = new URL(req.url)
   const status = searchParams.get('status') ?? ''
@@ -14,27 +13,42 @@ export async function GET(req: NextRequest) {
   const offset = (page - 1) * limit
 
   try {
-    const { data: payments, count } = await paymentsDal.getPayments({
-      status: status || undefined,
-      limit,
-      offset,
-    })
+    const supabase = createAdminClient()
 
-    // Email'leri ayrı sorguda çek
-    const userIds = Array.from(new Set(payments.map((p: Record<string, unknown>) => p.user_id as string)))
-    const profiles = await profilesDal.getProfilesByIds(userIds)
+    let query = supabase
+      .from('payments')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+
+    if (status) {
+      query = query.eq('status', status)
+    }
+
+    const { data: payments, count } = await query
+
+    const userIds = Array.from(new Set((payments ?? []).map((p: Record<string, unknown>) => p.user_id as string)))
+
+    let profiles: Record<string, unknown>[] = []
+    if (userIds.length > 0) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, email')
+        .in('id', userIds)
+      profiles = (data ?? []) as Record<string, unknown>[]
+    }
+
     const emailMap: Record<string, string> = Object.fromEntries(
-      profiles.map((p: Record<string, unknown>) => [p.id as string, p.email as string])
+      profiles.map((p) => [p.id as string, p.email as string])
     )
 
-    const result = payments.map((p: Record<string, unknown>) => ({
+    const result = (payments ?? []).map((p: Record<string, unknown>) => ({
       ...p,
       profiles: { email: emailMap[p.user_id as string] ?? null },
     }))
 
     return NextResponse.json({ payments: result, total: count, page, limit })
-  } catch (error) {
-    console.error('Admin payments error:', error)
+  } catch {
     return NextResponse.json({ success: false, error: 'Bir hata oluştu' }, { status: 500 })
   }
 }

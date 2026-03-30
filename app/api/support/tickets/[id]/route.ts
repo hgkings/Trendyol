@@ -1,27 +1,53 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase-server-client'
-import { getTicketById } from '@/dal/support'
+import { requireAuth, errorResponse } from '@/lib/api/helpers'
+import type { ServiceName } from '@/lib/gateway/types'
 
 export async function GET(
-  _request: NextRequest,
+  _request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await requireAuth()
+    if (user instanceof Response) return user
 
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+    const { initializeServices } = await import('@/services/registry')
+    initializeServices()
+
+    const { gateway } = await import('@/lib/gateway/gateway.adapter')
+    const result = await gateway.handle('support' as ServiceName, 'getTicket', { ticketId: params.id }, user.id)
+
+    if (!result.success) {
+      return Response.json({ success: false, error: result.error ?? 'Talep bulunamadı' }, { status: 404 })
     }
 
-    const ticket = await getTicketById(params.id, user.id)
+    return Response.json({ success: true, data: result.data }, { status: 200 })
+  } catch (error) {
+    return errorResponse(error)
+  }
+}
 
-    if (!ticket) {
-      return NextResponse.json({ success: false, error: 'Talep bulunamadı' }, { status: 404 })
+export async function PATCH(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const user = await requireAuth()
+    if (user instanceof Response) return user
+
+    const body = await request.json()
+    const method = body.action === 'close' ? 'closeTicket' : 'replyToTicket'
+
+    const { initializeServices } = await import('@/services/registry')
+    initializeServices()
+
+    const { gateway } = await import('@/lib/gateway/gateway.adapter')
+    const result = await gateway.handle('support' as ServiceName, method, { ...body, ticketId: params.id }, user.id)
+
+    if (!result.success) {
+      return Response.json({ success: false, error: result.error ?? 'Bir hata oluştu' }, { status: 400 })
     }
 
-    return NextResponse.json({ success: true, data: ticket }, { status: 200 })
-  } catch {
-    return NextResponse.json({ success: false, error: 'Bir hata oluştu' }, { status: 500 })
+    return Response.json({ success: true, data: result.data }, { status: 200 })
+  } catch (error) {
+    return errorResponse(error)
   }
 }

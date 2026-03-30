@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ShieldCheck, AlertTriangle, AlertOctagon, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/auth-context';
 
 type RiskLevel = 'safe' | 'moderate' | 'high';
@@ -26,6 +26,8 @@ export function GeneralRiskCard() {
             let level: RiskLevel = 'safe';
             const newReasons: string[] = [];
 
+            // TODO: replace with fetch('/api/cash-plan/risk') when API is created
+            const supabase = createClient();
             // 1. Check Cash Plan (HIGH RISK)
             const { data: cashPlan } = await supabase
                 .from('cash_plan')

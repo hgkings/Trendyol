@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAdmin } from '@/lib/admin-auth'
-import * as profilesDal from '@/dal/profiles'
+import { requireAdmin } from '@/lib/api/helpers'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function GET(req: NextRequest) {
-  const auth = await verifyAdmin()
-  if (!auth.authorized) return auth.response
+  const auth = await requireAdmin()
+  if (auth instanceof Response) return auth
 
   const { searchParams } = new URL(req.url)
   const search = searchParams.get('search') ?? ''
@@ -14,23 +14,36 @@ export async function GET(req: NextRequest) {
   const offset = (page - 1) * limit
 
   try {
-    const { data, count } = await profilesDal.searchProfiles({
-      search: search || undefined,
-      plan: plan || undefined,
-      limit,
-      offset,
-    })
+    const supabase = createAdminClient()
 
-    return NextResponse.json({ users: data, total: count, page, limit })
-  } catch (error) {
-    console.error('Admin users error:', error)
+    let countQuery = supabase.from('profiles').select('*', { count: 'exact', head: true })
+    let dataQuery = supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+
+    if (search) {
+      countQuery = countQuery.ilike('email', `%${search}%`)
+      dataQuery = dataQuery.ilike('email', `%${search}%`)
+    }
+    if (plan) {
+      countQuery = countQuery.eq('plan', plan)
+      dataQuery = dataQuery.eq('plan', plan)
+    }
+
+    const { count } = await countQuery
+    const { data } = await dataQuery
+
+    return NextResponse.json({ users: data ?? [], total: count ?? 0, page, limit })
+  } catch {
     return NextResponse.json({ success: false, error: 'Bir hata oluştu' }, { status: 500 })
   }
 }
 
 export async function PATCH(req: NextRequest) {
-  const auth = await verifyAdmin()
-  if (!auth.authorized) return auth.response
+  const auth = await requireAdmin()
+  if (auth instanceof Response) return auth
 
   try {
     const { userId, plan, pro_until } = await req.json()
@@ -51,10 +64,12 @@ export async function PATCH(req: NextRequest) {
       updates.pro_started_at = null
     }
 
-    await profilesDal.updateProfilePlan(userId, updates)
+    const supabase = createAdminClient()
+    const { error } = await supabase.from('profiles').update(updates).eq('id', userId)
+    if (error) throw error
+
     return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Admin users PATCH error:', error)
+  } catch {
     return NextResponse.json({ success: false, error: 'Bir hata oluştu' }, { status: 500 })
   }
 }

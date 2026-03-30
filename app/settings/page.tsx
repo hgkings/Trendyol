@@ -42,7 +42,7 @@ import {
 import { toast } from 'sonner';
 import { deleteAnalysis, getStoredAnalyses } from '@/lib/api/analyses';
 import { analysesToCSV, analysesToJSON } from '@/lib/csv';
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@/lib/supabase/client';
 import { isProUser } from '@/utils/access';
 import { useRouter } from 'next/navigation';
 import type { Marketplace, Analysis } from '@/types';
@@ -119,6 +119,7 @@ export default function SettingsPage() {
             setAnalyses(data);
         })();
         (async () => {
+            const supabase = createClient();
             const { data } = await supabase.auth.getUser();
             if (data?.user?.app_metadata?.providers) {
                 setProviders(data.user.app_metadata.providers);
@@ -195,6 +196,7 @@ export default function SettingsPage() {
             return;
         }
         setPasswordLoading(true);
+        const supabase = createClient();
         const { error } = await supabase.auth.updateUser({ password: newPassword });
         if (error) {
             toast.error(`Hata: ${error.message}`);
@@ -677,7 +679,7 @@ export default function SettingsPage() {
                             size="sm"
                             className="gap-1.5 text-red-400 border-red-500/20 hover:bg-red-500/10 rounded-[10px]"
                             onClick={async () => {
-                                await supabase.auth.signOut({ scope: 'global' });
+                                await createClient().auth.signOut({ scope: 'global' });
                                 router.push('/auth');
                             }}
                         >

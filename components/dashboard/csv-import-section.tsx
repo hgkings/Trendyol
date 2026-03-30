@@ -22,7 +22,7 @@ import { ProductInput } from '@/types';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '../shared/format';
 import { useAuth } from '@/contexts/auth-context';
-import { isPro } from '@/lib/plan';
+import { isProUser } from '@/utils/access';
 import { useRouter } from 'next/navigation';
 // Mock hook if actual one doesn't exist yet, or just use router for now
 const useUpgradeModal = () => ({ onOpen: () => { } });
@@ -113,7 +113,7 @@ export function CSVImportSection({ onImport }: CSVImportSectionProps) {
     const { onOpen } = useUpgradeModal(); // Assuming we have this, if not we'll use toast + redirect
 
     const handleImport = async () => {
-        if (!isPro(user)) {
+        if (!isProUser(user)) {
             toast.error('Bu özellik sadece PRO pakette mevcuttur.', {
                 action: {
                     label: 'Yükselt',

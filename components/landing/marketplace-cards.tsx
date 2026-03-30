@@ -1,26 +1,28 @@
 'use client';
 
+import Image from 'next/image';
+
 const marketplaces = [
   {
-    emoji: '🟠',
+    logo: '/brand/trendyol-logo.svg',
     name: 'Trendyol',
     desc: "Türkiye'nin en büyük pazaryeri. Komisyon, servis bedeli ve KDV dahil tam analiz.",
     badge: 'En Popüler',
   },
   {
-    emoji: '🔵',
+    logo: '/brand/hepsiburada-logo.svg',
     name: 'Hepsiburada',
     desc: 'İşlem bedeli ve hizmet bedeli dahil gerçek kârlılık analizi.',
     badge: null,
   },
   {
-    emoji: '🟣',
+    logo: '/brand/n11-logo.svg',
     name: 'n11',
     desc: 'Pazarlama ve pazaryeri hizmet bedelleri dahil net kâr hesaplama.',
     badge: null,
   },
   {
-    emoji: '🟡',
+    logo: '/brand/amazon-tr-logo.svg',
     name: 'Amazon TR',
     desc: 'Referral fee ve fiyat dilimi bazlı komisyon hesaplama.',
     badge: null,
@@ -54,7 +56,15 @@ export function MarketplaceCards() {
                   {mp.badge}
                 </span>
               )}
-              <div className="text-4xl mb-4">{mp.emoji}</div>
+              <div className="mb-4">
+                <Image
+                  src={mp.logo}
+                  alt={`${mp.name} logo`}
+                  width={48}
+                  height={48}
+                  className="rounded-xl"
+                />
+              </div>
               <h3 className="font-bold text-foreground mb-2">{mp.name}</h3>
               <p className="text-sm text-[rgba(255,255,255,0.5)] leading-relaxed">{mp.desc}</p>
             </div>

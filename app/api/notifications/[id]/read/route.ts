@@ -1,22 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase-server-client'
-import * as notificationsDal from '@/dal/notifications'
+import { requireAuth, callGatewayV1Format, errorResponse } from '@/lib/api/helpers'
+import type { ServiceName } from '@/lib/gateway/types'
 
 export const dynamic = 'force-dynamic'
 
 export async function PATCH(
-  _request: NextRequest,
+  _request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 })
-
-    await notificationsDal.markNotificationAsRead(params.id)
-    return NextResponse.json({ success: true })
+    const user = await requireAuth()
+    if (user instanceof Response) return user
+    return callGatewayV1Format('notification' as ServiceName, 'markAsRead', { notificationId: params.id }, user.id)
   } catch (error) {
-    console.error('PATCH /api/notifications/[id]/read error:', error)
-    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
+    return errorResponse(error)
   }
 }

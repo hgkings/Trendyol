@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +22,7 @@ export default function ForgotPasswordPage() {
     const trimmedEmail = email.trim();
     const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/auth/reset-password`;
 
+    const supabase = createClient();
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
       redirectTo,
     });

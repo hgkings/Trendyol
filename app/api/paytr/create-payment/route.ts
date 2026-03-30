@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { PRICING } from '@/config/pricing';
 import crypto from 'crypto';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient as createServerSupabase } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,9 +14,6 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Geçersiz plan' }, { status: 400 });
         }
 
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
         const merchantId = process.env.PAYTR_MERCHANT_ID;
         const merchantKey = process.env.PAYTR_MERCHANT_KEY;
         const merchantSalt = process.env.PAYTR_MERCHANT_SALT;
@@ -29,36 +28,19 @@ export async function POST(req: Request) {
         ).trim().replace(/\/$/, '');
 
 
-        if (!supabaseUrl || !supabaseAnonKey || !serviceKey) {
-            return NextResponse.json({ error: 'Config missing' }, { status: 500 });
-        }
-
         if (!merchantId || !merchantKey || !merchantSalt) {
-            console.error('[PayTR] PAYTR env vars eksik');
             return NextResponse.json({ error: 'Payment config missing' }, { status: 500 });
         }
 
         // Get user from session
-        const { createServerClient } = await import('@supabase/ssr');
-        const { cookies } = await import('next/headers');
-
-        const cookieStore = cookies();
-        const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-            cookies: {
-                getAll() { return cookieStore.getAll(); },
-                setAll(cookiesToSet) {
-                    try { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); } catch { }
-                },
-            },
-        });
+        const supabase = createServerSupabase();
 
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) {
             return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 });
         }
 
-        const { createClient } = await import('@supabase/supabase-js');
-        const adminSupabase = createClient(supabaseUrl, serviceKey);
+        const adminSupabase = createAdminClient();
 
         const testPrice = process.env.PAYTR_TEST_PRICE ? parseFloat(process.env.PAYTR_TEST_PRICE) : null;
         const planAmountMap: Record<string, number> = {
@@ -93,7 +75,6 @@ export async function POST(req: Request) {
             .single();
 
         if (insertError) {
-            console.error('[PayTR] Payment insert error:', JSON.stringify(insertError));
             return NextResponse.json({ error: 'Ödeme kaydı oluşturulamadı' }, { status: 500 });
         }
 
@@ -135,8 +116,6 @@ export async function POST(req: Request) {
             paytr_token: paytrToken,
         });
 
-        console.log('[PayTR] Link oluşturuluyor, callback_id:', callbackId, 'amount:', amountKurus, 'callback_link:', callbackLink);
-
         const paytrRes = await fetch('https://www.paytr.com/odeme/api/link/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -144,22 +123,20 @@ export async function POST(req: Request) {
         });
 
         const rawText = await paytrRes.text();
-        console.log('[PayTR] Ham yanıt:', rawText);
 
-        let paytrData: any;
+        let paytrData: unknown;
         try {
             paytrData = JSON.parse(rawText);
         } catch {
-            console.error('[PayTR] JSON parse hatası:', rawText);
             return NextResponse.json({ error: 'PayTR geçersiz yanıt döndü' }, { status: 500 });
         }
 
-        if (paytrData.status === 'error' || paytrData.status === 'failed') {
-            console.error('[PayTR] Link oluşturulamadı:', paytrData.err_msg || JSON.stringify(paytrData));
-            return NextResponse.json({ error: paytrData.err_msg || 'PayTR link oluşturulamadı' }, { status: 500 });
+        const paytrParsed = paytrData as Record<string, string>;
+        if (paytrParsed.status === 'error' || paytrParsed.status === 'failed') {
+            return NextResponse.json({ error: paytrParsed.err_msg || 'PayTR link oluşturulamadı' }, { status: 500 });
         }
 
-        const paymentUrl = paytrData.link;
+        const paymentUrl = paytrParsed.link;
 
         // Update provider_order_id to callbackId so callback can find it
         await adminSupabase
@@ -167,28 +144,22 @@ export async function POST(req: Request) {
             .update({ provider_order_id: callbackId })
             .eq('id', payment.id);
 
-        console.log(`[PayTR] ✅ Link oluşturuldu: ${paymentUrl}, callback_id=${callbackId}`);
-
         // Test modunda callback gelmez — otomatik plan aktif et
         const isTestMode = process.env.PAYTR_TEST_MODE === '1';
         if (isTestMode) {
             const daysToAdd = (plan === 'pro_yearly' || plan === 'starter_yearly') ? 365 : 30;
             const planUntil = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000).toISOString();
             const activePlan = plan.startsWith('starter') ? 'starter' : 'pro';
-            const { error: payErr } = await adminSupabase.from('payments').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', payment.id);
-            if (payErr) console.error('[PayTR] 🧪 Test modu payments update hatası:', JSON.stringify(payErr));
-            const { error: profErr } = await adminSupabase.from('profiles').update({
+            await adminSupabase.from('payments').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', payment.id);
+            await adminSupabase.from('profiles').update({
                 plan: activePlan, is_pro: activePlan === 'pro', plan_type: plan,
                 pro_until: planUntil, pro_started_at: new Date().toISOString(), pro_expires_at: planUntil,
             }).eq('id', user.id);
-            if (profErr) console.error('[PayTR] 🧪 Test modu profiles update hatası:', JSON.stringify(profErr));
-            else console.log(`[PayTR] 🧪 Test modu: ${activePlan} otomatik aktif edildi, user=${user.id}`);
         }
 
         return NextResponse.json({ success: true, paymentId: payment.id, paymentUrl, token: secureToken });
 
-    } catch (error: any) {
-        console.error('[PayTR] Create payment error:', error?.message || error);
+    } catch {
         return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 });
     }
 }

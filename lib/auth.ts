@@ -1,139 +1,73 @@
 import { User, PlanType, Marketplace } from '@/types';
-import { supabase } from './supabaseClient';
+import { createClient } from '@/lib/supabase/client';
 
-const PROFILE_SELECT_FULL = 'id, email, plan, pro_until, pro_expires_at, pro_renewal, pro_started_at, email_notifications_enabled, target_margin, margin_alert, default_marketplace, default_commission, default_vat, monthly_profit_target, default_return_rate, default_ads_cost, fixed_cost_monthly, target_profit_monthly, email_weekly_report, email_risk_alert, email_margin_alert, email_pro_expiry';
-const PROFILE_SELECT_CORE = 'id, email, plan, pro_until, pro_expires_at, pro_renewal, pro_started_at, email_notifications_enabled';
-
-// Preference keys that may not exist as DB columns yet
-const PREF_KEYS: (keyof User)[] = [
-  'target_margin', 'margin_alert', 'default_marketplace', 'default_commission', 'default_vat', 'monthly_profit_target', 'default_return_rate', 'default_ads_cost',
-  'fixed_cost_monthly', 'target_profit_monthly',
-  'email_weekly_report', 'email_risk_alert', 'email_margin_alert', 'email_pro_expiry'
-];
-
-function mapProfileRow(data: any): User {
+function mapProfileRow(data: Record<string, unknown>): User {
+  // Gateway camelCase, DB snake_case — her ikisini destekle
   return {
-    id: data.id,
-    email: data.email,
+    id: data.id as string,
+    email: data.email as string,
     plan: (data.plan as PlanType) || 'free',
-    pro_until: data.pro_until ?? null,
-    pro_expires_at: data.pro_expires_at ?? null,
-    pro_renewal: data.pro_renewal ?? true,
-    pro_started_at: data.pro_started_at ?? null,
-    email_notifications_enabled: data.email_notifications_enabled !== false,
-    target_margin: data.target_margin ?? undefined,
-    margin_alert: data.margin_alert ?? undefined,
-    default_marketplace: data.default_marketplace as Marketplace | undefined,
-    default_commission: data.default_commission ?? undefined,
-    default_vat: data.default_vat ?? undefined,
-    monthly_profit_target: data.monthly_profit_target ?? undefined,
-    default_return_rate: data.default_return_rate ?? undefined,
-    default_ads_cost: data.default_ads_cost ?? undefined,
-    fixed_cost_monthly: data.fixed_cost_monthly ?? undefined,
-    target_profit_monthly: data.target_profit_monthly ?? undefined,
-    email_weekly_report: data.email_weekly_report ?? true,
-    email_risk_alert: data.email_risk_alert ?? true,
-    email_margin_alert: data.email_margin_alert ?? true,
-    email_pro_expiry: data.email_pro_expiry ?? true,
+    pro_until: (data.pro_until ?? data.proUntil ?? null) as string | null,
+    pro_expires_at: (data.pro_expires_at ?? data.proExpiresAt ?? null) as string | null,
+    pro_renewal: (data.pro_renewal ?? data.proRenewal ?? true) as boolean,
+    pro_started_at: (data.pro_started_at ?? data.proStartedAt ?? null) as string | null,
+    email_notifications_enabled: (data.email_notifications_enabled ?? data.emailNotificationsEnabled) !== false,
+    is_pro: (data.is_pro ?? data.isPro ?? false) as boolean,
+    target_margin: (data.target_margin ?? data.targetMargin) as number | undefined,
+    margin_alert: (data.margin_alert ?? data.marginAlert) as boolean | undefined,
+    default_marketplace: (data.default_marketplace ?? data.defaultMarketplace) as Marketplace | undefined,
+    default_commission: (data.default_commission ?? data.defaultCommission) as number | undefined,
+    default_vat: (data.default_vat ?? data.defaultVat) as number | undefined,
+    monthly_profit_target: (data.monthly_profit_target ?? data.monthlyProfitTarget) as number | undefined,
+    default_return_rate: (data.default_return_rate ?? data.defaultReturnRate) as number | undefined,
+    default_ads_cost: (data.default_ads_cost ?? data.defaultAdsCost) as number | undefined,
+    fixed_cost_monthly: (data.fixed_cost_monthly ?? data.fixedCostMonthly) as number | undefined,
+    target_profit_monthly: (data.target_profit_monthly ?? data.targetProfitMonthly) as number | undefined,
+    email_weekly_report: ((data.email_weekly_report ?? data.emailWeeklyReport) as boolean) ?? true,
+    email_risk_alert: ((data.email_risk_alert ?? data.emailRiskAlert) as boolean) ?? true,
+    email_margin_alert: ((data.email_margin_alert ?? data.emailMarginAlert) as boolean) ?? true,
+    email_pro_expiry: ((data.email_pro_expiry ?? data.emailProExpiry) as boolean) ?? true,
   };
 }
-async function ensureProfile(userId: string, email: string): Promise<User> {
+
+export async function fetchProfile(userId: string, email: string): Promise<User> {
   try {
-    // Try full select first (includes preference columns)
-    let { data, error } = await supabase
-      .from('profiles')
-      .select(PROFILE_SELECT_FULL)
-      .eq('id', userId)
-      .maybeSingle();
-
-    // If the select fails (columns don't exist yet), fall back to core columns
-    if (error && error.code === '42703') {
-      const fallback = await supabase
-        .from('profiles')
-        .select(PROFILE_SELECT_CORE)
-        .eq('id', userId)
-        .maybeSingle();
-      data = fallback.data as any;
-      error = fallback.error;
+    const res = await fetch('/api/user/profile');
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.id) return mapProfileRow(data);
     }
 
-    if (data) {
-      return mapProfileRow(data);
+    // Profil yoksa sadece temel bilgilerle oluştur — plan'a dokunma!
+    const createRes = await fetch('/api/user/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, email_notifications_enabled: true }),
+    });
+
+    if (createRes.ok) {
+      const newData = await createRes.json();
+      if (newData && newData.id) return mapProfileRow(newData);
     }
 
-    const { data: upsertData, error: upsertError } = await supabase
-      .from('profiles')
-      .upsert(
-        { id: userId, email, plan: 'free', email_notifications_enabled: true },
-        { onConflict: 'id' }
-      )
-      .select(PROFILE_SELECT_FULL)
-      .single();
-
-    // Fallback if preference columns don't exist
-    if (upsertError && upsertError.code === '42703') {
-      const fb = await supabase
-        .from('profiles')
-        .upsert(
-          { id: userId, email, plan: 'free', email_notifications_enabled: true },
-          { onConflict: 'id' }
-        )
-        .select(PROFILE_SELECT_CORE)
-        .single();
-      if (!fb.error && fb.data) return mapProfileRow(fb.data);
-    }
-
-    if (upsertError) {
-      console.error('Error upserting profile:', upsertError);
-      return { id: userId, email, plan: 'free', email_notifications_enabled: true };
-    }
-
-    return mapProfileRow(upsertData);
-  } catch (err) {
-    console.error('Exception in ensureProfile:', err);
+    return { id: userId, email, plan: 'free', email_notifications_enabled: true };
+  } catch {
     return { id: userId, email, plan: 'free', email_notifications_enabled: true };
   }
 }
 
-export async function fetchProfile(userId: string, email: string): Promise<User> {
-  return await ensureProfile(userId, email);
-}
-
 export async function updateProfile(userId: string, updates: Partial<User>): Promise<{ success: boolean; error?: string }> {
-  // Only allow updating columns that actually exist in the profiles table
-  const coreKeys: (keyof User)[] = ['email', 'plan', 'email_notifications_enabled'];
-  const allAllowedKeys: (keyof User)[] = [...coreKeys, ...PREF_KEYS];
-
-  const safeUpdates: Record<string, any> = {};
-  for (const key of allAllowedKeys) {
-    if (updates[key] !== undefined) safeUpdates[key] = updates[key];
+  try {
+    const res = await fetch('/api/user/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+    const data = await res.json();
+    return { success: res.ok, error: data.error };
+  } catch {
+    return { success: false, error: 'Profil güncellenemedi.' };
   }
-
-  const { error } = await supabase
-    .from('profiles')
-    .update(safeUpdates)
-    .eq('id', userId);
-
-  if (error) {
-    // If error is "column does not exist", retry with only core keys
-    if (error.code === '42703' || error.message.includes('column')) {
-      const coreSafe: Record<string, any> = {};
-      for (const key of coreKeys) {
-        if (updates[key] !== undefined) coreSafe[key] = updates[key];
-      }
-      if (Object.keys(coreSafe).length > 0) {
-        const { error: retryErr } = await supabase.from('profiles').update(coreSafe).eq('id', userId);
-        if (retryErr) return { success: false, error: retryErr.message };
-      }
-      // Return partial success — core saved, preferences need migration
-      return {
-        success: false,
-        error: 'Tercih sütunları henüz veritabanında oluşturulmamış. Lütfen Supabase SQL Editor\'da migration sorgusunu çalıştırın.',
-      };
-    }
-    return { success: false, error: error.message };
-  }
-  return { success: true };
 }
 
 export async function login(
@@ -141,19 +75,21 @@ export async function login(
   password: string
 ): Promise<{ success: boolean; user?: User; error?: string }> {
   try {
+    const supabase = createClient();
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      return { success: false, error: `Giris hatasi: ${error.message}` };
+      return { success: false, error: `Giriş hatası: ${error.message}` };
     }
     if (!data.user || !data.user.email) {
-      return { success: false, error: 'Oturum acilamadi.' };
+      return { success: false, error: 'Oturum açılamadı.' };
     }
 
     const user = await fetchProfile(data.user.id, data.user.email);
     return { success: true, user };
-  } catch (err: any) {
-    return { success: false, error: `Beklenmeyen hata: ${err.message || err}` };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Beklenmeyen hata';
+    return { success: false, error: message };
   }
 }
 
@@ -162,20 +98,20 @@ export async function register(
   password: string
 ): Promise<{ success: boolean; user?: User; error?: string }> {
   if (password.length < 6) {
-    return { success: false, error: 'Sifre en az 6 karakter olmalidir.' };
+    return { success: false, error: 'Şifre en az 6 karakter olmalıdır.' };
   }
 
   try {
+    const supabase = createClient();
     const { data, error } = await supabase.auth.signUp({ email, password });
 
     if (error) {
-      return { success: false, error: `Kayit hatasi: ${error.message}` };
+      return { success: false, error: `Kayıt hatası: ${error.message}` };
     }
     if (!data.user || !data.user.email) {
-      return { success: false, error: 'Kullanici olusturulamadi (Yonetici onayi veya e-posta dogrulamasi gerekebilir).' };
+      return { success: false, error: 'Kullanıcı oluşturulamadı.' };
     }
 
-    // Force profile creation
     const user = await fetchProfile(data.user.id, data.user.email);
 
     // Welcome email gönder (API üzerinden, kayıt akışını etkilemez)
@@ -185,27 +121,26 @@ export async function register(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: data.user.id, email: data.user.email }),
       }).catch(() => {});
-    } catch {}
+    } catch {
+      // silent
+    }
 
     return { success: true, user };
-  } catch (err: any) {
-    return { success: false, error: `Beklenmeyen hata: ${err.message || err}` };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Beklenmeyen hata';
+    return { success: false, error: message };
   }
 }
 
 export async function logout(): Promise<void> {
+  const supabase = createClient();
   await supabase.auth.signOut();
 }
 
 export async function updateUserPlan(userId: string, plan: PlanType): Promise<void> {
-  const { error } = await supabase
-    .from('profiles')
-    .update({ plan })
-    .eq('id', userId);
-
-  if (error) {
-    console.error('Error updating plan:', error);
-  } else if (process.env.NODE_ENV === 'development') {
-    console.log('[Auth] Plan updated:', { userId, plan });
-  }
+  await fetch('/api/user/profile', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ plan }),
+  });
 }

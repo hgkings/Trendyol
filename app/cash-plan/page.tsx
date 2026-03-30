@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatCurrency } from '@/components/shared/format';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabaseClient';
+// TODO: migrate cash_plan DB calls to fetch('/api/cash-plan') when API is created
+import { createClient } from '@/lib/supabase/client';
 import { Loader2, TrendingDown, TrendingUp, Calendar, AlertTriangle, Save, Lock, Unlock } from 'lucide-react';
 import { CashPlanRow } from '@/types';
 import { Switch } from '@/components/ui/switch';
@@ -66,6 +67,7 @@ export default function CashPlanPage() {
         if (!user) return;
         setLoading(true);
 
+        const supabase = createClient();
         // Fetch existing plan
         const { data, error } = await supabase
             .from('cash_plan')
@@ -126,7 +128,8 @@ export default function CashPlanPage() {
 
         setRows(newRows);
         setLoading(false);
-    }, [user, horizon]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.id, horizon]);
 
     // Derived Rows with Stock Simulation
     const simulatedRows = rows.map((row, idx) => {
@@ -189,6 +192,7 @@ export default function CashPlanPage() {
         if (!user) return;
         setSaving(true);
 
+        const supabase = createClient();
         // Upsert all rows
         const { error } = await supabase.from('cash_plan').upsert(
             rows.map(r => ({

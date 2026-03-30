@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
-import { createClient, createAdminClient } from '@/lib/supabase-server-client'
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export default async function AdminRootLayout({
   children,
@@ -7,21 +8,30 @@ export default async function AdminRootLayout({
   children: React.ReactNode
 }) {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-  if (!user) {
+  if (authError || !user) {
     redirect('/auth?next=/admin')
   }
 
-  // Admin client ile RLS bypass ederek plan kontrolü yap
-  const adminClient = createAdminClient()
-  const { data: profile } = await adminClient
-    .from('profiles')
-    .select('plan')
-    .eq('id', user.id)
-    .single()
+  try {
+    const adminClient = createAdminClient()
+    const { data, error } = await adminClient
+      .from('profiles')
+      .select('plan')
+      .eq('id', user.id)
+      .single()
 
-  if (profile?.plan !== 'admin') {
+    if (error) {
+      // profiles tablosuna erişilemedi — redirect
+      redirect('/dashboard')
+    }
+
+    const plan = (data as Record<string, unknown>)?.plan as string
+    if (plan !== 'admin') {
+      redirect('/dashboard')
+    }
+  } catch {
     redirect('/dashboard')
   }
 

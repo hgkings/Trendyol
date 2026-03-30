@@ -1,505 +1,431 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase-server-client';
-import { PDFDocument, rgb, StandardFonts, PDFFont } from 'pdf-lib';
+import { createClient } from '@/lib/supabase/server';
+import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 
-// Colors (Tailwind-like)
-const COLORS = {
-    PRIMARY: rgb(0.145, 0.388, 0.922), // #2563EB (blue-600)
-    PRIMARY_LIGHT: rgb(0.93, 0.95, 1.0), // #EFF6FF (blue-50)
-    SECONDARY: rgb(0.388, 0.4, 0.945),   // #6366F1
-    SUCCESS: rgb(0.133, 0.773, 0.369),   // #22c55e (green-500)
-    SUCCESS_BG: rgb(0.86, 0.97, 0.89),   // #dcfce7
-    WARNING: rgb(0.96, 0.57, 0.06),      // #f59e0b (amber-500)
-    WARNING_BG: rgb(1.0, 0.96, 0.82),    // #fef3c7
-    DANGER: rgb(0.937, 0.267, 0.267),    // #ef4444 (red-500)
-    DANGER_BG: rgb(0.99, 0.89, 0.89),    // #fee2e2
-    DARK: rgb(0.059, 0.09, 0.165),       // #0F172A (slate-900)
-    GRAY: rgb(0.4, 0.45, 0.5),           // #64748B (slate-500)
-    GRAY_LIGHT: rgb(0.96, 0.97, 0.98),   // #F7F9FC (slate-50)
-    BORDER: rgb(0.898, 0.914, 0.941),    // #E2E8F0 (slate-200)
-    WHITE: rgb(1, 1, 1),
+// ─── Renkler ───
+const C = {
+  PRIMARY: rgb(0.851, 0.471, 0.024),    // #D97706 amber-600
+  PRIMARY_DARK: rgb(0.573, 0.251, 0.055), // #92400E amber-900
+  SUCCESS: rgb(0.133, 0.773, 0.369),     // #22c55e
+  SUCCESS_BG: rgb(0.86, 0.97, 0.89),
+  DANGER: rgb(0.937, 0.267, 0.267),      // #ef4444
+  DANGER_BG: rgb(0.99, 0.89, 0.89),
+  WARNING: rgb(0.96, 0.57, 0.06),        // #f59e0b
+  WARNING_BG: rgb(1.0, 0.96, 0.82),
+  DARK: rgb(0.059, 0.09, 0.165),         // #0F172A
+  TEXT: rgb(0.2, 0.23, 0.28),            // #334155
+  GRAY: rgb(0.4, 0.45, 0.5),
+  GRAY_LIGHT: rgb(0.96, 0.97, 0.98),
+  BORDER: rgb(0.88, 0.9, 0.93),
+  WHITE: rgb(1, 1, 1),
+  BG_DARK: rgb(0.05, 0.05, 0.07),       // koyu arka plan
+  ACCENT: rgb(0.98, 0.95, 0.88),        // krem
 };
 
-const UBUNTU_URLS = {
-    REGULAR: 'https://pdf-lib.js.org/assets/ubuntu/Ubuntu-R.ttf',
-    BOLD: 'https://pdf-lib.js.org/assets/ubuntu/Ubuntu-B.ttf',
+const FONT_URLS = {
+  REGULAR: 'https://pdf-lib.js.org/assets/ubuntu/Ubuntu-R.ttf',
+  BOLD: 'https://pdf-lib.js.org/assets/ubuntu/Ubuntu-B.ttf',
 };
 
-// Helper: Rounded Rectangle Path
-const createRoundedRectPath = (x: number, y: number, w: number, h: number, r: number) => {
-    // PDF coordinates: bottom-left is x,y.
-    // SVG Path equivalent.
-    // Move to bottom-left radius start
-    return `M ${x + r} ${y} L ${x + w - r} ${y} A ${r} ${r} 0 0 0 ${x + w} ${y + r} L ${x + w} ${y + h - r} A ${r} ${r} 0 0 0 ${x + w - r} ${y + h} L ${x + r} ${y + h} A ${r} ${r} 0 0 0 ${x} ${y + h - r} L ${x} ${y + r} A ${r} ${r} 0 0 0 ${x + r} ${y} Z`;
-    // Wait, PDF arc command might differ? 
-    // pdf-lib drawSvgPath handles "M L A Z".
-    // "A rx ry x-axis-rotation large-arc-flag sweep-flag x y"
-    // sweep-flag 0 means counter-clockwise?
-    // Let's rely on standard SVG path syntax.
-};
+function n(v: unknown, fallback = 0): number {
+  if (typeof v === 'number') return v;
+  if (typeof v === 'string') return parseFloat(v) || fallback;
+  return fallback;
+}
 
-// Helper: Standard Rounded Rect Drawer
-// Since drawSvgPath creates a filled shape, we can use it.
-// BUT borders? We might need to stroke it.
-// Simpler: Draw simple rects if rounded fails, but user wants rounded.
-// I will attempt SVG path.
+function fmt(val: number): string {
+  return val.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtPct(val: number): string {
+  return `%${val.toFixed(1)}`;
+}
+
+function riskLabel(level: string): string {
+  const map: Record<string, string> = {
+    safe: 'Düşük', moderate: 'Orta', risky: 'Yüksek', dangerous: 'Kritik'
+  };
+  return map[level] || 'Bilinmiyor';
+}
+
+function riskColor(level: string) {
+  if (level === 'safe') return C.SUCCESS;
+  if (level === 'moderate') return C.WARNING;
+  if (level === 'risky' || level === 'dangerous') return C.DANGER;
+  return C.GRAY;
+}
+
+function riskBg(level: string) {
+  if (level === 'safe') return C.SUCCESS_BG;
+  if (level === 'moderate') return C.WARNING_BG;
+  return C.DANGER_BG;
+}
+
+const marketplaceLabel: Record<string, string> = {
+  trendyol: 'Trendyol', hepsiburada: 'Hepsiburada',
+  n11: 'N11', amazon_tr: 'Amazon TR', custom: 'Diğer',
+};
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return new NextResponse('Unauthorized', { status: 401 });
+
+    const { data: row, error } = await supabase
+      .from('analyses')
+      .select('*')
+      .eq('id', params.id)
+      .eq('user_id', user.id)
+      .single();
+
+    if (error || !row) return new NextResponse('Analiz bulunamadı', { status: 404 });
+
+    const inp = (row.inputs ?? {}) as Record<string, unknown>;
+    const out = (row.outputs ?? {}) as Record<string, unknown>;
+
+    // ─── Değerleri çıkar ───
+    const salePrice = n(inp.sale_price);
+    const productCost = n(inp.product_cost);
+    const shippingCost = n(inp.shipping_cost);
+    const packagingCost = n(inp.packaging_cost);
+    const adCost = n(inp.ad_cost_per_sale);
+    const otherCost = n(inp.other_cost);
+    const commPct = n(inp.commission_pct);
+    const vatPct = n(inp.vat_pct, 20);
+    const returnPct = n(inp.return_rate_pct);
+    const monthlySales = n(inp.monthly_sales_volume);
+    const payoutDelay = n(inp.payout_delay_days);
+    const productName = (row.product_name ?? inp.product_name ?? 'İsimsiz Ürün') as string;
+    const mp = (row.marketplace ?? inp.marketplace ?? 'trendyol') as string;
+    const riskScore = n(row.risk_score);
+    const riskLvl = (row.risk_level ?? 'moderate') as string;
+    const createdAt = row.created_at ? new Date(row.created_at as string) : new Date();
+
+    // ─── Hesaplamalar (outputs'tan al, yoksa hesapla) ───
+    const vatAmount = n(out.vat_amount) || (salePrice - salePrice / (1 + vatPct / 100));
+    const salePriceExclVat = salePrice - vatAmount;
+    const commission = n(out.commission_amount) || (salePriceExclVat * commPct / 100);
+    const returnLoss = n(out.expected_return_loss) || (salePrice * returnPct / 100);
+    const serviceFee = n(out.service_fee_amount);
+    const unitVarCost = productCost + shippingCost + packagingCost + adCost + otherCost + serviceFee;
+    const unitTotalCost = n(out.unit_total_cost) || (unitVarCost + commission + vatAmount + returnLoss);
+    const unitNetProfit = n(out.unit_net_profit) || (salePrice - unitTotalCost);
+    const marginPct = n(out.margin_pct) || (salePrice > 0 ? (unitNetProfit / salePrice) * 100 : 0);
+    const monthlyRevenue = n(out.monthly_revenue) || (salePrice * monthlySales);
+    const monthlyNetProfit = n(out.monthly_net_profit) || (unitNetProfit * monthlySales);
+    const monthlyTotalCost = n(out.monthly_total_cost) || (unitTotalCost * monthlySales);
+    const breakevenPrice = n(out.breakeven_price) || unitTotalCost;
+
+    // Nakit akışı
+    const dailyOutflow = (unitVarCost * monthlySales) / 30;
+    const workingCapital = dailyOutflow * payoutDelay;
+
+    // Reklam tavanı
+    const adCeiling = unitNetProfit + adCost; // maks reklam = mevcut kar + mevcut reklam
+
+    // ─── PDF Oluştur ───
+    const pdfDoc = await PDFDocument.create();
+    pdfDoc.registerFontkit(fontkit);
+
+    let font: PDFFont;
+    let fontBold: PDFFont;
+    let useFallback = false;
+
     try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (!user) return new NextResponse('Unauthorized', { status: 401 });
-
-        // Fetch Analysis Data
-        const { data: row, error } = await supabase
-            .from('analyses')
-            .select('*')
-            .eq('id', params.id)
-            .eq('user_id', user.id)
-            .single();
-
-        if (error || !row) return new NextResponse('Analysis not found', { status: 404 });
-
-        // Prepare Inputs/Outputs
-        const inputs = row.inputs || {};
-        const results = row.results || {};
-
-        // Parse INPUTS (Base values)
-        const price = Number(inputs.sale_price) || 0;
-        const productCost = Number(inputs.product_cost) || 0;
-        const shipping = Number(inputs.shipping_cost) || 0;
-        const ads = Number(inputs.ad_cost_per_sale) || 0;
-        const packaging = Number(inputs.packaging_cost) || 0;
-        const otherCost = Number(inputs.other_cost) || 0;
-        const commRate = Number(inputs.commission_pct) || 20; // Default 20
-        const vatRate = Number(inputs.vat_pct) || 20; // Default 20
-        const returnRate = Number(inputs.return_rate_pct) || 0;
-
-        // Perform Calculations (Server-Side)
-        // Commission Amount = Price * (Rate/100)
-        const commission = price * (commRate / 100);
-
-        // VAT Amount = Price - (Price / (1 + VAT/100))
-        // Assuming Price includes VAT. If input.sale_price_includes_vat? 
-        // Standard behavior: Price has VAT.
-        // Wait, commission includes VAT? Usually yes.
-        // Let's use simple logic:
-        const vatAmount = price - (price / (1 + (vatRate / 100)));
-
-        // Expected Return Loss = Price * (ReturnRate/100) * (if margin?)
-        // Simple logic: Return Loss = Price * (ReturnRate/100).
-        // Actually usually Return Loss = (Shipping + Commission + LossValues) * Rate.
-        // But let's use Price * Rate as worst case estimate for now? No.
-        // Let's assume Return Loss = 0 for now unless user input explicitly provided it?
-        // Wait, `inputs.return_rate_pct` is provided.
-        // `results.expected_return_loss` was 0.
-        // Let's use a simple heuristic: 30 TL if rate > 0? No.
-        // Let's calculate: Return Cost per Unit = (Price * Rate%).
-        const returns = price * (returnRate / 100);
-
-        // Total Unit Cost
-        const totalCost = productCost + commission + shipping + ads + packaging + otherCost + vatAmount + returns;
-
-        // Net Profit
-        const netProfit = price - totalCost;
-
-        // Margin
-        const margin = price > 0 ? (netProfit / price) * 100 : 0;
-
-        // Break Even = Fixed Costs / (Price - Var Costs)? 
-        // Or Break Even Price = Total Cost?
-        // Break Even Point (Sales) = Total Fixed / Margin Ratio.
-        // But for Unit Analysis: Break Even Price = Total Unit Cost (excluding profit).
-        const breakEven = totalCost;
-
-        // Tax (VAT Amount) for display
-        const tax = vatAmount;
-
-        // Init PDF
-        const pdfDoc = await PDFDocument.create();
-        pdfDoc.registerFontkit(fontkit);
-
-        // Fonts
-        let font: PDFFont | undefined;
-        let fontBold: PDFFont | undefined;
-        let useFallback = false;
-
-        const fetchFont = async (url: string) => {
-            const res = await fetch(url);
-            if (!res.ok) throw new Error(`Fetch error: ${res.statusText}`);
-            const ab = await res.arrayBuffer();
-            if (ab.byteLength < 100) throw new Error("File too small");
-            return ab;
-        };
-
-        const cleanText = (txt: string) => {
-            if (!useFallback) return txt;
-            return txt
-                .replace(/Ğ/g, 'G').replace(/ğ/g, 'g')
-                .replace(/Ü/g, 'U').replace(/ü/g, 'u')
-                .replace(/Ş/g, 'S').replace(/ş/g, 's')
-                .replace(/İ/g, 'I').replace(/ı/g, 'i')
-                .replace(/Ö/g, 'O').replace(/ö/g, 'o')
-                .replace(/Ç/g, 'C').replace(/ç/g, 'c')
-                .replace(/₺/g, 'TL');
-        };
-
-        try {
-            const [fontBytes, fontBoldBytes] = await Promise.all([
-                fetchFont(UBUNTU_URLS.REGULAR),
-                fetchFont(UBUNTU_URLS.BOLD),
-            ]);
-            font = await pdfDoc.embedFont(fontBytes);
-            fontBold = await pdfDoc.embedFont(fontBoldBytes);
-        } catch (fontErr) {
-            console.error("[PDF Route] Font load failed, falling back to Helvetica:", fontErr);
-            useFallback = true;
-            font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-            fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-        }
-
-        const page = pdfDoc.addPage([595.28, 841.89]); // A4
-        const { width: W, height: H } = page.getSize();
-        const MARGIN = 40;
-
-        // Helpers
-        const drawText = (text: string, x: number, y: number, size: number, options: any = {}) => {
-            page.drawText(cleanText(text), { x, y, size, font: options.font || font, color: options.color || COLORS.DARK, ...options });
-        };
-        const drawTextRight = (text: string, x: number, y: number, size: number, options: any = {}) => {
-            const cleaned = cleanText(text);
-            const w = (options.font || font)!.widthOfTextAtSize(cleaned, size);
-            page.drawText(cleaned, { x: x - w, y, size, font: options.font || font, color: options.color || COLORS.DARK, ...options });
-        };
-        const drawTextCenter = (text: string, x: number, y: number, size: number, options: any = {}) => {
-            const cleaned = cleanText(text);
-            const w = (options.font || font)!.widthOfTextAtSize(cleaned, size);
-            page.drawText(cleaned, { x: x - (w / 2), y, size, font: options.font || font, color: options.color || COLORS.DARK, ...options });
-        };
-
-        // Helper: Draw Badge
-        const drawBadge = (label: string, text: string, xEnd: number, y: number, color: any, bgColor: any) => {
-            const paddingX = 12; // Increased padding
-            const paddingY = 4;
-            const textSize = 9;
-            const labelSize = 8;
-
-            // Calculate Badge Geometry
-            const cleanTxt = cleanText(text);
-            const textWidth = fontBold!.widthOfTextAtSize(cleanTxt, textSize);
-
-            // Add safety margin (+4) to prevent clipping
-            const badgeW = textWidth + (paddingX * 2) + 4;
-            const badgeH = textSize + (paddingY * 2); // 17
-
-            const badgeLeft = xEnd - badgeW;
-
-            // Badge Background
-            // Center of Text: y + 3.15 (Cap Height / 2)
-            // Center of Box: y + 3.15
-            // Box Bottom: Center - 8.5 = y - 5.35 ~ y - 5.5
-            // Box Top: Center + 8.5 = y + 11.65 ~ y + 11.5
-            page.drawRectangle({
-                x: badgeLeft, y: y - 5.5,
-                width: badgeW, height: badgeH,
-                color: bgColor,
-            });
-
-            // Badge Text
-            // Visual centering horizontally: badgeLeft + (badgeW - textWidth)/2
-            // Visual centering vertically: y
-            // But let's lower slightly to account for descenders causing visual offset?
-            // y + 1 looks good (previous y+1.5 was too high?).
-            // Let's try y + 0.5. Just above baseline.
-            const textX = badgeLeft + (badgeW - textWidth) / 2;
-            page.drawText(cleanTxt, { x: textX, y: y + 0.5, size: textSize, font: fontBold, color: color });
-
-            // Label
-            // Place label 12px to the left of Badge Left Edge.
-            drawTextRight(label, badgeLeft - 12, y, labelSize, { color: COLORS.GRAY });
-
-            // Return X position for NEXT badge (Status Badge).
-            // Gap between badges groups.
-            const labelWidth = (font || fontBold)!.widthOfTextAtSize(cleanText(label), labelSize);
-
-            return badgeLeft - 12 - labelWidth - 25; // 25px gap between badge groups
-        };
-
-        // Helper: Draw Card
-        const drawCard = (x: number, y: number, w: number, h: number, title: string, value: string, isPositive: boolean | null = null) => {
-            // Background
-            page.drawRectangle({ x, y, width: w, height: h, color: COLORS.GRAY_LIGHT });
-            // Labels
-            drawText(title, x + 12, y + h - 20, 9, { color: COLORS.GRAY });
-
-            // Value Color
-            let valColor = COLORS.DARK;
-            if (isPositive === true) valColor = COLORS.SUCCESS;
-            if (isPositive === false && title.includes('Kâr')) valColor = COLORS.DANGER;
-
-            drawText(value, x + 12, y + 20, 16, { font: fontBold, color: valColor });
-        };
-
-
-        /* ──────────────── HEADER ──────────────── */
-        let y = H - MARGIN - 20;
-
-        // Logo (Vector Chart)
-        const logoSize = 28;
-        const xBase = MARGIN;
-        const yBase = y - logoSize + 5;
-        const scale = logoSize / 40;
-
-        page.drawRectangle({ x: xBase, y: yBase, width: logoSize, height: logoSize, color: COLORS.PRIMARY });
-        const barsBottomY = yBase + (8 * scale);
-        page.drawRectangle({ x: xBase + (8 * scale), y: barsBottomY, width: 6 * scale, height: 10 * scale, color: COLORS.WHITE });
-        page.drawRectangle({ x: xBase + (17 * scale), y: barsBottomY, width: 6 * scale, height: 16 * scale, color: COLORS.WHITE });
-        page.drawRectangle({ x: xBase + (26 * scale), y: barsBottomY, width: 6 * scale, height: 22 * scale, color: COLORS.WHITE });
-
-        const pdfY = (svgY: number) => (yBase + 28) - (svgY * scale);
-        const pdfX = (svgX: number) => xBase + (svgX * scale);
-        const arrowOpts = { color: COLORS.WHITE, thickness: 2.5 * scale, lineCap: 'Round' as any, lineJoin: 'Round' as any };
-
-        page.drawLine({ start: { x: pdfX(18), y: pdfY(24) }, end: { x: pdfX(34), y: pdfY(8) }, ...arrowOpts });
-        page.drawLine({ start: { x: pdfX(28), y: pdfY(8) }, end: { x: pdfX(34), y: pdfY(8) }, ...arrowOpts });
-        page.drawLine({ start: { x: pdfX(34), y: pdfY(8) }, end: { x: pdfX(34), y: pdfY(14) }, ...arrowOpts });
-
-        // Title
-        drawText("Kârnet", MARGIN + logoSize + 10, y - 10, 20, { font: fontBold, color: COLORS.DARK });
-        drawTextRight("ANALiZ RAPORU", W - MARGIN, y - 8, 12, { color: COLORS.GRAY, font: fontBold });
-
-        y -= 40;
-        // Product Name
-        const productName = (inputs.product_name as string) || "İsimsiz Ürün";
-        drawText(productName, MARGIN, y, 16, { font: fontBold });
-        drawTextRight((row.marketplace || "Pazaryeri") + " • " + new Date().toLocaleDateString('tr-TR'), W - MARGIN, y + 2, 10, { color: COLORS.GRAY });
-
-        y -= 25;
-        page.drawLine({ start: { x: MARGIN, y }, end: { x: W - MARGIN, y }, thickness: 1, color: COLORS.BORDER });
-
-        // Badges Removed.
-        /*
-        // Badges (Top Right, slightly above line)
-        const badgeY = y + 35;
-        let badgeX = W - MARGIN;
-        
-        let riskLabel = "Risk";
-        let riskText = "Orta";
-        let riskColor = COLORS.WARNING;
-        let riskBg = COLORS.WARNING_BG;
-        if (margin > 25) { riskText = "Düşük"; riskColor = COLORS.SUCCESS; riskBg = COLORS.SUCCESS_BG; }
-        if (margin < 10) { riskText = "Yüksek"; riskColor = COLORS.DANGER; riskBg = COLORS.DANGER_BG; }
-        
-        // badgeX = drawBadge(riskLabel, riskText, badgeX, badgeY, riskColor, riskBg);
-
-        let profitLabel = "Durum";
-        let profitText = "Kârlı";
-        let profitColor = COLORS.SUCCESS;
-        let profitBg = COLORS.SUCCESS_BG;
-        if (netProfit < 0) { profitText = "Zarar"; profitColor = COLORS.DANGER; profitBg = COLORS.DANGER_BG; }
-        if (Math.abs(netProfit) < 1) { profitText = "Başabaş"; profitColor = COLORS.GRAY; profitBg = COLORS.GRAY_LIGHT; } 
-
-        // drawBadge(profitLabel, profitText, badgeX, badgeY, profitColor, profitBg);
-        */
-
-
-        /* ──────────────── SUMMARY CARDS (2 Rows x 3 Cols) ──────────────── */
-        y -= 30;
-        const cardH = 70;
-        const gap = 15;
-        const cardW = (W - (MARGIN * 2) - (gap * 2)) / 3;
-
-        // Row 1
-        drawCard(MARGIN, y - cardH, cardW, cardH, "Satış Fiyatı", `${price.toFixed(2)} TL`);
-        drawCard(MARGIN + cardW + gap, y - cardH, cardW, cardH, "Aylık Net Kâr", `${netProfit.toFixed(2)} TL`, netProfit > 0);
-        drawCard(MARGIN + (cardW + gap) * 2, y - cardH, cardW, cardH, "Kâr Marjı", `%${margin.toFixed(1)}`, margin > 15);
-
-        y -= (cardH + gap);
-        // Row 2
-        drawCard(MARGIN, y - cardH, cardW, cardH, "Aylık Ciro (Tahmini)", `${(price * 80).toFixed(2)} TL`); // Mock volume
-        drawCard(MARGIN + cardW + gap, y - cardH, cardW, cardH, "Birim Kâr", `${(netProfit / 80).toFixed(2)} TL`);
-        drawCard(MARGIN + (cardW + gap) * 2, y - cardH, cardW, cardH, "Başabaş Noktası", `${breakEven.toFixed(2)} TL`);
-
-        y -= (cardH + 40);
-
-
-        /* ──────────────── SPLIT LAYOUT: TABLE (Left) + CHART (Right) ──────────────── */
-        const tableW = (W - (MARGIN * 2)) * 0.60;
-        const chartW = (W - (MARGIN * 2)) * 0.35;
-        const chartX = MARGIN + tableW + (W - (MARGIN * 2)) * 0.05; // Gap
-
-        const startY = y;
-
-        // TABLE HEADER
-        drawText("Maliyet Dağılımı", MARGIN, y, 12, { font: fontBold, color: COLORS.PRIMARY });
-        y -= 25;
-
-        // Table Header Row
-        page.drawRectangle({ x: MARGIN, y: y, width: tableW, height: 25, color: COLORS.GRAY_LIGHT });
-        drawText("KALEM", MARGIN + 10, y + 8, 8, { font: fontBold, color: COLORS.GRAY });
-        drawTextRight("TUTAR", MARGIN + tableW - 10, y + 8, 8, { font: fontBold, color: COLORS.GRAY });
-        y -= 5; // Gap
-
-        const items = [
-            { name: "Ürün Maliyeti", val: productCost },
-            { name: "Komisyon (%20)", val: commission },
-            { name: "KDV", val: tax },
-            { name: "Kargo", val: shipping },
-            { name: "Paketleme", val: packaging },
-            { name: "Reklam (Birim)", val: ads },
-            { name: "İade Kaybı", val: returns },
-            { name: "Diğer Giderler", val: otherCost },
-        ];
-
-        let isZebra = false;
-        items.forEach(item => {
-            if (item.val > 0) {
-                y -= 25;
-                if (isZebra) {
-                    page.drawRectangle({ x: MARGIN, y, width: tableW, height: 25, color: COLORS.GRAY_LIGHT });
-                    // Make zebra extremely subtle: F8F9FA. COLORS.GRAY_LIGHT is F7F9FC. Good.
-                }
-                drawText(item.name, MARGIN + 10, y + 7, 9);
-                drawTextRight(item.val.toFixed(2), MARGIN + tableW - 10, y + 7, 9, { font: fontBold });
-                isZebra = !isZebra;
-            }
-        });
-
-        // Total Row
-        y -= 30;
-        page.drawRectangle({ x: MARGIN, y, width: tableW, height: 30, color: COLORS.GRAY_LIGHT });
-        // border top/bottom
-        page.drawLine({ start: { x: MARGIN, y: y + 30 }, end: { x: MARGIN + tableW, y: y + 30 }, thickness: 1, color: COLORS.BORDER });
-        page.drawLine({ start: { x: MARGIN, y }, end: { x: MARGIN + tableW, y }, thickness: 1, color: COLORS.BORDER });
-
-        drawText("Toplam Birim Maliyet", MARGIN + 10, y + 10, 10, { font: fontBold, color: COLORS.DARK });
-        drawTextRight(totalCost.toFixed(2) + " TL", MARGIN + tableW - 10, y + 10, 10, { font: fontBold, color: COLORS.DARK });
-
-
-        /* ──────────────── CHART (Right Side) ──────────────── */
-        // Donut Chart
-        // Center of Chart area
-        const cx = chartX + (chartW / 2);
-        const cy = startY - 80; // Align with top rows of table roughly
-        const r = 50;
-        const thickness = 15;
-
-        // Data for Chart
-        const chartData = [
-            { label: "Ürün", val: productCost, color: COLORS.PRIMARY },
-            { label: "Komisyon", val: commission, color: COLORS.SECONDARY },
-            { label: "Kargo", val: shipping, color: COLORS.SUCCESS },
-            { label: "Diğer", val: ads + returns + packaging + otherCost + tax, color: COLORS.GRAY },
-        ].filter(d => d.val > 0);
-
-        const totalChart = chartData.reduce((a, b) => a + b.val, 0);
-
-        if (totalChart > 0) {
-            let startAngle = 0;
-            // Draw Segments
-            chartData.forEach(d => {
-                const sliceAngle = (d.val / totalChart) * 2 * Math.PI;
-                const endAngle = startAngle + sliceAngle;
-
-                // SVG Path for Arc (Annulus Sector really)
-                // But simplified: thick strokes using drawSvgPath with Stroke?
-                // pdf-lib drawCircle doesn't support stroke width/segments easily for donuts.
-                // Alternative: Draw Lines? No.
-                // Alternative: Use `drawSvgPath` with customized path string for arc.
-
-                // Calculate points
-                // We need to draw an ARC.
-                // Standard SVG 'A' command.
-                // M startX startY A r r 0 largeArc sweep endX endY
-
-                // Helper to get coords
-                const getCoords = (a: number, rad: number) => ({
-                    x: cx + rad * Math.cos(a), // PDF coords: Y is up? No, usually check.
-                    // If we use standard Trig, Y goes up. In PDF Y goes up.
-                    // SVG path coordinate system in pdf-lib usually matches local transformation.
-                    // Let's assume standard trig.
-                    y: cy + rad * Math.sin(a)
-                });
-
-                // Angles in PDF-Lib/Trig usually radians. 0 is Right.
-                // We start at -PI/2 (Top).
-                const a1 = startAngle - (Math.PI / 2);
-                const a2 = endAngle - (Math.PI / 2);
-
-                const p1 = getCoords(a1, r);
-                const p2 = getCoords(a2, r);
-
-                const largeArc = sliceAngle > Math.PI ? 1 : 0;
-
-                // Stroke method: Draw a path along the center of the ring, strokeWidth = thickness?
-                // Path: Arc from p1 to p2.
-                // Stroke Width = thickness.
-
-                const path = `M ${p1.x} ${p1.y} A ${r} ${r} 0 ${largeArc} 1 ${p2.x} ${p2.y}`;
-                // Note: sweep-flag 1 is usually clockwise.
-
-                page.drawSvgPath(path, {
-                    borderColor: d.color,
-                    borderWidth: thickness,
-                });
-
-                startAngle += sliceAngle;
-            });
-
-            // Draw Legend Below Chart
-            let legendY = cy - r - 30;
-            chartData.forEach(d => {
-                page.drawRectangle({ x: chartX + 10, y: legendY, width: 8, height: 8, color: d.color });
-                drawText(d.label, chartX + 25, legendY, 9);
-                const pct = Math.round((d.val / totalChart) * 100);
-                drawTextRight(`%${pct}`, chartX + chartW - 10, legendY, 9, { font: fontBold });
-                legendY -= 15;
-            });
-        }
-
-        /* ──────────────── FOOTER ──────────────── */
-        const footerY = 40;
-        page.drawLine({ start: { x: MARGIN, y: footerY + 15 }, end: { x: W - MARGIN, y: footerY + 15 }, thickness: 0.5, color: COLORS.BORDER });
-
-        drawText("karnet.com", MARGIN, footerY, 8, { font: font, color: COLORS.GRAY });
-        drawTextCenter("Destek: destek@karnet.com", W / 2, footerY, 8, { font: font, color: COLORS.GRAY });
-
-        const reportId = `KNR-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${params.id.slice(0, 4).toUpperCase()}`;
-        drawTextRight(`1 / 1  |  ${reportId}`, W - MARGIN, footerY, 8, { font: font, color: COLORS.GRAY });
-
-        const disclaimer = "Bu rapor tahmini hesaplamalara dayanır. Sonuçlar pazar yeri kesintileri ve piyasa koşullarına göre değişebilir.";
-
-        // Disclaimer Box
-        page.drawRectangle({
-            x: MARGIN, y: footerY - 25,
-            width: W - (MARGIN * 2), height: 18,
-            color: COLORS.GRAY_LIGHT,
-            opacity: 0.5
-        });
-        drawTextCenter(disclaimer, W / 2, footerY - 20, 6, { font: font, color: COLORS.GRAY });
-
-
-        // Save
-        const pdfBytes = await pdfDoc.save();
-        const MKT: any = { 'trendyol': 'Trendyol', 'hepsiburada': 'Hepsiburada', 'amazon': 'Amazon' };
-        const safePlatform = (MKT[row.marketplace || inputs.marketplace] || row.marketplace || "Platform")
-            .replace(/[^a-zA-Z0-9_\-]/g, "-");
-        const filename = `Karnet_Analiz_Raporu_${safePlatform}_${new Date().toISOString().split('T')[0]}.pdf`;
-
-        return new NextResponse(pdfBytes, {
-            status: 200,
-            headers: {
-                'Content-Type': 'application/pdf',
-                'Content-Disposition': `attachment; filename="${filename}"`
-            }
-        });
-
-    } catch (error) {
-        console.error('PDF Generation Error:', error);
-        return new NextResponse('Server Error: ' + (error instanceof Error ? error.message : 'Unknown'), { status: 500 });
+      const [r, b] = await Promise.all([
+        fetch(FONT_URLS.REGULAR).then(r => r.arrayBuffer()),
+        fetch(FONT_URLS.BOLD).then(r => r.arrayBuffer()),
+      ]);
+      font = await pdfDoc.embedFont(r);
+      fontBold = await pdfDoc.embedFont(b);
+    } catch {
+      useFallback = true;
+      font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     }
+
+    const clean = (t: string) => {
+      if (!useFallback) return t;
+      return t.replace(/ğ/g,'g').replace(/Ğ/g,'G').replace(/ü/g,'u').replace(/Ü/g,'U')
+        .replace(/ş/g,'s').replace(/Ş/g,'S').replace(/ı/g,'i').replace(/İ/g,'I')
+        .replace(/ö/g,'o').replace(/Ö/g,'O').replace(/ç/g,'c').replace(/Ç/g,'C')
+        .replace(/₺/g,'TL');
+    };
+
+    // ═══════════════════════════════════════
+    // SAYFA 1 — Özet + Maliyet Dağılımı
+    // ═══════════════════════════════════════
+    const p1 = pdfDoc.addPage([595.28, 841.89]);
+    const W = 595.28;
+    const M = 40; // margin
+    let y = 841.89 - M;
+
+    const txt = (page: PDFPage, t: string, x: number, yy: number, size: number, opts: { font?: PDFFont; color?: ReturnType<typeof rgb> } = {}) => {
+      page.drawText(clean(t), { x, y: yy, size, font: opts.font ?? font, color: opts.color ?? C.TEXT });
+    };
+    const txtR = (page: PDFPage, t: string, x: number, yy: number, size: number, opts: { font?: PDFFont; color?: ReturnType<typeof rgb> } = {}) => {
+      const ct = clean(t);
+      const w = (opts.font ?? font).widthOfTextAtSize(ct, size);
+      page.drawText(ct, { x: x - w, y: yy, size, font: opts.font ?? font, color: opts.color ?? C.TEXT });
+    };
+
+    // ── HEADER ──
+    // Amber gradient bar
+    p1.drawRectangle({ x: 0, y: y - 5, width: W, height: 50, color: C.PRIMARY });
+    txt(p1, 'KÂRNET', M + 5, y + 10, 22, { font: fontBold, color: C.WHITE });
+    txtR(p1, 'ANALİZ RAPORU', W - M, y + 12, 11, { font: fontBold, color: C.WHITE });
+    txtR(p1, createdAt.toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' }), W - M, y, 8, { color: rgb(1, 1, 1) });
+    y -= 65;
+
+    // Ürün adı ve pazaryeri
+    txt(p1, productName, M, y, 18, { font: fontBold, color: C.DARK });
+    y -= 18;
+    txt(p1, `${marketplaceLabel[mp] ?? mp} · Komisyon: %${commPct} · KDV: %${vatPct}`, M, y, 9, { color: C.GRAY });
+    y -= 5;
+    p1.drawLine({ start: { x: M, y }, end: { x: W - M, y }, thickness: 1, color: C.BORDER });
+
+    // ── DURUM + RİSK BADGE ──
+    y -= 25;
+    const isProfitable = unitNetProfit > 0;
+
+    // Durum badge
+    const statusText = isProfitable ? '✓ KÂRLI' : '✗ ZARAR';
+    const statusColor = isProfitable ? C.SUCCESS : C.DANGER;
+    const statusBg = isProfitable ? C.SUCCESS_BG : C.DANGER_BG;
+    p1.drawRectangle({ x: M, y: y - 4, width: 70, height: 20, color: statusBg });
+    txt(p1, statusText, M + 8, y, 9, { font: fontBold, color: statusColor });
+
+    // Risk badge
+    const rBg = riskBg(riskLvl);
+    const rCol = riskColor(riskLvl);
+    const rTxt = `Risk: ${riskLabel(riskLvl)} (${riskScore}/100)`;
+    p1.drawRectangle({ x: M + 80, y: y - 4, width: 130, height: 20, color: rBg });
+    txt(p1, rTxt, M + 88, y, 9, { font: fontBold, color: rCol });
+
+    // ── ANA METRİKLER — Liste formatı (tablo gibi) ──
+    y -= 30;
+    const contentW = W - M * 2;
+
+    // Ozet tablo basligi
+    p1.drawRectangle({ x: M, y: y - 2, width: contentW, height: 22, color: C.PRIMARY });
+    txt(p1, 'OZET METRIKLER', M + 12, y + 4, 8, { font: fontBold, color: C.WHITE });
+    y -= 26;
+
+    const drawMetricRow = (label: string, value: string, positive: boolean | null = null) => {
+      // Zebra
+      if (y % 2 === 0) p1.drawRectangle({ x: M, y: y - 2, width: contentW, height: 22, color: C.GRAY_LIGHT });
+      // Sol renk cizgisi
+      const barColor = positive === true ? C.SUCCESS : positive === false ? C.DANGER : C.PRIMARY;
+      p1.drawRectangle({ x: M, y: y - 2, width: 3, height: 22, color: barColor });
+      // Label
+      txt(p1, label, M + 14, y + 4, 9, { color: C.GRAY });
+      // Value
+      let valColor = C.DARK;
+      if (positive === true) valColor = C.SUCCESS;
+      if (positive === false) valColor = C.DANGER;
+      txtR(p1, value, W - M - 12, y + 4, 11, { font: fontBold, color: valColor });
+      y -= 24;
+    };
+
+    drawMetricRow('Satis Fiyati', `${fmt(salePrice)} TL`);
+    drawMetricRow('Birim Net Kar', `${fmt(unitNetProfit)} TL`, unitNetProfit > 0);
+    drawMetricRow('Kar Marji', fmtPct(marginPct), marginPct > 0);
+    drawMetricRow('Aylik Net Kar', `${fmt(monthlyNetProfit)} TL`, monthlyNetProfit > 0);
+    drawMetricRow('Aylik Ciro', `${fmt(monthlyRevenue)} TL`);
+    drawMetricRow('Basabas Fiyati', `${fmt(breakevenPrice)} TL`);
+    drawMetricRow('Reklam Tavani', `${fmt(Math.max(0, adCeiling))} TL`);
+
+    y -= 15;
+
+    // ── KÂR/ZARAR ÖZETİ (kompakt) ──
+    const boxColor = isProfitable ? C.SUCCESS_BG : C.DANGER_BG;
+    const textCol = isProfitable ? C.SUCCESS : C.DANGER;
+    p1.drawRectangle({ x: M, y: y - 2, width: contentW, height: 24, color: boxColor });
+    p1.drawRectangle({ x: M, y: y - 2, width: 3, height: 24, color: textCol });
+
+    const statusLabel = isProfitable ? 'KARLI' : 'ZARAR';
+    txt(p1, `${statusLabel}: ${fmt(unitNetProfit)} TL`, M + 14, y + 4, 10, { font: fontBold, color: textCol });
+    txtR(p1, `${fmtPct(marginPct)} marj | ${fmt(monthlySales)} adet/ay | Aylik: ${fmt(monthlyNetProfit)} TL`, W - M - 12, y + 5, 8, { color: C.GRAY });
+
+    y -= 35;
+
+    // ── SATIŞÇI İÇİN ÖZELLİKLER ──
+    txt(p1, 'Onemli Bilgiler', M, y, 11, { font: fontBold, color: C.PRIMARY });
+    y -= 18;
+
+    const drawKeyValue = (label: string, value: string, yy: number) => {
+      txt(p1, label, M + 10, yy, 8, { color: C.GRAY });
+      txtR(p1, value, W - M - 10, yy, 8, { font: fontBold, color: C.DARK });
+      return yy - 16;
+    };
+
+    y = drawKeyValue('Urun Maliyeti', `${fmt(productCost)} TL`, y);
+    y = drawKeyValue(`Komisyon (%${commPct})`, `${fmt(commission)} TL`, y);
+    y = drawKeyValue(`KDV (%${vatPct})`, `${fmt(vatAmount)} TL`, y);
+    y = drawKeyValue('Kargo', `${fmt(shippingCost)} TL`, y);
+    if (adCost > 0) y = drawKeyValue('Reklam (Birim)', `${fmt(adCost)} TL`, y);
+    if (returnLoss > 0) y = drawKeyValue(`Iade Kaybi (%${returnPct})`, `${fmt(returnLoss)} TL`, y);
+    p1.drawLine({ start: { x: M, y: y + 5 }, end: { x: W - M, y: y + 5 }, thickness: 0.5, color: C.BORDER });
+    y = drawKeyValue('TOPLAM MALIYET', `${fmt(unitTotalCost)} TL`, y);
+
+    y -= 20;
+
+    // ── NAKİT AKIŞI ──
+    txt(p1, 'Nakit Akisi', M, y, 11, { font: fontBold, color: C.PRIMARY });
+    y -= 18;
+    y = drawKeyValue('Gunluk Nakit Cikisi', `${fmt(dailyOutflow)} TL`, y);
+    y = drawKeyValue(`Isletme Sermayesi (${payoutDelay} gun)`, `${fmt(workingCapital)} TL`, y);
+    y = drawKeyValue('Maks Reklam Butcesi', `${fmt(Math.max(0, adCeiling))} TL`, y);
+
+    y -= 20;
+
+    // ── RİSK ──
+    txt(p1, 'Risk Degerlendirmesi', M, y, 11, { font: fontBold, color: C.PRIMARY });
+    y -= 18;
+    y = drawKeyValue('Risk Skoru', `${riskScore}/100`, y);
+    y = drawKeyValue('Risk Seviyesi', riskLabel(riskLvl), y);
+    const riskFactors = (out._risk_factors ?? []) as Array<{ name: string }>;
+    for (const f of riskFactors.slice(0, 3)) {
+      p1.drawRectangle({ x: M + 5, y: y - 2, width: W - M * 2 - 10, height: 14, color: riskBg(riskLvl) });
+      txt(p1, `- ${f.name}`, M + 12, y, 7, { color: riskColor(riskLvl) });
+      y -= 16;
+    }
+
+    // ── FOOTER Sayfa 1 ──
+    p1.drawLine({ start: { x: M, y: 50 }, end: { x: W - M, y: 50 }, thickness: 0.5, color: C.BORDER });
+    txt(p1, 'kârnet.com', M, 38, 7, { color: C.GRAY });
+    txtR(p1, `Sayfa 1/2 · ${createdAt.toLocaleDateString('tr-TR')}`, W - M, 38, 7, { color: C.GRAY });
+    txt(p1, 'Bu rapor tahmini hesaplamalara dayanır. Muhasebeciye danışmadan karar vermeyin.', M, 28, 6, { color: C.GRAY });
+
+    // ═══════════════════════════════════════
+    // SAYFA 2 — Maliyet Tablosu + Oneriler
+    // ═══════════════════════════════════════
+    const p2 = pdfDoc.addPage([595.28, 841.89]);
+    y = 841.89 - M;
+
+    // Header bar
+    p2.drawRectangle({ x: 0, y: y - 5, width: W, height: 35, color: C.PRIMARY });
+    txt(p2, 'KARNET - Maliyet Analizi', M + 5, y + 5, 14, { font: fontBold, color: C.WHITE });
+    txtR(p2, clean(productName), W - M, y + 5, 10, { color: C.WHITE });
+    y -= 55;
+
+    const drawInfoRow = (page: PDFPage, label: string, value: string, yy: number, bold = false) => {
+      txt(page, label, M + 10, yy, 9, { color: C.GRAY });
+      txtR(page, value, W - M - 10, yy, 9, { font: bold ? fontBold : font, color: C.DARK });
+      return yy - 18;
+    };
+
+    // ── MALİYET TABLOSU ──
+    txt(p2, 'Maliyet Dagilimi (Birim)', M, y, 12, { font: fontBold, color: C.PRIMARY });
+    y -= 22;
+
+    // Tablo basligi
+    p2.drawRectangle({ x: M, y: y - 2, width: W - M * 2, height: 22, color: C.PRIMARY });
+    txt(p2, 'Kalem', M + 10, y + 4, 8, { font: fontBold, color: C.WHITE });
+    txtR(p2, 'Tutar (TL)', W - M - 90, y + 4, 8, { font: fontBold, color: C.WHITE });
+    txtR(p2, 'Oran', W - M - 10, y + 4, 8, { font: fontBold, color: C.WHITE });
+
+    const costItems = [
+      { name: 'Urun Maliyeti', val: productCost },
+      { name: `Komisyon (%${commPct})`, val: commission },
+      { name: `KDV (%${vatPct})`, val: vatAmount },
+      { name: 'Kargo', val: shippingCost },
+      { name: 'Paketleme', val: packagingCost },
+      { name: 'Reklam (Birim)', val: adCost },
+      { name: `Iade Kaybi (%${returnPct})`, val: returnLoss },
+      { name: 'Diger Giderler', val: otherCost },
+      { name: 'Servis Bedeli', val: serviceFee },
+    ].filter(i => i.val > 0);
+
+    y -= 24;
+    let zebra = false;
+    for (const item of costItems) {
+      const pct = unitTotalCost > 0 ? (item.val / unitTotalCost) * 100 : 0;
+      if (zebra) p2.drawRectangle({ x: M, y: y - 2, width: W - M * 2, height: 20, color: C.GRAY_LIGHT });
+      txt(p2, item.name, M + 10, y + 3, 9);
+      txtR(p2, fmt(item.val), W - M - 90, y + 3, 9, { font: fontBold });
+      txtR(p2, fmtPct(pct), W - M - 10, y + 3, 9, { color: C.GRAY });
+      const barW = Math.min(pct * 0.5, 50);
+      p2.drawRectangle({ x: W - M - 70, y: y + 1, width: barW, height: 10, color: C.PRIMARY, opacity: 0.15 });
+      y -= 22;
+      zebra = !zebra;
+    }
+
+    // Toplam
+    p2.drawLine({ start: { x: M, y: y + 10 }, end: { x: W - M, y: y + 10 }, thickness: 1, color: C.PRIMARY });
+    y -= 5;
+    p2.drawRectangle({ x: M, y: y - 4, width: W - M * 2, height: 22, color: C.GRAY_LIGHT });
+    txt(p2, 'TOPLAM BIRIM MALIYET', M + 10, y + 2, 9, { font: fontBold, color: C.DARK });
+    txtR(p2, `${fmt(unitTotalCost)} TL`, W - M - 90, y + 2, 9, { font: fontBold, color: C.DARK });
+    txtR(p2, '%100', W - M - 10, y + 2, 9, { font: fontBold, color: C.DARK });
+
+    y -= 35;
+
+    // ── AYLIK PROJEKSIYON ──
+    txt(p2, 'Aylik Projeksiyon', M, y, 12, { font: fontBold, color: C.PRIMARY });
+    y -= 20;
+
+    y = drawInfoRow(p2, 'Aylik Satis Adedi', `${fmt(monthlySales)} adet`, y);
+    y = drawInfoRow(p2, 'Aylik Brut Ciro', `${fmt(monthlyRevenue)} TL`, y);
+    y = drawInfoRow(p2, 'Aylik Toplam Maliyet', `${fmt(monthlyTotalCost)} TL`, y);
+    y = drawInfoRow(p2, 'Aylik Net Kar', `${fmt(monthlyNetProfit)} TL`, y, true);
+    const yearlyProfit = monthlyNetProfit * 12;
+    y = drawInfoRow(p2, 'Yillik Tahmini Net Kar', `${fmt(yearlyProfit)} TL`, y, true);
+    p2.drawLine({ start: { x: M, y: y + 5 }, end: { x: W - M, y: y + 5 }, thickness: 0.5, color: C.BORDER });
+
+    y -= 25;
+
+    // ── ÖNERİLER ──
+    txt(p2, 'Oneriler', M, y, 12, { font: fontBold, color: C.PRIMARY });
+    y -= 20;
+
+    const tips: string[] = [];
+    if (marginPct < 10) tips.push('Dusuk marj: Fiyat artirma veya maliyet azaltma degerlendirin.');
+    if (marginPct < 0) tips.push('Urun zararda! Satisa devam etmek nakit kaybina yol acar.');
+    if (returnPct >= 15) tips.push(`Iade orani yuksek (%${returnPct}). Urun kalitesi ve aciklamalari gozden gecirin.`);
+    if (adCost > unitNetProfit && adCost > 0) tips.push('Reklam harcamasi kari asiyor. ROAS optimizasyonu yapin.');
+    if (commPct >= 25) tips.push(`Komisyon orani yuksek (%${commPct}). Farkli pazaryeri veya kategori degerlendirin.`);
+    if (monthlySales === 0) tips.push('Satis hacmi girilmemis. Aylik projeksiyonlar icin satis tahmini ekleyin.');
+    if (payoutDelay > 14) tips.push(`Odeme gecikmesi ${payoutDelay} gun - nakit akisini sikilastirabilir.`);
+    if (isProfitable && marginPct > 20) tips.push('Iyi marj! Reklam butcesi artirarak satis hacmini buyutebilirsiniz.');
+    if (tips.length === 0) tips.push('Genel durumunuz dengeli gorunuyor. Duzenli analiz yapmaya devam edin.');
+
+    for (const tip of tips) {
+      txt(p2, `  ${tip}`, M + 10, y, 8, { color: C.TEXT });
+      y -= 16;
+    }
+
+    // ── FOOTER Sayfa 2 ──
+    p2.drawLine({ start: { x: M, y: 50 }, end: { x: W - M, y: 50 }, thickness: 0.5, color: C.BORDER });
+    txt(p2, 'karnet.com', M, 38, 7, { color: C.GRAY });
+    txtR(p2, `Sayfa 2/2`, W - M, 38, 7, { color: C.GRAY });
+    txt(p2, 'Bu rapor tahmini hesaplamalara dayanir. Muhasebeciye danismadan karar vermeyin.', M, 28, 6, { color: C.GRAY });
+
+    // ─── Kaydet ───
+    const pdfBytes = await pdfDoc.save();
+    const safeName = productName
+      .replace(/ğ/g,'g').replace(/Ğ/g,'G').replace(/ü/g,'u').replace(/Ü/g,'U')
+      .replace(/ş/g,'s').replace(/Ş/g,'S').replace(/ı/g,'i').replace(/İ/g,'I')
+      .replace(/ö/g,'o').replace(/Ö/g,'O').replace(/ç/g,'c').replace(/Ç/g,'C')
+      .replace(/â/g,'a').replace(/Â/g,'A')
+      .replace(/[^a-zA-Z0-9 _-]/g, '')
+      .trim().slice(0, 50);
+    const filename = `Karnet_Rapor_${safeName}_${createdAt.toISOString().split('T')[0]}.pdf`;
+
+    return new NextResponse(pdfBytes, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+      },
+    });
+  } catch (error) {
+    // Geçici debug — production'dan önce kaldırılacak
+    const msg = error instanceof Error ? error.message + '\n' + error.stack : 'Bilinmeyen hata';
+    return new NextResponse('PDF oluşturulamadı: ' + msg, { status: 500 });
+  }
 }

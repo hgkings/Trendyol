@@ -1,40 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prepareSyncContext } from '@/lib/marketplace-sync-helpers';
-import { getSellerSettlements, getOtherFinancials } from '@/lib/trendyol-api';
+import { requireAuth, callGatewayV1Format, errorResponse } from '@/lib/api/helpers'
+import type { ServiceName } from '@/lib/gateway/types'
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
-    try {
-        const { ctx, error, status } = await prepareSyncContext();
-        if (!ctx) {
-            return NextResponse.json({ error }, { status });
-        }
+export async function GET(request: Request) {
+  try {
+    const user = await requireAuth()
+    if (user instanceof Response) return user
 
-        const { searchParams } = new URL(request.url);
-        const startDate = searchParams.get('startDate')
-            ?? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        const endDate = searchParams.get('endDate')
-            ?? new Date().toISOString().split('T')[0];
+    const { searchParams } = new URL(request.url)
+    const days = parseInt(searchParams.get('gun') ?? '30')
+    const startDate = searchParams.get('startDate') ?? undefined
+    const endDate = searchParams.get('endDate') ?? undefined
 
-        const [settlements, otherFinancials] = await Promise.all([
-            getSellerSettlements(ctx.credentials, startDate, endDate),
-            getOtherFinancials(ctx.credentials, startDate, endDate),
-        ]);
-
-        return NextResponse.json({
-            success: true,
-            data: settlements,
-            otherFinancials,
-            settlements: settlements.length,
-            otherFinancialsCount: otherFinancials.length,
-            toplam: settlements.length + otherFinancials.length,
-        });
-    } catch (err: any) {
-        console.error('[marketplace/trendyol/finance] Error:', err?.message);
-        return NextResponse.json(
-            { error: err?.message || 'Finans verileri alınamadı.' },
-            { status: 500 }
-        );
-    }
+    return callGatewayV1Format('marketplace' as ServiceName, 'getTrendyolFinance', { days, startDate, endDate }, user.id)
+  } catch (err: unknown) {
+    return errorResponse(err)
+  }
 }

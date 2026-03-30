@@ -36,7 +36,7 @@ import { useRouter } from 'next/navigation';
 import { PLAN_LIMITS } from '@/config/plans';
 import { isProUser } from '@/utils/access';
 import { getStoredAnalyses } from '@/lib/api/analyses';
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import type { Analysis, Marketplace } from '@/types';
 
@@ -115,6 +115,7 @@ export default function AccountPage() {
     })();
     // Get auth providers
     (async () => {
+      const supabase = createClient();
       const { data } = await supabase.auth.getUser();
       if (data?.user?.app_metadata?.providers) {
         setProviders(data.user.app_metadata.providers);
@@ -515,7 +516,7 @@ export default function AccountPage() {
               size="sm"
               className="gap-1.5 text-red-400 border-red-500/20 hover:bg-red-500/10 rounded-[10px]"
               onClick={async () => {
-                await supabase.auth.signOut({ scope: 'global' });
+                await createClient().auth.signOut({ scope: 'global' });
                 router.push('/auth');
               }}
             >

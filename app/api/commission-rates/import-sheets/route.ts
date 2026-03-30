@@ -40,7 +40,8 @@ export async function POST(req: NextRequest) {
 
     const csv = await response.text();
     return NextResponse.json({ csv });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Bilinmeyen hata' }, { status: 500 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Bilinmeyen hata'
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

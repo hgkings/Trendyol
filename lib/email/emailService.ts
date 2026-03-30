@@ -9,8 +9,8 @@ import { getWeeklyReportTemplate, getRiskAlertTemplate, getMarginAlertTemplate }
 
 // Lazy Supabase admin — only import when actually needed
 async function getSupabaseAdmin() {
-    const { supabaseAdmin } = await import('../supabase-server-client');
-    return supabaseAdmin;
+    const { createAdminClient } = await import('../supabase/admin');
+    return createAdminClient();
 }
 
 const MAIL_REPLY_TO = () => process.env.MAIL_REPLY_TO || 'karnet.destek@gmail.com';
@@ -44,7 +44,7 @@ async function checkEmailPreference(userId: string | undefined, column: string):
             .eq('id', userId)
             .single();
         if (!data) return true;
-        return data[column] !== false;
+        return (data as unknown as Record<string, unknown>)[column] !== false;
     } catch {
         return true;
     }

@@ -1,57 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prepareSyncContext } from '@/lib/marketplace-sync-helpers';
-import { getClaims } from '@/lib/hepsiburada-api';
+import { requireAuth, callGatewayV1Format, errorResponse } from '@/lib/api/helpers'
+import type { ServiceName } from '@/lib/gateway/types'
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'
 
-const DEFAULT_DAYS_BACK = 90;
+export async function GET(request: Request) {
+  try {
+    const user = await requireAuth()
+    if (user instanceof Response) return user
 
-export async function GET(request: NextRequest) {
-    try {
-        const { ctx, error, status } = await prepareSyncContext(undefined, 'hepsiburada');
-        if (!ctx) {
-            return NextResponse.json(
-                { success: false, error: error || 'Hepsiburada hesabı bağlı değil' },
-                { status }
-            );
-        }
+    const { searchParams } = new URL(request.url)
+    const days = parseInt(searchParams.get('gun') ?? '90')
 
-        const { searchParams } = new URL(request.url);
-        const gun = Number(searchParams.get('gun') ?? DEFAULT_DAYS_BACK);
-
-        const now = new Date();
-        const startDate = new Date();
-        startDate.setDate(now.getDate() - gun);
-
-        const { iadeListesi, ozet } = await getClaims(
-            {
-                apiKey: ctx.credentials.apiKey,
-                apiSecret: ctx.credentials.apiSecret,
-                merchantId: ctx.sellerId,
-            },
-            startDate,
-            now
-        );
-
-        return NextResponse.json({
-            success: true,
-            iadeListesi,
-            ozet,
-            aralik: `Son ${gun} gün`,
-        });
-    } catch (err: any) {
-        console.error('[marketplace/hepsiburada/claims] Error:', err?.message);
-
-        if (err?.message?.includes('Kimlik bilgileri hatalı')) {
-            return NextResponse.json({ success: false, error: 'Kimlik bilgileri hatalı' }, { status: 401 });
-        }
-        if (err?.message?.includes('rate limit') || err?.message?.includes('429')) {
-            return NextResponse.json({ success: false, error: 'İstek limiti aşıldı, bekleyin' }, { status: 429 });
-        }
-
-        return NextResponse.json(
-            { success: false, error: 'Bir hata oluştu', detail: err?.message },
-            { status: 500 }
-        );
-    }
+    return callGatewayV1Format('marketplace' as ServiceName, 'getHepsiburadaClaims', { days }, user.id)
+  } catch (err: unknown) {
+    return errorResponse(err)
+  }
 }

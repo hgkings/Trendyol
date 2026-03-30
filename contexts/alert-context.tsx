@@ -42,18 +42,23 @@ export function AlertProvider({ children }: { children: ReactNode }) {
             const analysisData = await getStoredAnalyses();
             setAnalyses(analysisData);
 
-            // 2. Generate new notifications from analyses and upsert them
-            const newNotifications = generateNotifications(analysisData);
+            // 2. Generate local notifications from analyses (client-side only)
+            const localNotifications = generateNotifications(analysisData);
 
-            if (newNotifications.length > 0) {
-                await upsertNotifications(newNotifications);
+            // 3. Fetch DB notifications and merge with local
+            let dbNotifications: Notification[] = [];
+            try {
+                dbNotifications = await getNotifications();
+            } catch {
+                // silent
             }
 
-            // 3. Fetch all notifications from DB
-            const dbNotifications = await getNotifications();
-            setNotifications(dbNotifications);
-        } catch (error) {
-            console.error('Error fetching alerts:', error);
+            // Merge: DB notifications + local (deduplicate by dedupe_key)
+            const existingKeys = new Set(dbNotifications.map(n => n.dedupe_key).filter(Boolean));
+            const newLocals = localNotifications.filter(n => !existingKeys.has(n.dedupe_key));
+            setNotifications([...dbNotifications, ...newLocals]);
+        } catch {
+            // silent
         } finally {
             setLoading(false);
         }

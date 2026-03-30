@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAdmin } from '@/lib/admin-auth'
-import * as supportService from '@/services/support.service'
+import { requireAdmin, callGatewayV1Format } from '@/lib/api/helpers'
+import type { ServiceName } from '@/lib/gateway/types'
 import { UpdateTicketSchema } from '@/lib/validations/support'
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const auth = await verifyAdmin()
-  if (!auth.authorized) return auth.response
+  const auth = await requireAdmin()
+  if (auth instanceof Response) return auth
 
   try {
     const body = await request.json()
@@ -21,8 +21,10 @@ export async function PATCH(
       )
     }
 
-    const ticket = await supportService.replyToTicket(params.id, parsed.data)
-    return NextResponse.json({ success: true, data: ticket }, { status: 200 })
+    return callGatewayV1Format('support' as ServiceName, 'replyToTicket', {
+      ticketId: params.id,
+      ...parsed.data,
+    }, auth.id)
   } catch {
     return NextResponse.json({ success: false, error: 'Bir hata oluştu' }, { status: 500 })
   }
@@ -32,11 +34,11 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const auth = await verifyAdmin()
-  if (!auth.authorized) return auth.response
+  const auth = await requireAdmin()
+  if (auth instanceof Response) return auth
 
   try {
-    await supportService.deleteTicket(params.id)
+    await callGatewayV1Format('support' as ServiceName, 'deleteTicket', { ticketId: params.id }, auth.id)
     return new NextResponse(null, { status: 204 })
   } catch {
     return NextResponse.json({ success: false, error: 'Bir hata oluştu' }, { status: 500 })

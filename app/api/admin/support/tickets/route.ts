@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAdmin } from '@/lib/admin-auth'
-import * as supportService from '@/services/support.service'
+import { requireAdmin, callGatewayV1Format } from '@/lib/api/helpers'
+import type { ServiceName } from '@/lib/gateway/types'
 import { TicketFilterSchema } from '@/lib/validations/support'
 
 export async function GET(request: NextRequest) {
-  const auth = await verifyAdmin()
-  if (!auth.authorized) return auth.response
+  const auth = await requireAdmin()
+  if (auth instanceof Response) return auth
 
   try {
     const { searchParams } = new URL(request.url)
 
     if (searchParams.get('stats') === '1') {
-      const stats = await supportService.getTicketStats()
-      return NextResponse.json({ success: true, data: stats }, { status: 200 })
+      return callGatewayV1Format('support' as ServiceName, 'getTicketStats', {}, auth.id)
     }
 
     const filterParsed = TicketFilterSchema.safeParse({
@@ -23,8 +22,7 @@ export async function GET(request: NextRequest) {
     })
 
     const filters = filterParsed.success ? filterParsed.data : {}
-    const tickets = await supportService.getAllTickets(filters)
-    return NextResponse.json({ success: true, data: tickets }, { status: 200 })
+    return callGatewayV1Format('support' as ServiceName, 'listAllTickets', { ...filters }, auth.id)
   } catch {
     return NextResponse.json({ success: false, error: 'Bir hata oluştu' }, { status: 500 })
   }

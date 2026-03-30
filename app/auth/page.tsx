@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { KarnetLogo } from '@/components/shared/KarnetLogo';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@/lib/supabase/client';
 import {
   Eye, EyeOff, HelpCircle, ArrowRight, Check,
   TrendingUp, TestTube2, Plug,
@@ -151,8 +151,10 @@ function AuthPageContent() {
       if (result.success) {
         // Profili full_name ile güncelle (hata olursa sessizce geç)
         try {
+          const supabase = createClient();
           const { data: { user: authUser } } = await supabase.auth.getUser();
           if (authUser) {
+            // TODO: replace with fetch('/api/user/profile') PATCH when API supports full_name
             await supabase.from('profiles').update({ full_name: trimmedName }).eq('id', authUser.id);
           }
         } catch {}
@@ -170,6 +172,7 @@ function AuthPageContent() {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     setError('');
+    const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(returnUrl)}` },

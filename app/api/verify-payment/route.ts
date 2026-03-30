@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient as createServerSupabase } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,28 +10,12 @@ export async function GET(req: Request) {
         const token = searchParams.get('token');
         const paymentId = searchParams.get('paymentId');
 
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-        if (!supabaseUrl || !supabaseAnonKey || !serviceKey) {
-            return NextResponse.json({ success: false, error: 'Sunucu yapılandırma hatası' }, { status: 500 });
-        }
-
-        const admin = createClient(supabaseUrl, serviceKey);
+        const admin = createAdminClient();
 
         // ── Token-based polling (new flow) ───────────────────────────────────
         if (token) {
             // 1. Authenticate the caller
-            const cookieStore = cookies();
-            const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-                cookies: {
-                    getAll() { return cookieStore.getAll(); },
-                    setAll(cookiesToSet) {
-                        try { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); } catch { }
-                    },
-                },
-            });
+            const supabase = createServerSupabase();
 
             const { data: { user }, error: authError } = await supabase.auth.getUser();
             if (authError || !user) {
@@ -67,7 +50,6 @@ export async function GET(req: Request) {
             // 5. ONLY report success if PayTR callback already marked payment as paid.
             //    This endpoint does NOT activate Pro itself — the callback does.
             if (payment.status === 'paid') {
-                console.log('[verify-payment] ✅ Ödeme onaylandı (callback tarafından):', payment.id);
                 return NextResponse.json({ success: true });
             }
 
@@ -91,8 +73,7 @@ export async function GET(req: Request) {
 
         return NextResponse.json({ success: false, error: 'token veya paymentId gerekli' }, { status: 400 });
 
-    } catch (error: any) {
-        console.error('[verify-payment] Hata:', error?.message || error);
+    } catch {
         return NextResponse.json({ success: false, error: 'Sunucu hatası' }, { status: 500 });
     }
 }

@@ -12,7 +12,8 @@ import {
     Search,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabaseClient';
+// TODO: migrate product_marketplace_map DB calls to fetch('/api/marketplace/matching') when API is created
+import { createClient } from '@/lib/supabase/client';
 import { getStoredAnalyses } from '@/lib/api/analyses';
 import { useAuth } from '@/contexts/auth-context';
 import Link from 'next/link';
@@ -43,6 +44,7 @@ export default function MatchingPage() {
     const fetchData = useCallback(async () => {
         if (!user) return;
         setLoading(true);
+        const supabase = createClient();
         try {
             const { data: maps } = await supabase
                 .from('product_marketplace_map')
@@ -73,6 +75,7 @@ export default function MatchingPage() {
 
     const handleMatch = async (mappingId: string, analysisId: string) => {
         setSavingId(mappingId);
+        const supabase = createClient();
         try {
             const { error } = await supabase
                 .from('product_marketplace_map')

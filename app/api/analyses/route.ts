@@ -1,75 +1,50 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase-server-client'
-import * as analysisService from '@/services/analysis.service'
-import { apiRateLimit, getIp } from '@/lib/rate-limit'
+import { requireAuth, callGatewayV1Format, errorResponse } from '@/lib/api/helpers'
+import { createAdminClient } from '@/lib/supabase/admin'
+import type { ServiceName } from '@/lib/gateway/types'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const ip = getIp(request)
-    const { success: allowed } = await apiRateLimit.limit(ip)
-    if (!allowed) {
-      return NextResponse.json({ error: 'Çok fazla istek. Lütfen bekleyin.' }, { status: 429 })
-    }
-
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 })
-
-    const analyses = await analysisService.getUserAnalyses(user.id)
-    return NextResponse.json(analyses)
-  } catch (error: any) {
-    console.error('Analyses API Error:', {
-      message: error?.message,
-      code: error?.code,
-      details: error?.details,
-      hint: error?.hint,
-    })
-    return NextResponse.json(
-      {
-        error: 'Analizler yüklenemedi',
-        detail: error?.message,
-      },
-      { status: 500 }
-    )
+    const user = await requireAuth()
+    if (user instanceof Response) return user
+    return callGatewayV1Format('analysis' as ServiceName, 'list', {}, user.id)
+  } catch (error) {
+    return errorResponse(error)
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const ip = getIp(request)
-    const { success: allowed } = await apiRateLimit.limit(ip)
-    if (!allowed) {
-      return NextResponse.json({ error: 'Çok fazla istek. Lütfen bekleyin.' }, { status: 429 })
-    }
-
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 })
-
+    const user = await requireAuth()
+    if (user instanceof Response) return user
     const body = await request.json()
-    const analysis = { ...body, userId: user.id }
-    const result = await analysisService.createAnalysis(user.id, analysis)
 
-    if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 400 })
+    // V1 UI tam Analysis objesi gönderir (id, userId, input, result, risk, createdAt)
+    // Client-side hesaplama yapılmış — direkt DB'ye kaydet
+    if (body.id && body.input && body.result && body.risk) {
+      const supabase = createAdminClient()
+      const { error } = await supabase.from('analyses').upsert({
+        id: body.id,
+        user_id: user.id,
+        marketplace: body.input.marketplace ?? 'trendyol',
+        product_name: body.input.product_name ?? body.input.productName ?? '',
+        inputs: body.input,
+        outputs: body.result,
+        risk_score: body.risk.score ?? 0,
+        risk_level: body.risk.level ?? 'moderate',
+        created_at: body.createdAt ?? new Date().toISOString(),
+      }, { onConflict: 'id' })
+
+      if (error) {
+        return Response.json({ success: false, error: error.message }, { status: 500 })
+      }
+      return Response.json({ success: true, id: body.id })
     }
 
-    return NextResponse.json({ success: true })
-  } catch (error: any) {
-    console.error('Analyses API Error:', {
-      message: error?.message,
-      code: error?.code,
-      details: error?.details,
-      hint: error?.hint,
-    })
-    return NextResponse.json(
-      {
-        error: 'Analizler yüklenemedi',
-        detail: error?.message,
-      },
-      { status: 500 }
-    )
+    // Gateway üzerinden oluştur (camelCase input beklenir)
+    return callGatewayV1Format('analysis' as ServiceName, 'create', { input: body }, user.id)
+  } catch (error) {
+    return errorResponse(error)
   }
 }
