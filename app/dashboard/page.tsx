@@ -27,12 +27,20 @@ export default function DashboardPage() {
   const [trendyolConn, setTrendyolConn] = useState<ConnStatus>({ status: 'disconnected' });
 
   useEffect(() => {
-    fetch('/api/marketplace/trendyol')
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10000)
+
+    fetch('/api/marketplace/trendyol', { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (d) setTrendyolConn({ status: d.status ?? 'disconnected', seller_id: d.seller_id });
       })
-      .catch(() => {});
+      .catch(() => {
+        // Timeout veya hata — varsayilan disconnected kalir
+      })
+      .finally(() => clearTimeout(timeout))
+
+    return () => { controller.abort(); clearTimeout(timeout) }
   }, []);
 
   const handleDelete = async (id: string) => {

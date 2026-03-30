@@ -148,9 +148,9 @@ export default function SettingsPage() {
         setDeleting(true);
         try {
             const res = await fetch('/api/user/delete', { method: 'DELETE' });
-            if (!res.ok) {
-                const data = await res.json().catch(() => ({}));
-                throw new Error(data.error || 'Silme başarısız');
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || data.error) {
+                throw new Error(data.error || 'Hesap silinemedi. Lütfen tekrar deneyin.');
             }
             toast.success('Hesabınız ve tüm verileriniz kalıcı olarak silindi.');
             setDeleteDialogOpen(false);

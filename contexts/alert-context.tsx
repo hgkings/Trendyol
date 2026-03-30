@@ -29,6 +29,8 @@ export function AlertProvider({ children }: { children: ReactNode }) {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const mountedRef = { current: true }
+
     const refresh = useCallback(async () => {
         if (!user) {
             setAnalyses([]);
@@ -38,29 +40,29 @@ export function AlertProvider({ children }: { children: ReactNode }) {
         }
 
         try {
-            // 1. Fetch current analyses
             const analysisData = await getStoredAnalyses();
+            if (!mountedRef.current) return
+
             setAnalyses(analysisData);
 
-            // 2. Generate local notifications from analyses (client-side only)
             const localNotifications = generateNotifications(analysisData);
 
-            // 3. Fetch DB notifications and merge with local
             let dbNotifications: Notification[] = [];
             try {
                 dbNotifications = await getNotifications();
             } catch {
-                // silent
+                // DB bildirim hatasi — yerel bildirimlerle devam et
             }
 
-            // Merge: DB notifications + local (deduplicate by dedupe_key)
+            if (!mountedRef.current) return
+
             const existingKeys = new Set(dbNotifications.map(n => n.dedupe_key).filter(Boolean));
             const newLocals = localNotifications.filter(n => !existingKeys.has(n.dedupe_key));
             setNotifications([...dbNotifications, ...(newLocals as Notification[])]);
         } catch {
-            // silent
+            // Veri yüklenemedi — mevcut state korunur
         } finally {
-            setLoading(false);
+            if (mountedRef.current) setLoading(false);
         }
     }, [user]);
 
@@ -76,7 +78,9 @@ export function AlertProvider({ children }: { children: ReactNode }) {
     };
 
     useEffect(() => {
+        mountedRef.current = true
         refresh();
+        return () => { mountedRef.current = false }
     }, [refresh]);
 
     return (

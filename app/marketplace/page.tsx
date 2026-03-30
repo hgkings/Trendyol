@@ -149,8 +149,13 @@ export default function MarketplacePage() {
     const apiBase = `/api/marketplace/${selectedMarketplace}`;
 
     const fetchStatus = useCallback(async () => {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), 15000)
+
         try {
-            const res = await fetch(`/api/marketplace/${selectedMarketplace}`);
+            const res = await fetch(`/api/marketplace/${selectedMarketplace}`, {
+                signal: controller.signal,
+            });
             if (res.ok) {
                 const data = await res.json();
                 setConnection(data);
@@ -160,6 +165,7 @@ export default function MarketplacePage() {
         } catch {
             setConnection(null);
         } finally {
+            clearTimeout(timeout)
             setLoading(false);
         }
     }, [selectedMarketplace]);
@@ -221,12 +227,20 @@ export default function MarketplacePage() {
 
     useEffect(() => {
         if (connection?.status === 'connected' && selectedMarketplace === 'trendyol') {
-            fetch('/api/marketplace/trendyol/unsupplied-orders')
-                .then((r) => r.json())
+            const controller = new AbortController()
+            const timeout = setTimeout(() => controller.abort(), 10000)
+
+            fetch('/api/marketplace/trendyol/unsupplied-orders', { signal: controller.signal })
+                .then((r) => r.ok ? r.json() : null)
                 .then((data) => {
-                    if (typeof data.toplam === 'number') setAskidakiSiparis(data.toplam);
+                    if (data && typeof data.toplam === 'number') setAskidakiSiparis(data.toplam);
                 })
-                .catch(() => {});
+                .catch(() => {
+                    // Timeout veya hata — varsayilan 0 kalir
+                })
+                .finally(() => clearTimeout(timeout))
+
+            return () => { controller.abort(); clearTimeout(timeout) }
         } else {
             setAskidakiSiparis(0);
         }

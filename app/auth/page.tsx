@@ -6,6 +6,7 @@ import { KarnetLogo } from '@/components/shared/KarnetLogo';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { createClient } from '@/lib/supabase/client';
+import { toast } from 'sonner';
 import {
   Eye, EyeOff, HelpCircle, ArrowRight, Check,
   TrendingUp, TestTube2, Plug,
@@ -149,14 +150,21 @@ function AuthPageContent() {
     } else {
       const result = await register(trimmedEmail, password);
       if (result.success) {
-        // Profili full_name ile güncelle (hata olursa sessizce geç)
-        try {
-          await fetch('/api/user/profile', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ full_name: trimmedName }),
-          });
-        } catch { /* profil güncelleme opsiyonel */ }
+        // Profili full_name ile güncelle
+        if (trimmedName) {
+          try {
+            const profileRes = await fetch('/api/user/profile', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ full_name: trimmedName }),
+            });
+            if (!profileRes.ok) {
+              toast.error('İsim kaydedilemedi. Ayarlardan güncelleyebilirsiniz.');
+            }
+          } catch {
+            toast.error('İsim kaydedilemedi. Ayarlardan güncelleyebilirsiniz.');
+          }
+        }
 
         // Email doğrulama geçici olarak devre dışı — direkt dashboard'a yönlendir
         router.push(returnUrl);
