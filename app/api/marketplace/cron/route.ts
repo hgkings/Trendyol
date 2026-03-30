@@ -21,7 +21,7 @@ export async function GET(req: Request) {
 
     const { data: connections } = await admin
       .from('marketplace_connections')
-      .select('id, user_id, seller_id, status')
+      .select('id, user_id, seller_id, status, marketplace_secrets(encrypted_blob)')
       .eq('marketplace', 'trendyol')
       .eq('status', 'connected')
 
@@ -33,15 +33,11 @@ export async function GET(req: Request) {
 
     for (const conn of connections) {
       try {
-        const { data: secret } = await admin
-          .from('marketplace_secrets')
-          .select('encrypted_blob')
-          .eq('connection_id', conn.id)
-          .single()
+        const secrets = (conn as Record<string, unknown>).marketplace_secrets as { encrypted_blob: string }[] | null
+        const encryptedBlob = secrets?.[0]?.encrypted_blob
+        if (!encryptedBlob) continue
 
-        if (!secret?.encrypted_blob) continue
-
-        const creds = decryptCredentials(secret.encrypted_blob)
+        const creds = decryptCredentials(encryptedBlob)
         const sellerId = creds.sellerId || conn.seller_id || ''
         if (!sellerId) continue
 
