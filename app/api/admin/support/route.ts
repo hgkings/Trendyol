@@ -1,70 +1,38 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/api/helpers'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { NextRequest } from 'next/server'
+import { requireAdmin, callGatewayV1Format, errorResponse } from '@/lib/api/helpers'
 
 export async function GET(req: NextRequest) {
-  const auth = await requireAdmin()
-  if (auth instanceof Response) return auth
-
-  const { searchParams } = new URL(req.url)
-  const status = searchParams.get('status') ?? ''
-
   try {
-    const supabase = createAdminClient()
+    const auth = await requireAdmin()
+    if (auth instanceof Response) return auth
 
-    let query = supabase
-      .from('support_tickets')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const { searchParams } = new URL(req.url)
+    const status = searchParams.get('status') ?? undefined
 
-    if (status) query = query.eq('status', status)
-
-    const { data: tickets, error } = await query
-    if (error) throw error
-
-    const userIds = Array.from(new Set((tickets ?? []).map((t: Record<string, unknown>) => t.user_id as string)))
-    let emailMap: Record<string, string> = {}
-
-    if (userIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, email')
-        .in('id', userIds)
-
-      emailMap = Object.fromEntries((profiles ?? []).map((p: Record<string, unknown>) => [p.id as string, p.email as string]))
-    }
-
-    const result = (tickets ?? []).map((t: Record<string, unknown>) => ({
-      ...t,
-      profiles: { email: emailMap[t.user_id as string] ?? t.user_id },
-    }))
-
-    return NextResponse.json({ tickets: result })
+    return callGatewayV1Format('support', 'listAllTickets', { status }, auth.id)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Bilinmeyen hata'
-    return NextResponse.json({ success: false, error: 'Bir hata oluştu', message }, { status: 500 })
+    return errorResponse(error)
   }
 }
 
 export async function PATCH(req: NextRequest) {
-  const auth = await requireAdmin()
-  if (auth instanceof Response) return auth
-
   try {
-    const { id, status, admin_note } = await req.json()
-    if (!id) return NextResponse.json({ success: false, error: 'id zorunludur' }, { status: 400 })
+    const auth = await requireAdmin()
+    if (auth instanceof Response) return auth
 
-    const updates: Record<string, unknown> = {}
-    if (status !== undefined) updates.status = status
-    if (admin_note !== undefined) updates.admin_note = admin_note
+    const body = await req.json()
+    const { id, status, admin_note } = body as { id?: string; status?: string; admin_note?: string }
 
-    const supabase = createAdminClient()
-    const { error } = await supabase.from('support_tickets').update(updates).eq('id', id)
-    if (error) throw error
+    if (!id) {
+      return Response.json({ success: false, error: 'id zorunludur' }, { status: 400 })
+    }
 
-    return NextResponse.json({ success: true })
+    return callGatewayV1Format('support', 'replyToTicket', {
+      ticketId: id,
+      status,
+      admin_reply: admin_note,
+    }, auth.id)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Bilinmeyen hata'
-    return NextResponse.json({ success: false, error: 'Bir hata oluştu', message }, { status: 500 })
+    return errorResponse(error)
   }
 }

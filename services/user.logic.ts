@@ -6,6 +6,7 @@
 
 import { ServiceError } from '@/lib/gateway/types'
 import type { UserRepository } from '@/repositories/user.repository'
+import type { ProfileRow } from '@/lib/db/types'
 
 // ----------------------------------------------------------------
 // Tipler
@@ -335,6 +336,162 @@ export class UserLogic {
     if (PRO_PLANS.includes(plan)) return PLAN_LIMITS.pro
     if (STARTER_PLANS.includes(plan)) return PLAN_LIMITS.starter
     return PLAN_LIMITS.free
+  }
+
+  // ----------------------------------------------------------------
+  // Admin metodlari
+  // ----------------------------------------------------------------
+
+  /**
+   * Admin: Kullanicilari arar — email + plan filtresi + sayfalama.
+   */
+  async searchUsers(
+    traceId: string,
+    payload: unknown,
+    _userId: string
+  ): Promise<{ users: ProfileRow[]; total: number; page: number; limit: number }> {
+    const { search, plan, page = 1, limit = 20 } = payload as {
+      search?: string
+      plan?: string
+      page?: number
+      limit?: number
+    }
+
+    // Plan gruplama: 'pro' → tum pro varyantlari, 'starter' → tum starter varyantlari
+    let planFilter: string[] | undefined
+    if (plan) {
+      if (plan === 'pro') {
+        planFilter = ['pro', 'pro_monthly', 'pro_yearly']
+      } else if (plan === 'starter') {
+        planFilter = ['starter', 'starter_monthly', 'starter_yearly']
+      } else {
+        planFilter = [plan]
+      }
+    }
+
+    const result = await this.userRepo.searchUsers({
+      search,
+      planFilter,
+      page,
+      pageSize: limit,
+    })
+
+    return {
+      users: result.data,
+      total: result.total,
+      page: result.page,
+      limit: result.pageSize,
+    }
+  }
+
+  /**
+   * Admin: Kullanici planini gunceller.
+   * is_pro, pro_started_at, pro_expires_at otomatik ayarlanir.
+   */
+  async updateUserPlan(
+    traceId: string,
+    payload: unknown,
+    _userId: string
+  ): Promise<{ success: boolean }> {
+    const { userId, plan, pro_until } = payload as {
+      userId: string
+      plan: PlanType
+      pro_until?: string
+    }
+
+    if (!userId || !plan) {
+      throw new ServiceError('userId ve plan zorunludur', {
+        code: 'MISSING_FIELDS',
+        statusCode: 400,
+        traceId,
+      })
+    }
+
+    const profile = await this.userRepo.findById(userId)
+    if (!profile) {
+      throw new ServiceError('Kullanıcı bulunamadı', {
+        code: 'USER_NOT_FOUND',
+        statusCode: 404,
+        traceId,
+      })
+    }
+
+    const isPro = PRO_PLANS.includes(plan) || plan === 'admin'
+    const isStarter = STARTER_PLANS.includes(plan)
+    const isPaid = isPro || isStarter
+
+    const updates: Partial<Record<string, unknown>> = {
+      plan,
+      is_pro: isPro,
+      plan_type: plan,
+    }
+
+    if (isPaid) {
+      updates.pro_started_at = new Date().toISOString()
+      updates.pro_expires_at = pro_until ?? null
+    } else {
+      // free plana dusurulurse pro bilgilerini temizle
+      updates.pro_started_at = null
+      updates.pro_expires_at = null
+      updates.pro_renewal = false
+    }
+
+    await this.userRepo.update(userId, updates)
+    return { success: true }
+  }
+
+  /**
+   * Admin: Dashboard istatistikleri.
+   * Kullanici sayilari (plana gore), analiz sayisi, gelir, destek talepleri, son kullanicilar.
+   */
+  async getAdminStats(
+    traceId: string,
+    _payload: unknown,
+    _userId: string
+  ): Promise<{
+    totalUsers: number
+    freeUsers: number
+    starterUsers: number
+    proUsers: number
+    adminUsers: number
+    totalAnalyses: number
+    totalRevenue: number
+    totalTickets: number
+    recentUsers: ProfileRow[]
+  }> {
+    const [
+      totalUsers,
+      freeUsers,
+      starterUsers,
+      proUsers,
+      adminUsers,
+      totalAnalyses,
+      totalRevenue,
+      totalTickets,
+      recentUsers,
+    ] = await Promise.all([
+      this.userRepo.countAll(),
+      this.userRepo.countByPlan(['free']),
+      this.userRepo.countByPlan(['starter', 'starter_monthly', 'starter_yearly']),
+      this.userRepo.countByPlan(['pro', 'pro_monthly', 'pro_yearly']),
+      this.userRepo.countByPlan(['admin']),
+      this.userRepo.countTable('analyses'),
+      this.userRepo.sumPaidPayments(),
+      this.userRepo.countTable('support_tickets'),
+      this.userRepo.findRecent(10),
+    ])
+
+    return {
+      totalUsers,
+      freeUsers,
+      starterUsers,
+      proUsers,
+      adminUsers,
+      totalAnalyses,
+      totalRevenue,
+      totalTickets,
+      recentUsers,
+    }
   }
 
   /**

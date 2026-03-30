@@ -237,4 +237,145 @@ export class UserRepository extends BaseRepository<ProfileRow> {
       pageSize,
     }
   }
+
+  /**
+   * Admin: Kullanicilari arar — email ilike + plan filtresi + sayfalama.
+   * Birden fazla plan tipini gruplar (orn. 'pro' → pro, pro_monthly, pro_yearly).
+   */
+  async searchUsers(
+    options: {
+      search?: string
+      planFilter?: string[]
+      page?: number
+      pageSize?: number
+    }
+  ): Promise<PaginatedResult<ProfileRow>> {
+    const { search, planFilter, page = 1, pageSize = 20 } = options
+    const offset = (page - 1) * pageSize
+
+    // Count query
+    let countQuery = this.supabase
+      .from(this.tableName)
+      .select('*', { count: 'exact', head: true })
+
+    if (search) {
+      countQuery = countQuery.ilike('email', `%${search}%`)
+    }
+    if (planFilter && planFilter.length > 0) {
+      countQuery = countQuery.in('plan', planFilter)
+    }
+
+    const { count, error: countError } = await countQuery
+
+    if (countError) {
+      throw new Error(`Admin kullanici arama sayisi basarisiz: ${countError.message}`)
+    }
+
+    // Data query
+    let dataQuery = this.supabase
+      .from(this.tableName)
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + pageSize - 1)
+
+    if (search) {
+      dataQuery = dataQuery.ilike('email', `%${search}%`)
+    }
+    if (planFilter && planFilter.length > 0) {
+      dataQuery = dataQuery.in('plan', planFilter)
+    }
+
+    const { data, error } = await dataQuery
+
+    if (error) {
+      throw new Error(`Admin kullanici araması basarisiz: ${error.message}`)
+    }
+
+    return {
+      data: (data ?? []) as ProfileRow[],
+      total: count ?? 0,
+      page,
+      pageSize,
+    }
+  }
+
+  /**
+   * Admin: Toplam kullanici sayisini plana gore sayar.
+   */
+  async countByPlan(plan: string[]): Promise<number> {
+    const { count, error } = await this.supabase
+      .from(this.tableName)
+      .select('*', { count: 'exact', head: true })
+      .in('plan', plan)
+
+    if (error) {
+      throw new Error(`Plan bazli sayim basarisiz: ${error.message}`)
+    }
+
+    return count ?? 0
+  }
+
+  /**
+   * Admin: Toplam kullanici sayisi.
+   */
+  async countAll(): Promise<number> {
+    const { count, error } = await this.supabase
+      .from(this.tableName)
+      .select('*', { count: 'exact', head: true })
+
+    if (error) {
+      throw new Error(`Toplam kullanici sayimi basarisiz: ${error.message}`)
+    }
+
+    return count ?? 0
+  }
+
+  /**
+   * Admin: Son kayit olan kullanicilari getirir.
+   */
+  async findRecent(limit: number = 10): Promise<ProfileRow[]> {
+    const { data, error } = await this.supabase
+      .from(this.tableName)
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (error) {
+      throw new Error(`Son kullanicilar getirilemedi: ${error.message}`)
+    }
+
+    return (data ?? []) as ProfileRow[]
+  }
+
+  /**
+   * Admin: Baska tablolardan count alir (analyses, payments, support_tickets).
+   */
+  async countTable(tableName: string): Promise<number> {
+    const { count, error } = await this.supabase
+      .from(tableName)
+      .select('*', { count: 'exact', head: true })
+
+    if (error) {
+      throw new Error(`${tableName} sayimi basarisiz: ${error.message}`)
+    }
+
+    return count ?? 0
+  }
+
+  /**
+   * Admin: Toplam odeme gelirini hesaplar (status = 'paid').
+   */
+  async sumPaidPayments(): Promise<number> {
+    const { data, error } = await this.supabase
+      .from('payments')
+      .select('amount_try')
+      .eq('status', 'paid')
+
+    if (error) {
+      throw new Error(`Odeme toplami basarisiz: ${error.message}`)
+    }
+
+    if (!data || data.length === 0) return 0
+    return data.reduce((sum: number, row: { amount_try: number }) => sum + (row.amount_try ?? 0), 0)
+  }
 }
