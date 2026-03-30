@@ -12,7 +12,7 @@ interface AuthContextType {
   loading: boolean;
   mfaRequired: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string; mfaRequired?: boolean }>;
-  register: (email: string, password: string, fullName?: string) => Promise<{ success: boolean; error?: string }>;
+  register: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   upgradePlan: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -85,8 +85,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await refreshUser();
   }, [refreshUser]);
 
-  const register = useCallback(async (email: string, password: string, fullName?: string) => {
-    const result = await authRegister(email, password, fullName);
+  const register = useCallback(async (email: string, password: string) => {
+    const result = await authRegister(email, password);
     if (result.success && result.user) {
       setUser(result.user);
     }

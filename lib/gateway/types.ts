@@ -27,7 +27,7 @@ export type ServiceName =
  * Her servisin varsayilan rate limit profili.
  */
 export const SERVICE_RATE_LIMIT_MAP: Record<ServiceName, RateLimitType> = {
-  analysis: 'analysis',
+  analysis: 'api',
   user: 'api',
   payment: 'api',
   notification: 'api',
