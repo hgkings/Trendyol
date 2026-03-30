@@ -60,6 +60,7 @@ export const PLAN_LIMITS = {
 } as const;
 
 export type PlanKey = keyof typeof PLAN_LIMITS;
+export type PlanFeature = keyof typeof PLAN_LIMITS.free;
 
 /**
  * Helper to get the limit for a given plan.

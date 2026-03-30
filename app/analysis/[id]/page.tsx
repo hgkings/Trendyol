@@ -496,39 +496,21 @@ export default function AnalysisResultPage() {
 
             {/* Collapsible Heavy Data Sections */}
             <CollapsibleCard title="Hassasiyet Analizi" description="Farklı senaryolarda kâr değişimi" defaultOpen={false}>
-              {isPro ? (
+              <ProLockedSection title="Hassasiyet Analizi" feature="sensitivityAnalysis">
                 <SensitivityTable input={input} />
-              ) : (
-                <ProLockedSection title="Hassasiyet Analizi">
-                  <div className="blur-sm grayscale opacity-50 pointer-events-none select-none">
-                    <SensitivityTable input={input} />
-                  </div>
-                </ProLockedSection>
-              )}
+              </ProLockedSection>
             </CollapsibleCard>
 
             <CollapsibleCard title="Pazaryeri Karşılaştırması" description="Diğer pazaryerleri" defaultOpen={false}>
-              {isPro ? (
+              <ProLockedSection title="Pazaryeri Karşılaştırması" feature="marketplaceComparison">
                 <MarketplaceComparison input={input} />
-              ) : (
-                <ProLockedSection title="Pazaryeri Karşılaştırması">
-                  <div className="blur-sm grayscale opacity-50 pointer-events-none select-none">
-                    <MarketplaceComparison input={input} />
-                  </div>
-                </ProLockedSection>
-              )}
+              </ProLockedSection>
             </CollapsibleCard>
 
             <CollapsibleCard title="Nakit Akışı Tahmini" description="Tahmini nakit durumu" defaultOpen={false}>
-              {isPro ? (
+              <ProLockedSection title="Nakit Akışı Tahmini" feature="cashflow">
                 <CashflowEstimator input={input} />
-              ) : (
-                <ProLockedSection title="Nakit Akışı Tahmini">
-                  <div className="blur-sm grayscale opacity-50 pointer-events-none select-none">
-                    <CashflowEstimator input={input} />
-                  </div>
-                </ProLockedSection>
-              )}
+              </ProLockedSection>
             </CollapsibleCard>
 
           </div>

@@ -1,9 +1,8 @@
 'use client';
 
-import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
-import { Crown, X, Check, Loader2 } from 'lucide-react';
-import { PRICING, monthlyLabel } from '@/config/pricing';
+import { Crown, X, Check, Loader2, Zap } from 'lucide-react';
+import { PRICING } from '@/config/pricing';
 import { toast } from 'sonner';
 import { useState } from 'react';
 
@@ -12,27 +11,35 @@ interface UpgradeModalProps {
   onClose: () => void;
 }
 
-const features = [
-  'Sinirsiz urun analizi',
-  'Hassasiyet analizi',
-  'Pazaryeri karsilastirmasi',
-  'Nakit akisi tahmini',
-  'CSV iceri aktarma',
-  'CSV & rapor disari aktarma',
+const starterFeatures = [
+  '25 ürün analizi',
+  'CSV içe/dışa aktarma',
+  'Duyarlılık analizi',
+  'Başabaş hesaplama',
+  'Aylık 5 PDF rapor',
+];
+
+const proFeatures = [
+  'Sınırsız ürün analizi',
+  'Pazaryeri entegrasyonları',
+  'Nakit akışı tahmini',
+  'Pazaryeri karşılaştırması',
+  'Sınırsız PDF rapor',
+  'Premium destek',
 ];
 
 export function UpgradeModal({ open, onClose }: UpgradeModalProps) {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<string | null>(null);
 
   if (!open) return null;
 
-  const handleUpgrade = async () => {
-    setLoading(true);
+  const handleUpgrade = async (plan: string) => {
+    setLoading(plan);
     try {
       const res = await fetch('/api/paytr/create-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: 'pro_monthly' }),
+        body: JSON.stringify({ plan }),
       });
       const data = await res.json();
       if (data.paymentUrl) {
@@ -42,62 +49,93 @@ export function UpgradeModal({ open, onClose }: UpgradeModalProps) {
         window.location.href = `/basari?${params.toString()}`;
       } else {
         toast.error(data.error || 'Ödeme başlatılamadı.');
-        setLoading(false);
+        setLoading(null);
       }
-    } catch (err: any) {
-      console.error('[UPGRADE-MODAL] Error:', err);
-      toast.error(err.message || 'Ödeme başlatılamadı.');
-      setLoading(false);
+    } catch {
+      toast.error('Ödeme başlatılamadı.');
+      setLoading(null);
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="mx-4 w-full max-w-md rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[#1C1917] p-8 shadow-2xl">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Crown className="h-6 w-6 text-amber-500" />
-            <h2 className="text-xl font-bold">Pro&apos;ya Yükselt</h2>
-          </div>
+      <div className="mx-4 w-full max-w-lg rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[#1C1917] p-8 shadow-2xl">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold">Planınızı Yükseltin</h2>
           <button onClick={onClose} className="rounded-lg p-1 hover:bg-muted">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <p className="mt-3 text-sm text-muted-foreground">
-          Ücretsiz plan limitine ulaştınız. Pro plana geçiş yaparak tüm özelliklere erişebilirsiniz.
+        <p className="text-sm text-muted-foreground mb-6">
+          Ücretsiz plan limitine ulaştınız. Daha fazla özellik için planınızı seçin.
         </p>
 
-        <div className="mt-6 space-y-3">
-          {features.map((f) => (
-            <div key={f} className="flex items-center gap-2.5">
-              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/12">
-                <Check className="h-3 w-3 text-emerald-400" />
-              </div>
-              <span className="text-sm">{f}</span>
+        <div className="grid grid-cols-2 gap-4">
+          {/* Starter */}
+          <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 space-y-4">
+            <div className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-blue-400" />
+              <span className="font-bold text-blue-300">Başlangıç</span>
             </div>
-          ))}
+            <div className="space-y-2">
+              {starterFeatures.map((f) => (
+                <div key={f} className="flex items-center gap-2">
+                  <Check className="h-3 w-3 text-blue-400 shrink-0" />
+                  <span className="text-xs">{f}</span>
+                </div>
+              ))}
+            </div>
+            <Button
+              className="w-full rounded-xl text-white text-xs"
+              style={{ background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)' }}
+              disabled={loading !== null}
+              onClick={() => handleUpgrade('starter_monthly')}
+            >
+              {loading === 'starter_monthly' ? (
+                <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> Yönlendiriliyor</>
+              ) : (
+                <>{PRICING.symbol}{PRICING.starter.monthly}/ay</>
+              )}
+            </Button>
+          </div>
+
+          {/* Pro */}
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-4">
+            <div className="flex items-center gap-2">
+              <Crown className="h-5 w-5 text-amber-400" />
+              <span className="font-bold text-amber-300">Profesyonel</span>
+            </div>
+            <div className="space-y-2">
+              {proFeatures.map((f) => (
+                <div key={f} className="flex items-center gap-2">
+                  <Check className="h-3 w-3 text-amber-400 shrink-0" />
+                  <span className="text-xs">{f}</span>
+                </div>
+              ))}
+            </div>
+            <Button
+              className="w-full rounded-xl text-white text-xs"
+              style={{ background: 'linear-gradient(135deg, #D97706, #92400E)' }}
+              disabled={loading !== null}
+              onClick={() => handleUpgrade('pro_monthly')}
+            >
+              {loading === 'pro_monthly' ? (
+                <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> Yönlendiriliyor</>
+              ) : (
+                <>{PRICING.symbol}{PRICING.pro.monthly}/ay</>
+              )}
+            </Button>
+          </div>
         </div>
 
-        <div className="mt-8 space-y-3">
-          <Button
-            className="w-full rounded-xl text-white"
-            style={{ background: 'linear-gradient(135deg, #D97706, #92400E)' }}
-            disabled={loading}
-            onClick={handleUpgrade}
-          >
-            {loading ? (
-              <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Yönlendiriliyor…</>
-            ) : (
-              <>{monthlyLabel()} - Pro&apos;ya Geç</>
-            )}
-          </Button>
-          <Button variant="outline" className="w-full" onClick={onClose}>
+        <div className="mt-4 flex justify-center">
+          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={onClose}>
             Şimdilik Değil
           </Button>
         </div>
 
-        <p className="mt-4 text-center text-xs text-muted-foreground">
+        <p className="mt-3 text-center text-xs text-muted-foreground">
           Güvenli ödeme PayTR altyapısı ile gerçekleştirilir.
         </p>
       </div>

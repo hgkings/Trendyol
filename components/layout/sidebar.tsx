@@ -8,7 +8,7 @@ import {
   Crown, FileText, Upload, CreditCard, ArrowRight, Shield, Store,
 } from 'lucide-react';
 import { NAV_ITEMS, BOTTOM_NAV_ITEMS } from '@/config/navigation';
-import { isProUser } from '@/utils/access';
+import { isProUser, hasFeature } from '@/utils/access';
 import { ProStatusCard } from '@/components/shared/ProStatusCard';
 
 export function Sidebar() {
@@ -33,7 +33,7 @@ export function Sidebar() {
           <div className="flex flex-col gap-0.5">
             {NAV_ITEMS.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-              const isLocked = (item as any).restricted && !isPro;
+              const isLocked = !!item.requiredFeature && !hasFeature(user, item.requiredFeature);
 
               if (isLocked) {
                 return (

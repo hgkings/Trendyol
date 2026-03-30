@@ -14,6 +14,7 @@ import type { UserRepository } from '@/repositories/user.repository'
 export type PlanType = 'free' | 'starter' | 'pro' | 'pro_monthly' | 'pro_yearly' | 'starter_monthly' | 'starter_yearly' | 'admin'
 
 const PRO_PLANS: PlanType[] = ['pro', 'pro_monthly', 'pro_yearly']
+const STARTER_PLANS: PlanType[] = ['starter', 'starter_monthly', 'starter_yearly']
 
 export interface PlanLimits {
   maxProducts: number
@@ -332,7 +333,7 @@ export class UserLogic {
   resolveLimits(plan: PlanType): PlanLimits {
     if (plan === 'admin') return PLAN_LIMITS.admin
     if (PRO_PLANS.includes(plan)) return PLAN_LIMITS.pro
-    if (plan === 'starter' || plan === 'starter_monthly' || plan === 'starter_yearly') return PLAN_LIMITS.starter
+    if (STARTER_PLANS.includes(plan)) return PLAN_LIMITS.starter
     return PLAN_LIMITS.free
   }
 
