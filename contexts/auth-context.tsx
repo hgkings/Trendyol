@@ -83,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     await authLogout();
     setUser(null);
+    window.location.href = '/';
   }, []);
 
   const upgradePlan = useCallback(async () => {
