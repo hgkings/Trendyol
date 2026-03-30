@@ -571,6 +571,38 @@ export class AnalysisLogic {
   }
 
   /**
+   * Tam hesaplanmis analiz objesini DB'ye upsert eder.
+   * V1 UI client-side hesaplama yapar ve tum veriyi gonderir.
+   */
+  async upsertFull(
+    _traceId: string,
+    payload: unknown,
+    userId: string
+  ): Promise<{ success: boolean; id: string }> {
+    const body = payload as {
+      id: string
+      input: Record<string, unknown>
+      result: Record<string, unknown>
+      risk: { score?: number; level?: string }
+      createdAt?: string
+    }
+
+    const row = await this.analysisRepo.upsertRow({
+      id: body.id,
+      user_id: userId,
+      marketplace: (body.input.marketplace as string) ?? 'trendyol',
+      product_name: (body.input.product_name as string) ?? (body.input.productName as string) ?? '',
+      inputs: body.input as Record<string, unknown>,
+      outputs: body.result as Record<string, unknown>,
+      risk_score: body.risk.score ?? 0,
+      risk_level: body.risk.level ?? 'moderate',
+      created_at: body.createdAt ?? new Date().toISOString(),
+    })
+
+    return { success: true, id: row.id }
+  }
+
+  /**
    * Marketplace + kategori icin varsayilan degerlerle input olusturur.
    */
   async getDefaults(

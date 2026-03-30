@@ -49,6 +49,20 @@ export class AnalysisRepository extends BaseRepository<AnalysisRow> {
     }
   }
 
+  async upsertRow(data: Partial<AnalysisRow> & { id: string; user_id: string }): Promise<AnalysisRow> {
+    const { data: result, error } = await this.supabase
+      .from(this.tableName)
+      .upsert(data, { onConflict: 'id' })
+      .select()
+      .single()
+
+    if (error) {
+      throw new Error(`Analiz kaydedilemedi: ${error.message}`)
+    }
+
+    return result as AnalysisRow
+  }
+
   async findByIdAndUserId(id: string, userId: string): Promise<AnalysisRow | null> {
     const { data, error } = await this.supabase
       .from(this.tableName)
