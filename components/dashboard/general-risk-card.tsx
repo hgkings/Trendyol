@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ShieldCheck, AlertTriangle, AlertOctagon, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/auth-context';
 
 type RiskLevel = 'safe' | 'moderate' | 'high';
@@ -26,19 +25,17 @@ export function GeneralRiskCard() {
             let level: RiskLevel = 'safe';
             const newReasons: string[] = [];
 
-            // TODO: replace with fetch('/api/cash-plan/risk') when API is created
-            const supabase = createClient();
             // 1. Check Cash Plan (HIGH RISK)
-            const { data: cashPlan } = await supabase
-                .from('cash_plan')
-                .select('month, closing_cash')
-                .eq('user_id', user.id)
-                .lt('closing_cash', 0); // Only get negative months
-
-            if (cashPlan && cashPlan.length > 0) {
-                level = 'high';
-                newReasons.push(`Nakit planında ${cashPlan.length} ayda açık görünüyor.`);
-            }
+            try {
+                const res = await fetch('/api/cash-plan/risk');
+                if (res.ok) {
+                    const { negativeMonths } = await res.json();
+                    if (negativeMonths > 0) {
+                        level = 'high';
+                        newReasons.push(`Nakit planında ${negativeMonths} ayda açık görünüyor.`);
+                    }
+                }
+            } catch { /* risk check optional */ }
 
             // 2. Check Target Margin vs Actual (MODERATE)
             // Note: In a real app we'd fetch actual average margin from 'analyses' table. 

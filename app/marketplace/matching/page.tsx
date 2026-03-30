@@ -12,9 +12,8 @@ import {
     Search,
 } from 'lucide-react';
 import { toast } from 'sonner';
-// TODO: migrate product_marketplace_map DB calls to fetch('/api/marketplace/matching') when API is created
-import { createClient } from '@/lib/supabase/client';
 import { getStoredAnalyses } from '@/lib/api/analyses';
+import { getProductMap, manualMatchProduct } from '@/lib/api/products';
 import { useAuth } from '@/contexts/auth-context';
 import Link from 'next/link';
 
@@ -44,16 +43,9 @@ export default function MatchingPage() {
     const fetchData = useCallback(async () => {
         if (!user) return;
         setLoading(true);
-        const supabase = createClient();
         try {
-            const { data: maps } = await supabase
-                .from('product_marketplace_map')
-                .select('id, external_product_id, merchant_sku, barcode, external_title, internal_product_id, match_confidence')
-                .eq('user_id', user.id)
-                .eq('marketplace', 'trendyol')
-                .order('match_confidence', { ascending: true });
-
-            setMappings(maps || []);
+            const maps = await getProductMap('trendyol');
+            setMappings((maps || []) as MappingRow[]);
 
             const allAnalyses = await getStoredAnalyses();
             const anl = allAnalyses.map((a: { id: string; input: { product_name: string } }) => ({
@@ -75,23 +67,11 @@ export default function MatchingPage() {
 
     const handleMatch = async (mappingId: string, analysisId: string) => {
         setSavingId(mappingId);
-        const supabase = createClient();
         try {
-            const { error } = await supabase
-                .from('product_marketplace_map')
-                .update({
-                    internal_product_id: analysisId || null,
-                    match_confidence: analysisId ? 'high' : 'manual_required',
-                })
-                .eq('id', mappingId);
-
-            if (error) {
-                toast.error('Eşleştirme kaydedilemedi.');
-            } else {
-                toast.success('Eşleştirme kaydedildi!');
-                fetchData();
-            }
-        } catch {
+            await manualMatchProduct(mappingId, analysisId || null);
+            toast.success('Eşleştirme kaydedildi!');
+            fetchData();
+        } catch (_matchError) {
             toast.error('Sunucu hatası.');
         } finally {
             setSavingId(null);

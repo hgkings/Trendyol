@@ -151,13 +151,12 @@ function AuthPageContent() {
       if (result.success) {
         // Profili full_name ile güncelle (hata olursa sessizce geç)
         try {
-          const supabase = createClient();
-          const { data: { user: authUser } } = await supabase.auth.getUser();
-          if (authUser) {
-            // TODO: replace with fetch('/api/user/profile') PATCH when API supports full_name
-            await supabase.from('profiles').update({ full_name: trimmedName }).eq('id', authUser.id);
-          }
-        } catch {}
+          await fetch('/api/user/profile', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ full_name: trimmedName }),
+          });
+        } catch { /* profil güncelleme opsiyonel */ }
 
         // Email doğrulama geçici olarak devre dışı — direkt dashboard'a yönlendir
         router.push(returnUrl);

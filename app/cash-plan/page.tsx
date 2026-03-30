@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/components/shared/format';
 import { toast } from 'sonner';
-import { createClient } from '@/lib/supabase/client';
+// Supabase client kaldirildi — API uzerinden erisim
 import {
     Loader2, TrendingDown, TrendingUp, Calendar, AlertTriangle,
     Save, Package, Wallet, ShieldAlert, Activity, ArrowDown, ArrowUp,
@@ -122,13 +122,12 @@ export default function CashPlanPage() {
         if (!user) return;
         setLoading(true);
 
-        const supabase = createClient();
-        const { data, error } = await supabase
-            .from('cash_plan')
-            .select('*')
-            .eq('user_id', user.id);
-
-        if (error) {
+        let data: CashPlanRow[] | null = null;
+        try {
+            const res = await fetch('/api/cash-plan');
+            if (!res.ok) throw new Error('Veri yüklenemedi');
+            data = await res.json();
+        } catch {
             toast.error('Veri yüklenemedi.');
             setLoading(false);
             return;
@@ -320,23 +319,27 @@ export default function CashPlanPage() {
     const handleSave = async () => {
         if (!user) return;
         setSaving(true);
-        const supabase = createClient();
-        const { error } = await supabase.from('cash_plan').upsert(
-            rows.map(r => ({
-                user_id: user.id,
-                month: r.month,
-                opening_cash: r.opening_cash,
-                cash_in: r.cash_in,
-                cash_out: r.cash_out,
-                closing_cash: r.closing_cash,
-            })),
-            { onConflict: 'user_id, month' }
-        );
-        if (error) {
-            toast.error('Kaydetme hatasi: ' + error.message);
-        } else {
-            toast.success('Nakit plani kaydedildi.');
-            setHasChanges(false);
+        try {
+            const res = await fetch('/api/cash-plan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(rows.map(r => ({
+                    month: r.month,
+                    opening_cash: r.opening_cash,
+                    cash_in: r.cash_in,
+                    cash_out: r.cash_out,
+                    closing_cash: r.closing_cash,
+                }))),
+            });
+            const result = await res.json();
+            if (!res.ok || !result.success) {
+                toast.error('Kaydetme hatası: ' + (result.error || 'Bilinmeyen hata'));
+            } else {
+                toast.success('Nakit planı kaydedildi.');
+                setHasChanges(false);
+            }
+        } catch {
+            toast.error('Kaydetme sırasında hata oluştu.');
         }
         setSaving(false);
     };
