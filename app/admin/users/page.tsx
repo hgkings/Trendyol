@@ -24,6 +24,11 @@ interface UserRow {
 const PLAN_COLORS: Record<string, string> = {
     admin: 'bg-red-100 text-red-700',
     pro: 'bg-amber-100 text-amber-700',
+    pro_monthly: 'bg-amber-100 text-amber-700',
+    pro_yearly: 'bg-amber-100 text-amber-700',
+    starter: 'bg-blue-100 text-blue-700',
+    starter_monthly: 'bg-blue-100 text-blue-700',
+    starter_yearly: 'bg-blue-100 text-blue-700',
     free: 'bg-gray-100 text-gray-600',
 };
 
@@ -103,6 +108,7 @@ export default function AdminUsersPage() {
                         <SelectContent>
                             <SelectItem value="all">Tümü</SelectItem>
                             <SelectItem value="free">Ücretsiz</SelectItem>
+                            <SelectItem value="starter">Starter</SelectItem>
                             <SelectItem value="pro">Pro</SelectItem>
                             <SelectItem value="admin">Admin</SelectItem>
                         </SelectContent>
@@ -188,7 +194,12 @@ export default function AdminUsersPage() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="free">Ücretsiz</SelectItem>
+                                        <SelectItem value="starter">Starter</SelectItem>
+                                        <SelectItem value="starter_monthly">Starter (Aylık)</SelectItem>
+                                        <SelectItem value="starter_yearly">Starter (Yıllık)</SelectItem>
                                         <SelectItem value="pro">Pro</SelectItem>
+                                        <SelectItem value="pro_monthly">Pro (Aylık)</SelectItem>
+                                        <SelectItem value="pro_yearly">Pro (Yıllık)</SelectItem>
                                         <SelectItem value="admin">Admin</SelectItem>
                                     </SelectContent>
                                 </Select>

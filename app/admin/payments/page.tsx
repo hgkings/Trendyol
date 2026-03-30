@@ -137,7 +137,7 @@ export default function AdminPaymentsPage() {
                                             return (
                                                 <tr key={p.id} className="hover:bg-muted/30 transition-colors">
                                                     <td className="px-4 py-3 font-medium">
-                                                        {(p.profiles as any)?.email ?? p.user_id.slice(0, 8) + '...'}
+                                                        {p.profiles?.email ?? p.user_id.slice(0, 8) + '...'}
                                                     </td>
                                                     <td className="px-4 py-3 text-muted-foreground capitalize">{p.plan}</td>
                                                     <td className="px-4 py-3 font-semibold">₺{(p.amount_try || 0).toLocaleString('tr-TR')}</td>

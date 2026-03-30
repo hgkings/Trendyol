@@ -9,6 +9,7 @@ import { Loader2 } from 'lucide-react';
 interface Stats {
     totalUsers: number;
     proUsers: number;
+    starterUsers: number;
     freeUsers: number;
     totalAnalyses: number;
     totalRevenue: number;
@@ -39,7 +40,7 @@ export default function AdminDashboardPage() {
         {
             title: 'Pro Kullanıcı',
             value: stats.proUsers,
-            sub: `${stats.freeUsers} ücretsiz`,
+            sub: `${stats.starterUsers} starter · ${stats.freeUsers} ücretsiz`,
             icon: Crown,
             color: 'text-amber-600',
             bg: 'bg-amber-500/10',
@@ -72,6 +73,11 @@ export default function AdminDashboardPage() {
         const map: Record<string, string> = {
             admin: 'bg-red-100 text-red-700',
             pro: 'bg-amber-100 text-amber-700',
+            pro_monthly: 'bg-amber-100 text-amber-700',
+            pro_yearly: 'bg-amber-100 text-amber-700',
+            starter: 'bg-blue-100 text-blue-700',
+            starter_monthly: 'bg-blue-100 text-blue-700',
+            starter_yearly: 'bg-blue-100 text-blue-700',
             free: 'bg-gray-100 text-gray-600',
         };
         return map[plan] ?? map.free;
