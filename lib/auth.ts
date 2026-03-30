@@ -1,6 +1,11 @@
 import { User, PlanType, Marketplace } from '@/types';
 import { createClient } from '@/lib/supabase/client';
 
+// ----------------------------------------------------------------
+// Auth islemleri — login/register server-side API proxy uzerinden.
+// Session cookie ile tasinir, client-side Supabase SDK ile senkronize olur.
+// ----------------------------------------------------------------
+
 function mapProfileRow(data: Record<string, unknown>): User {
   // Gateway camelCase, DB snake_case — her ikisini destekle
   return {
@@ -74,27 +79,33 @@ export async function login(
   password: string
 ): Promise<{ success: boolean; user?: User; error?: string; mfaRequired?: boolean }> {
   try {
-    const supabase = createClient();
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    // Server-side proxy — rate limit + audit log + cookie session
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
 
-    if (error) {
-      return { success: false, error: `Giriş hatası: ${error.message}` };
-    }
-    if (!data.user || !data.user.email) {
-      return { success: false, error: 'Oturum açılamadı.' };
-    }
+    const result = await res.json();
 
-    // MFA kontrolu — kullanici TOTP kaydetmisse AAL2 gerekir
-    const { data: factorsData } = await supabase.auth.mfa.listFactors();
-    if (factorsData?.totp && factorsData.totp.length > 0) {
-      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (aalData && aalData.currentLevel === 'aal1' && aalData.nextLevel === 'aal2') {
-        // MFA dogrulama gerekiyor — session var ama AAL2 degil
-        return { success: true, mfaRequired: true };
-      }
+    if (!res.ok) {
+      return { success: false, error: result.error ?? 'Giriş başarısız.' };
     }
 
-    const user = await fetchProfile(data.user.id, data.user.email);
+    // MFA gerekiyorsa profil çekmeye gerek yok
+    if (result.mfaRequired) {
+      return { success: true, mfaRequired: true };
+    }
+
+    // Cookie set edildi — server'dan dönen userId/email ile profil çek.
+    // NOT: Browser Supabase client singleton'ı cookie'leri hemen görmeyebilir,
+    // bu yüzden getUser() yerine server'dan dönen bilgiyi kullanıyoruz.
+    // fetchProfile() içindeki fetch('/api/user/profile') çağrısı yeni cookie'leri
+    // otomatik gönderir (browser cookie jar hemen güncellenir).
+    const userId = result.userId as string;
+    const userEmail = (result.email as string) ?? email;
+
+    const user = await fetchProfile(userId, userEmail);
     return { success: true, user };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Beklenmeyen hata';
@@ -104,36 +115,36 @@ export async function login(
 
 export async function register(
   email: string,
-  password: string
-): Promise<{ success: boolean; user?: User; error?: string }> {
-  if (password.length < 6) {
-    return { success: false, error: 'Şifre en az 6 karakter olmalıdır.' };
-  }
-
+  password: string,
+  fullName?: string
+): Promise<{ success: boolean; user?: User; error?: string; needsEmailConfirmation?: boolean }> {
   try {
-    const supabase = createClient();
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    // Server-side proxy — rate limit + audit log + cookie session
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, fullName }),
+    });
 
-    if (error) {
-      return { success: false, error: `Kayıt hatası: ${error.message}` };
-    }
-    if (!data.user || !data.user.email) {
-      return { success: false, error: 'Kullanıcı oluşturulamadı.' };
-    }
+    const result = await res.json();
 
-    const user = await fetchProfile(data.user.id, data.user.email);
-
-    // Welcome email gönder (API üzerinden, kayıt akışını etkilemez)
-    try {
-      fetch('/api/email/welcome', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: data.user.id, email: data.user.email }),
-      }).catch(() => {});
-    } catch {
-      // silent
+    if (!res.ok) {
+      return { success: false, error: result.error ?? 'Kayıt başarısız.' };
     }
 
+    // Email doğrulaması gerekiyorsa session yok — profil çekme
+    if (result.needsEmailConfirmation) {
+      return {
+        success: true,
+        needsEmailConfirmation: true,
+      };
+    }
+
+    // Session var (email doğrulaması kapalıysa) — profil çek
+    const userId = result.userId as string;
+    const userEmail = (result.email as string) ?? email;
+
+    const user = await fetchProfile(userId, userEmail);
     return { success: true, user };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Beklenmeyen hata';

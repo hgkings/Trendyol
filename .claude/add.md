@@ -40,6 +40,7 @@ BU SIRALAMA DEGISMEZ. GOREV ALMADAN ONCE BU 3 ADIM TAMAMLANMALI.
 |----------|----------|-----------|-----------|
 | Terminal Claude | Claude Code CLI (Opus 4.6) | Guvenlik denetimi + runtime fix | 2026-03-31 |
 | Eklenti 1 | Claude Code VSCode Extension (Opus 4.6) | cash-plan + break-even premium tasarim + logout fix | 2026-03-30 |
+| Eklenti 2 | Claude Code VSCode Extension (Opus 4.6) | 4 agent template kurulumu | 2026-03-31 |
 
 ---
 
@@ -50,7 +51,7 @@ BU SIRALAMA DEGISMEZ. GOREV ALMADAN ONCE BU 3 ADIM TAMAMLANMALI.
 |---|-------|--------|-------|
 | 2 | npm audit + bagimlilk guncelleme | Kolay | ✅ YAPILDI (Terminal Claude, 03-31) |
 | 3 | Admin 2FA (Supabase MFA) | Orta | ✅ YAPILDI (Terminal Claude, 03-31) |
-| 4 | User-ID bazli rate limiting | Orta | BEKLIYOR |
+| 4 | User-ID bazli rate limiting + Auth proxy | Orta | ✅ YAPILDI (Terminal Claude, 03-31) |
 | 5 | Cloudflare WAF entegrasyonu | Orta | BEKLIYOR |
 | 6 | Monitoring/Alerting sistemi | Orta-Zor | BEKLIYOR |
 | 7 | Otomatik secret rotation | Zor | BEKLIYOR |
@@ -68,14 +69,24 @@ BU SIRALAMA DEGISMEZ. GOREV ALMADAN ONCE BU 3 ADIM TAMAMLANMALI.
 
 ## SON DEGISIKLIKLER (en yeniden eskiye)
 
-### 2026-03-30 (Eklenti 1 — VSCode Extension)
+### 2026-03-31 (Terminal Claude — Auth Security Proxy)
 
 | Tarih | Ajan | Ozet | Dosyalar | Commit |
 |-------|------|------|----------|--------|
-| 03-30 | Eklenti 1 | Nakit Plani sayfasi premium tasarim — area chart, 4 ozet kart (en dusuk kasa + risk + nakit pisti + ort. net), senaryo karsilastirma (kotumser/normal/iyimser), stok simulasyonu ay secimi, floating save bar, akilli oneriler paneli, Framer Motion animasyonlar | app/cash-plan/page.tsx | b171544 |
-| 03-30 | Eklenti 1 | Basabas sayfasi premium tasarim — gelir/maliyet kesisim grafigi, 4 KPI kart, fiyat hassasiyet slider (-30%/+30%), gunluk hedef kirilimi + progress bar, katki payi gostergesi, akilli oneriler, floating save bar | app/break-even/page.tsx | b171544 |
-| 03-30 | Eklenti 1 | Logout fix — cikis yapinca bos sayfa yerine anasayfaya yonlendirme | contexts/auth-context.tsx | b171544 |
-| 03-30 | Eklenti 1 | karnet-context skill olusturuldu — proje baglami, mimari, bilinen sorunlar, gelistirme kurallari | .claude/skills/karnet-context/SKILL.md | b171544 |
+| 03-31 | Terminal Claude | Server-side auth proxy — login/register rate limiting (IP+email cift katman), audit log, MFA destegi, cookie session, user enumeration korumasi, SSRF fix, fake user korumasi | app/api/auth/login/route.ts, app/api/auth/register/route.ts, lib/auth.ts, contexts/auth-context.tsx, app/auth/page.tsx | — |
+| 03-31 | Terminal Claude | MFA/2FA iyilestirme — settings'te mevcut durum kontrolu, aktif/pasif gosterim, devre disi birakma, sadece verified faktorler sayilir | components/auth/mfa-setup.tsx, app/api/auth/login/route.ts | — |
+| 03-31 | Terminal Claude | Rate limit genisletme — admin (10/15dk) + analysis (30/dk) limiter eklendi, gateway types eslesmesi | lib/security/rate-limit.ts, lib/gateway/types.ts | — |
+| 03-31 | Terminal Claude | Register isim fix — fullName register API'ye tasindi (Supabase user metadata), cookie race condition onlendi | app/api/auth/register/route.ts, lib/auth.ts, contexts/auth-context.tsx, app/auth/page.tsx | — |
+
+### 2026-03-31 (Eklenti 1 — VSCode Extension)
+
+| Tarih | Ajan | Ozet | Dosyalar | Commit |
+|-------|------|------|----------|--------|
+| 03-31 | Eklenti 1 | Dashboard premium tasarim + mobil optimizasyon — 4 yeni bilesen (header selamlama, enhanced KPI, quick actions, smart insights), 6 bilesen guncelleme (profit area chart, risk donut, pareto madalya, recommendations motion, pazaryeri kompakt, products-table mobil kart gorunumu) | app/dashboard/page.tsx, 6 components/dashboard/*, components/shared/PazaryeriIstatistikKarti.tsx | 822e4bf |
+| 03-31 | Eklenti 1 | Nakit Plani sayfasi premium tasarim — area chart, 4 ozet kart, senaryo karsilastirma, stok simulasyonu ay secimi, floating save bar, akilli oneriler | app/cash-plan/page.tsx | b171544 |
+| 03-31 | Eklenti 1 | Basabas sayfasi premium tasarim — gelir/maliyet grafigi, 4 KPI kart, fiyat hassasiyet slider, gunluk hedef kirilimi, katki payi gostergesi, akilli oneriler, floating save bar | app/break-even/page.tsx | b171544 |
+| 03-31 | Eklenti 1 | Logout fix — cikis yapinca bos sayfa yerine anasayfaya yonlendirme | contexts/auth-context.tsx | b171544 |
+| 03-31 | Eklenti 1 | karnet-context skill olusturuldu | .claude/skills/karnet-context/SKILL.md | b171544 |
 
 ### 2026-03-31
 
@@ -89,6 +100,7 @@ BU SIRALAMA DEGISMEZ. GOREV ALMADAN ONCE BU 3 ADIM TAMAMLANMALI.
 | 03-31 | Terminal Claude | auditLog cagrilari 10 kritik endpoint'e eklendi | paytr/callback, create-payment, user/delete, admin/users, admin/activate-payment, cron/check-expiry, trendyol/webhook, helpers.ts, gateway.adapter.ts, audit.ts | b8afea6 |
 | 03-31 | Terminal Claude | Kalan 6 guvenlik bulgusu — Zod, CSP, audit log, debug guard, rate limit | 15 dosya, audit_logs migration | 00ac34b |
 | 03-31 | Terminal Claude | Tam guvenlik denetimi — 16 kritik+yuksek bulgu duzeltildi | paytr/callback, create-payment, admin/users, webhook, pdf, support.repo, commission-import, cron, helpers, analysis.logic, registry, profiles RLS migration | 9e83561 |
+| 03-31 | Eklenti 2 | 4 agent template kurulumu — frontend-developer, code-reviewer, ui-ux-designer, backend-architect | .claude/agents/frontend-developer.md, .claude/agents/code-reviewer.md, .claude/agents/ui-ux-designer.md, .claude/agents/backend-architect.md | — |
 
 ### 2026-03-30
 
@@ -151,7 +163,7 @@ BU SIRALAMA DEGISMEZ. GOREV ALMADAN ONCE BU 3 ADIM TAMAMLANMALI.
 | Alan | Durum | Not |
 |------|-------|-----|
 | Mimari (9 katman) | ✅ %90 uyumlu | 2 debug route haric tumu gateway'de |
-| Guvenlik | ✅ 6.5/10 → 7.5/10 | 22 bulgu duzeltildi, 2FA ve WAF eksik |
+| Guvenlik | ✅ 6.5/10 → 8/10 | 22 bulgu + auth proxy + rate limit, WAF eksik |
 | TypeScript | ✅ Sifir hata | tsc --noEmit temiz |
 | Plan sistemi | ✅ 3 katmanli | Free/Starter/Pro + feature bazli gating |
 | Audit log | ✅ Aktif | 10 endpoint'te, DB'ye yaziyor |

@@ -49,7 +49,13 @@ const syncLimiter = createLimiter('sync', 1, '5 m')
 // 3 istek / dakika — blog yorumlari
 const commentLimiter = createLimiter('comment', 3, '1 m')
 
-export type RateLimitType = 'auth' | 'api' | 'email' | 'sync' | 'comment'
+// 10 istek / 15 dakika — admin islemleri (kullanici basina)
+const adminLimiter = createLimiter('admin', 10, '15 m')
+
+// 30 istek / dakika — analiz olusturma (kullanici basina)
+const analysisLimiter = createLimiter('analysis', 30, '1 m')
+
+export type RateLimitType = 'auth' | 'api' | 'email' | 'sync' | 'comment' | 'admin' | 'analysis'
 
 const limiters: Record<RateLimitType, Ratelimit | null> = {
   auth: authLimiter,
@@ -57,6 +63,8 @@ const limiters: Record<RateLimitType, Ratelimit | null> = {
   email: emailLimiter,
   sync: syncLimiter,
   comment: commentLimiter,
+  admin: adminLimiter,
+  analysis: analysisLimiter,
 }
 
 interface RateLimitResult {
