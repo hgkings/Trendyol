@@ -32,6 +32,17 @@ const PLAN_COLORS: Record<string, string> = {
     free: 'bg-gray-100 text-gray-600',
 };
 
+const PLAN_LABELS: Record<string, string> = {
+    admin: 'Admin',
+    pro: 'Pro',
+    pro_monthly: 'Pro',
+    pro_yearly: 'Pro',
+    starter: 'Başlangıç',
+    starter_monthly: 'Başlangıç',
+    starter_yearly: 'Başlangıç',
+    free: 'Ücretsiz',
+};
+
 export default function AdminUsersPage() {
     const [users, setUsers] = useState<UserRow[]>([]);
     const [total, setTotal] = useState(0);
@@ -138,7 +149,7 @@ export default function AdminUsersPage() {
                                                 <td className="px-4 py-3 font-medium">{u.email}</td>
                                                 <td className="px-4 py-3">
                                                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${PLAN_COLORS[u.plan] ?? PLAN_COLORS.free}`}>
-                                                        {u.plan}
+                                                        {PLAN_LABELS[u.plan] ?? u.plan}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3 text-muted-foreground">
