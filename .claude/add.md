@@ -56,12 +56,12 @@ BU SIRALAMA DEGISMEZ. GOREV ALMADAN ONCE BU 3 ADIM TAMAMLANMALI.
 | 8 | Backup/disaster recovery testi | Zor | BEKLIYOR |
 | 9 | SOC2/KVKK compliance framework | Cok Zor | BEKLIYOR |
 
-### Supabase Manuel SQL (Hilmi'nin calistirmasi gereken)
+### Supabase Manuel SQL (Hilmi tarafindan calistirildi)
 | SQL | Amac | Durum |
 |-----|------|-------|
-| Plan CHECK constraint genisletme | starter planlar icin | BEKLIYOR |
-| Profiles RLS duzeltme (SELECT) | Herkese acik → kullanici bazli | BEKLIYOR |
-| audit_logs tablo olusturma | Guvenlik log tablosu | BEKLIYOR |
+| Plan CHECK constraint genisletme | starter planlar icin | ✅ YAPILDI (Hilmi, 2026-03-31) |
+| Profiles RLS duzeltme (SELECT) | Herkese acik → kullanici bazli | ✅ YAPILDI (Hilmi, 2026-03-31) |
+| audit_logs tablo olusturma | Guvenlik log tablosu | ✅ YAPILDI (Hilmi, 2026-03-31) |
 
 ---
 
