@@ -12,7 +12,6 @@ function mapProfileRow(data: Record<string, unknown>): User {
     pro_renewal: (data.pro_renewal ?? data.proRenewal ?? true) as boolean,
     pro_started_at: (data.pro_started_at ?? data.proStartedAt ?? null) as string | null,
     email_notifications_enabled: (data.email_notifications_enabled ?? data.emailNotificationsEnabled) !== false,
-    is_pro: (data.is_pro ?? data.isPro ?? false) as boolean,
     target_margin: (data.target_margin ?? data.targetMargin) as number | undefined,
     margin_alert: (data.margin_alert ?? data.marginAlert) as boolean | undefined,
     default_marketplace: (data.default_marketplace ?? data.defaultMarketplace) as Marketplace | undefined,
