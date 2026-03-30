@@ -34,9 +34,7 @@ export async function POST(req: Request) {
             .digest('base64');
 
         if (hash !== expectedHash) {
-            if (process.env.PAYTR_SKIP_HASH !== '1') {
-                return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
-            }
+            return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
         }
 
         // ── STEP 2: Supabase Bağlantısı ─────────────────────────

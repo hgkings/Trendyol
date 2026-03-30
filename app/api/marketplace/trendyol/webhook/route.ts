@@ -17,20 +17,21 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: Request) {
   try {
     const webhookSecret = process.env.TRENDYOL_WEBHOOK_SECRET
-    const signature = request.headers.get('x-signature')
+    if (!webhookSecret) {
+      return Response.json({ error: 'Webhook yapilandirmasi eksik' }, { status: 500 })
+    }
 
+    const signature = request.headers.get('x-signature')
     const body = await request.text()
 
-    // Imza dogrulama (secret tanimliysaa)
-    if (webhookSecret) {
-      const expectedSig = crypto
-        .createHmac('sha256', webhookSecret)
-        .update(body)
-        .digest('hex')
+    // HMAC-SHA256 imza dogrulama (zorunlu)
+    const expectedSig = crypto
+      .createHmac('sha256', webhookSecret)
+      .update(body)
+      .digest('hex')
 
-      if (!signature || signature !== expectedSig) {
-        return Response.json({ error: 'Gecersiz imza' }, { status: 401 })
-      }
+    if (!signature || signature !== expectedSig) {
+      return Response.json({ error: 'Gecersiz imza' }, { status: 401 })
     }
 
     let payload: unknown

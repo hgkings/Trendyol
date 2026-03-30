@@ -55,7 +55,7 @@ export function initializeServices(): void {
   const productRepo = new ProductRepository(supabase)
 
   // Service instance'lari (repo DI)
-  const analysisLogic = new AnalysisLogic(analysisRepo)
+  const analysisLogic = new AnalysisLogic(analysisRepo, userRepo)
   const riskLogic = new RiskLogic()
   const commissionLogic = new CommissionLogic(commissionRepo)
   const userLogic = new UserLogic(userRepo)

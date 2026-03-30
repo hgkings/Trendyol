@@ -6,6 +6,7 @@
 
 import { ServiceError } from '@/lib/gateway/types'
 import type { AnalysisRepository } from '@/repositories/analysis.repository'
+import { getPlanLimits } from '@/config/plans'
 import { riskLogic } from './risk.logic'
 import { getCategoryDefaults } from './commission.logic'
 import type { MarketplaceName } from './commission.logic'
@@ -375,7 +376,10 @@ function calculateProAccountingResult(input: ProAccountingInput): ProAccountingR
 // ----------------------------------------------------------------
 
 export class AnalysisLogic {
-  constructor(private readonly analysisRepo: AnalysisRepository) {}
+  constructor(
+    private readonly analysisRepo: AnalysisRepository,
+    private readonly userRepo?: { findById: (id: string) => Promise<{ plan: string } | null> },
+  ) {}
 
   /**
    * Tam kar hesaplamasi yapar — standart mod.
@@ -508,6 +512,23 @@ export class AnalysisLogic {
   ): Promise<{ id: string }> {
     const { input } = payload as { input: AnalysisInput }
     this.validateInput(input, traceId)
+
+    // Plan limiti kontrol et
+    if (this.userRepo) {
+      const profile = await this.userRepo.findById(userId)
+      if (profile) {
+        const limits = getPlanLimits(profile.plan)
+        if (limits.maxProducts !== Infinity) {
+          const currentCount = await this.analysisRepo.countByUserId(userId)
+          if (currentCount >= limits.maxProducts) {
+            throw new ServiceError(
+              `Plan limitinize ulaştınız. Maksimum ${limits.maxProducts} ürün analizi oluşturabilirsiniz.`,
+              { code: 'PLAN_LIMIT_REACHED', statusCode: 403, traceId }
+            )
+          }
+        }
+      }
+    }
 
     const calculation = calculateProfit(input)
     const risk = await riskLogic.calculateRisk(traceId, {

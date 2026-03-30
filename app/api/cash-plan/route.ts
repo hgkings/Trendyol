@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     )
 
     if (error) {
-      return NextResponse.json({ error: 'Kaydetme hatası: ' + error.message }, { status: 500 })
+      return NextResponse.json({ error: 'Nakit planı kaydedilemedi' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })

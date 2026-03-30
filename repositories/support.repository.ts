@@ -117,9 +117,13 @@ export class SupportRepository extends BaseRepository<TicketRow> {
       dataQuery = dataQuery.eq('category', filters.category)
     }
     if (filters.search) {
-      const searchFilter = `user_email.ilike.%${filters.search}%,subject.ilike.%${filters.search}%`
-      countQuery = countQuery.or(searchFilter)
-      dataQuery = dataQuery.or(searchFilter)
+      // Ozel karakterleri escape et (Supabase OR filter injection korunmasi)
+      const safeSearch = filters.search.replace(/[%_,()]/g, '')
+      if (safeSearch.length > 0) {
+        const searchFilter = `user_email.ilike.%${safeSearch}%,subject.ilike.%${safeSearch}%`
+        countQuery = countQuery.or(searchFilter)
+        dataQuery = dataQuery.or(searchFilter)
+      }
     }
 
     const { count, error: countError } = await countQuery

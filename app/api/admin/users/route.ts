@@ -4,7 +4,7 @@ import { z } from 'zod'
 
 const UpdateUserPlanSchema = z.object({
   userId: z.string().uuid('Geçerli bir kullanıcı ID\'si gerekli'),
-  plan: z.enum(['free', 'starter', 'starter_monthly', 'starter_yearly', 'pro', 'pro_monthly', 'pro_yearly', 'admin']),
+  plan: z.enum(['free', 'starter', 'starter_monthly', 'starter_yearly', 'pro', 'pro_monthly', 'pro_yearly']),
   pro_until: z.string().optional(),
 })
 
@@ -36,6 +36,14 @@ export async function PATCH(req: NextRequest) {
       return Response.json(
         { success: false, error: 'Doğrulama hatası', details: parsed.error.errors },
         { status: 422 }
+      )
+    }
+
+    // Admin kendi planini degistiremez
+    if (parsed.data.userId === auth.id) {
+      return Response.json(
+        { success: false, error: 'Kendi planınızı değiştiremezsiniz' },
+        { status: 403 }
       )
     }
 

@@ -144,8 +144,10 @@ export async function POST(req: Request) {
             .update({ provider_order_id: callbackId })
             .eq('id', payment.id);
 
-        // Test modunda callback gelmez — otomatik plan aktif et
-        const isTestMode = process.env.PAYTR_TEST_MODE === '1';
+        // Test mode: yalnizca development ortaminda otomatik aktivasyon
+        const isTestMode = process.env.PAYTR_TEST_MODE === '1'
+          && process.env.NODE_ENV === 'development'
+          && process.env.VERCEL_ENV !== 'production';
         if (isTestMode) {
             const daysToAdd = (plan === 'pro_yearly' || plan === 'starter_yearly') ? 365 : 30;
             const planUntil = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000).toISOString();

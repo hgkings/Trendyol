@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import crypto from 'crypto'
 
 interface AuthUser {
   id: string
@@ -61,7 +62,9 @@ export function requireCronSecret(request: Request): true | Response {
   const cronSecret = process.env.CRON_SECRET
   const authHeader = request.headers.get('authorization')
 
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  const expected = `Bearer ${cronSecret}`
+  if (!cronSecret || !authHeader || authHeader.length !== expected.length
+    || !crypto.timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected))) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

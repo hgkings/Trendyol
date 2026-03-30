@@ -52,7 +52,8 @@ export async function GET(req: Request) {
         let totalPages = 1
         let productCount = 0
 
-        while (page < totalPages) {
+        const MAX_PAGES = 500
+        while (page < totalPages && page < MAX_PAGES) {
           const result = await fetchProducts(apiCreds, page, 50)
           totalPages = result.totalPages
 

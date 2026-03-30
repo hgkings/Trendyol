@@ -426,8 +426,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       },
     });
   } catch (error) {
-    // Geçici debug — production'dan önce kaldırılacak
-    const msg = error instanceof Error ? error.message + '\n' + error.stack : 'Bilinmeyen hata';
-    return new NextResponse('PDF oluşturulamadı: ' + msg, { status: 500 });
+    if (process.env.NODE_ENV === 'development') {
+      const msg = error instanceof Error ? error.message : 'Bilinmeyen hata';
+      return new NextResponse('PDF oluşturulamadı: ' + msg, { status: 500 });
+    }
+    return new NextResponse('PDF oluşturulamadı', { status: 500 });
   }
 }
