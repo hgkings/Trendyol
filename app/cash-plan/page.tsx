@@ -83,7 +83,7 @@ export default function CashPlanPage() {
         // Generate months based on horizon
         const months = getNextMonths(horizon);
         const existingMap = new Map<string, CashPlanRow>();
-        data?.forEach((r) => existingMap.set(r.month, r));
+        (data as CashPlanRow[] | null)?.forEach((r) => existingMap.set(r.month, r));
 
         // Merge logic
         let currentOpening = 0;
