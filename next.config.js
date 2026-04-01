@@ -7,7 +7,7 @@ const nextConfig = {
   },
   images: {
     remotePatterns: [
-      { protocol: 'https', hostname: 'wqwoobksvaleicrkyatl.supabase.co' },
+      { protocol: 'https', hostname: 'uxskqquapxldqzlonyvf.supabase.co' },
     ],
   },
   env: {
@@ -39,8 +39,8 @@ const nextConfig = {
               scriptSrc,
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: blob: https://wqwoobksvaleicrkyatl.supabase.co https://fonts.gstatic.com",
-              "connect-src 'self' https://wqwoobksvaleicrkyatl.supabase.co wss://wqwoobksvaleicrkyatl.supabase.co https://va.vercel-scripts.com",
+              "img-src 'self' data: blob: https://uxskqquapxldqzlonyvf.supabase.co https://fonts.gstatic.com",
+              "connect-src 'self' https://uxskqquapxldqzlonyvf.supabase.co wss://uxskqquapxldqzlonyvf.supabase.co https://va.vercel-scripts.com",
               "frame-src 'self' https://www.paytr.com",
               "frame-ancestors 'none'",
               "form-action 'self'",
