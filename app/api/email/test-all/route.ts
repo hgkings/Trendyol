@@ -11,6 +11,10 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.xn--krnet-3qa.co
  * Authorization: Bearer CRON_SECRET
  */
 export async function POST(request: NextRequest) {
+  if (process.env.NODE_ENV === 'production' && process.env.VERCEL === '1') {
+    return NextResponse.json({ error: 'Not available in production' }, { status: 404 });
+  }
+
   const cronCheck = requireCronSecret(request)
   if (cronCheck !== true) return cronCheck
 

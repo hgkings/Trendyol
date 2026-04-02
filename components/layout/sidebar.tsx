@@ -178,7 +178,7 @@ export function Sidebar() {
 
           {/* Version */}
           <div className="text-[9px] text-muted-foreground/40 font-mono text-center pt-1 pb-1">
-            v{process.env.NEXT_PUBLIC_BUILD_ID || '2.0.0'}
+            v2.0.0
           </div>
         </div>
 

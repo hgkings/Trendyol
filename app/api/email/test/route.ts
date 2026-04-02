@@ -7,6 +7,10 @@ import { getIp } from '@/lib/api/helpers'
 export const dynamic = 'force-dynamic'
 
 async function handler(request: Request) {
+  if (process.env.NODE_ENV === 'production' && process.env.VERCEL === '1') {
+    return NextResponse.json({ error: 'Not available in production' }, { status: 404 });
+  }
+
   try {
     // Sadece admin erisebilir
     const auth = await requireAdmin()
