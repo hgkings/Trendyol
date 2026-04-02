@@ -158,7 +158,7 @@ export function ProductsTable({ analyses, onDelete }: ProductsTableProps) {
 
   if (analyses.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[rgba(255,255,255,0.10)] bg-[rgba(255,255,255,0.02)] p-12 text-center">
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-card p-12 text-center">
         <div className="rounded-full bg-primary/10 p-4 mb-4">
           <Search className="h-8 w-8 text-primary/60" />
         </div>
@@ -178,12 +178,12 @@ export function ProductsTable({ analyses, onDelete }: ProductsTableProps) {
   return (
     <div className="space-y-4">
       {/* --- Toolbar --- */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-[rgba(255,255,255,0.03)] p-4 rounded-xl border border-[rgba(255,255,255,0.06)]">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-card p-4 rounded-xl border border-border/40">
         <div className="relative w-full md:max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Ürün adı veya pazaryeri ara..."
-            className="pl-9 h-10 bg-[rgba(255,255,255,0.04)] border-transparent focus:border-amber-500/20 focus:bg-[rgba(255,255,255,0.06)] transition-all"
+            className="pl-9 h-10 bg-muted/20 border-transparent focus:border-amber-500/20 focus:bg-muted/30 transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -241,14 +241,14 @@ export function ProductsTable({ analyses, onDelete }: ProductsTableProps) {
           </div>
         ) : (
           paginatedData.map((a) => (
-            <div key={a.id} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5 space-y-2.5">
+            <div key={a.id} className="rounded-xl border border-border/40 bg-card p-3.5 space-y-2.5">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <Link href={`/analysis/${a.id}`} className="hover:underline">
                     <span className="font-semibold text-sm block truncate">{a.input.product_name}</span>
                   </Link>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[10px] bg-white/[0.06] px-1.5 py-0.5 rounded text-muted-foreground">
+                    <span className="text-[10px] bg-muted/30 px-1.5 py-0.5 rounded text-muted-foreground">
                       {getMarketplaceLabel(a.input.marketplace)}
                     </span>
                     <span className="text-[10px] text-muted-foreground">
@@ -261,27 +261,27 @@ export function ProductsTable({ analyses, onDelete }: ProductsTableProps) {
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <span className="text-[10px] text-muted-foreground block">Birim Kar</span>
-                  <span className={`text-sm font-bold tabular-nums ${a.result.unit_net_profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <span className={`text-sm font-bold tabular-nums ${a.result.unit_net_profit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
                     {formatCurrency(a.result.unit_net_profit)}
                   </span>
                 </div>
                 <div>
                   <span className="text-[10px] text-muted-foreground block">Marj</span>
-                  <span className={`text-sm font-bold tabular-nums ${a.result.margin_pct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <span className={`text-sm font-bold tabular-nums ${a.result.margin_pct >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
                     {formatPercent(a.result.margin_pct)}
                   </span>
                 </div>
                 <div>
                   <span className="text-[10px] text-muted-foreground block">Aylik Kar</span>
-                  <span className={`text-sm font-bold tabular-nums ${a.result.monthly_net_profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <span className={`text-sm font-bold tabular-nums ${a.result.monthly_net_profit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
                     {formatCurrency(a.result.monthly_net_profit)}
                   </span>
                 </div>
               </div>
-              <div className="flex items-center justify-between pt-2 border-t border-white/[0.04]">
+              <div className="flex items-center justify-between pt-2 border-t border-border/30">
                 <div className="flex flex-wrap gap-1">
                   {a.result.margin_pct >= 20 && (a.risk.level === 'safe' || a.risk.level === 'moderate') && (
-                    <span className="text-[9px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded">Yildiz</span>
+                    <span className="text-[9px] bg-amber-500/10 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded">Yildiz</span>
                   )}
                   {a.result.monthly_net_profit <= 0 && (
                     <span className="text-[9px] bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded">Zarar</span>
@@ -304,11 +304,11 @@ export function ProductsTable({ analyses, onDelete }: ProductsTableProps) {
       </div>
 
       {/* --- Desktop Table --- */}
-      <div className="hidden md:block overflow-hidden rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)]">
+      <div className="hidden md:block overflow-hidden rounded-2xl border border-border/40 bg-card">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] text-[11px] uppercase tracking-wider text-[rgba(255,255,255,0.4)]">
+              <tr className="border-b border-border/40 bg-muted/10 text-[11px] uppercase tracking-wider text-muted-foreground/70">
                 <th
                   className="px-4 py-3.5 text-left font-semibold cursor-pointer select-none group"
                   onClick={() => handleSort('monthly_net_profit')} // Default/Custom logic
@@ -369,7 +369,7 @@ export function ProductsTable({ analyses, onDelete }: ProductsTableProps) {
                 </tr>
               ) : (
                 paginatedData.map((a) => (
-                  <tr key={a.id} className="transition-colors hover:bg-white/[0.03] group">
+                  <tr key={a.id} className="transition-colors hover:bg-muted/10 group">
                     <td className="px-4 py-3.5">
                       <div className="flex flex-col">
                         <span className="font-semibold text-foreground truncate max-w-[180px] sm:max-w-xs">{a.input.product_name}</span>
@@ -378,7 +378,7 @@ export function ProductsTable({ analyses, onDelete }: ProductsTableProps) {
                         </span>
                       </div>
                       <div className="mt-1 sm:hidden">
-                        <span className="inline-flex items-center rounded-md bg-[rgba(255,255,255,0.06)] px-2 py-1 text-[10px] font-medium text-muted-foreground">
+                        <span className="inline-flex items-center rounded-md bg-muted/30 px-2 py-1 text-[10px] font-medium text-muted-foreground">
                           {getMarketplaceLabel(a.input.marketplace)}
                         </span>
                       </div>
@@ -386,7 +386,7 @@ export function ProductsTable({ analyses, onDelete }: ProductsTableProps) {
                       {/* Health Tags */}
                       <div className="flex flex-wrap gap-1 mt-1.5">
                         {a.result.margin_pct >= 20 && (a.risk.level === 'safe' || a.risk.level === 'moderate') && (
-                          <span className="inline-flex items-center rounded-sm bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">
+                          <span className="inline-flex items-center rounded-sm bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400">
                             ⭐ Yıldız
                           </span>
                         )}
@@ -403,17 +403,17 @@ export function ProductsTable({ analyses, onDelete }: ProductsTableProps) {
                       </div>
                     </td>
                     <td className="hidden px-4 py-3.5 sm:table-cell">
-                      <span className="inline-flex items-center rounded-full bg-[rgba(255,255,255,0.06)] px-2.5 py-1 text-xs font-medium text-[rgba(255,255,255,0.6)] border border-[rgba(255,255,255,0.06)]">
+                      <span className="inline-flex items-center rounded-full bg-muted/30 px-2.5 py-1 text-xs font-medium text-muted-foreground border border-border/40">
                         {getMarketplaceLabel(a.input.marketplace)}
                       </span>
                     </td>
-                    <td className={`px-4 py-3.5 text-right font-bold tabular-nums ${a.result.unit_net_profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    <td className={`px-4 py-3.5 text-right font-bold tabular-nums ${a.result.unit_net_profit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
                       {formatCurrency(a.result.unit_net_profit)}
                     </td>
-                    <td className={`hidden px-4 py-3.5 text-right font-bold tabular-nums md:table-cell ${a.result.margin_pct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    <td className={`hidden px-4 py-3.5 text-right font-bold tabular-nums md:table-cell ${a.result.margin_pct >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
                       {formatPercent(a.result.margin_pct)}
                     </td>
-                    <td className={`hidden px-4 py-3.5 text-right font-bold tabular-nums lg:table-cell ${a.result.monthly_net_profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    <td className={`hidden px-4 py-3.5 text-right font-bold tabular-nums lg:table-cell ${a.result.monthly_net_profit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
                       {formatCurrency(a.result.monthly_net_profit)}
                     </td>
                     <td className="px-4 py-3.5 text-center">
@@ -479,7 +479,7 @@ export function ProductsTable({ analyses, onDelete }: ProductsTableProps) {
 
       {/* --- Pagination (shared between mobile & desktop) --- */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 rounded-xl border border-white/[0.06] bg-white/[0.02]">
+        <div className="flex items-center justify-between px-4 py-3 rounded-xl border border-border/40 bg-card">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="hidden sm:inline">Satir:</span>
             <Select

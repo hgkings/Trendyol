@@ -134,9 +134,9 @@ export default function MatchingPage() {
     const confidenceBadge = (c: string) => {
         switch (c) {
             case 'high':
-                return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400"><CheckCircle2 className="h-3 w-3" /> Yüksek</span>;
+                return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"><CheckCircle2 className="h-3 w-3" /> Yüksek</span>;
             case 'medium':
-                return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400"><Link2 className="h-3 w-3" /> Orta</span>;
+                return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-700 dark:text-amber-400"><Link2 className="h-3 w-3" /> Orta</span>;
             default:
                 return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400"><AlertTriangle className="h-3 w-3" /> Manuel Gerekli</span>;
         }
@@ -206,13 +206,13 @@ export default function MatchingPage() {
                             placeholder="Ürün ara..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full h-9 pl-9 pr-3 rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] text-sm placeholder:text-muted-foreground focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20"
+                            className="w-full h-9 pl-9 pr-3 rounded-lg border border-border/60 bg-muted/10 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20"
                         />
                     </div>
                 </div>
 
                 {/* Table */}
-                <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] overflow-hidden">
+                <div className="rounded-xl border border-border/40 bg-card overflow-hidden">
                     {loading ? (
                         <div className="flex items-center justify-center py-16">
                             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

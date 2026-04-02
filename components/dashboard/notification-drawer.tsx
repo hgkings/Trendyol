@@ -92,7 +92,7 @@ export function NotificationDrawer() {
                                         "px-3 py-1.5 text-xs font-medium rounded-full border transition-all",
                                         (filter === f.value)
                                             ? "bg-primary border-primary text-primary-foreground shadow-sm"
-                                            : "bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.5)] hover:bg-white/5"
+                                            : "bg-muted/20 border-border/40 text-muted-foreground hover:bg-muted/50"
                                     )}
                                 >
                                     {f.label}
@@ -131,7 +131,7 @@ export function NotificationDrawer() {
                                     key={n.id}
                                     onClick={() => navigate(n)}
                                     className={cn(
-                                        "group relative flex items-start gap-4 p-5 hover:bg-white/5 transition-colors cursor-pointer",
+                                        "group relative flex items-start gap-4 p-5 hover:bg-muted/50 transition-colors cursor-pointer",
                                         n.is_read && "opacity-60"
                                     )}
                                 >
@@ -171,7 +171,7 @@ export function NotificationDrawer() {
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center h-64 p-8 text-center">
-                            <div className="h-12 w-12 rounded-full bg-[rgba(255,255,255,0.06)] flex items-center justify-center mb-4">
+                            <div className="h-12 w-12 rounded-full bg-muted/30 flex items-center justify-center mb-4">
                                 <ShieldCheck className="h-6 w-6 text-muted-foreground" />
                             </div>
                             <h3 className="font-semibold text-foreground">Bildirim Yok</h3>
@@ -182,7 +182,7 @@ export function NotificationDrawer() {
                     )}
                 </div>
 
-                <div className="p-4 border-t border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] shrink-0">
+                <div className="p-4 border-t border-border/40 bg-muted/10 shrink-0">
                     <Button variant="outline" className="w-full text-xs h-8" onClick={() => router.push('/products')}>
                         Tüm Ürünleri İncele
                     </Button>

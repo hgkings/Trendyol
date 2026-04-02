@@ -71,16 +71,16 @@ const SCENARIO_CONFIG: Record<Scenario, { label: string; inMul: number; outMul: 
 function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; dataKey: string }>; label?: string }) {
     if (!active || !payload?.length) return null;
     return (
-        <div className="rounded-xl border border-white/10 bg-[#1a1a2e]/95 backdrop-blur-xl px-4 py-3 shadow-2xl">
-            <p className="text-xs font-medium text-white/60 mb-2">{label}</p>
+        <div className="rounded-xl border border-border/50 bg-card backdrop-blur-xl px-4 py-3 shadow-md">
+            <p className="text-xs font-medium text-muted-foreground mb-2">{label}</p>
             {payload.map((entry, i) => (
                 <div key={i} className="flex items-center justify-between gap-6 text-sm">
-                    <span className="text-white/70">
+                    <span className="text-foreground/80">
                         {entry.dataKey === 'closing' ? 'Kapanış' :
                             entry.dataKey === 'pessimistic' ? 'Kötümser' :
                                 entry.dataKey === 'optimistic' ? 'İyimser' : entry.dataKey}
                     </span>
-                    <span className={`font-bold tabular-nums ${entry.value < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                    <span className={`font-bold tabular-nums ${entry.value < 0 ? 'text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
                         {formatCurrency(entry.value)}
                     </span>
                 </div>
@@ -379,10 +379,10 @@ export default function CashPlanPage() {
                         <div className="space-y-1">
                             <div className="flex items-center gap-3">
                                 <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/5 border border-emerald-500/10">
-                                    <Wallet className="h-5 w-5 text-emerald-400" />
+                                    <Wallet className="h-5 w-5 text-emerald-700 dark:text-emerald-400" />
                                 </div>
                                 <div>
-                                    <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
+                                    <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
                                         Nakit Plani
                                     </h1>
                                     <p className="text-sm text-muted-foreground">
@@ -394,7 +394,7 @@ export default function CashPlanPage() {
 
                         <div className="flex items-center gap-3">
                             {/* Scenario toggle */}
-                            <div className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.06] rounded-lg px-3 py-1.5">
+                            <div className="flex items-center gap-2 bg-muted/10 border border-border/40 rounded-lg px-3 py-1.5">
                                 <BarChart3 className="h-3.5 w-3.5 text-muted-foreground" />
                                 <span className="text-xs text-muted-foreground hidden sm:inline">Senaryo:</span>
                                 {(['pessimistic', 'normal', 'optimistic'] as Scenario[]).map((s) => (
@@ -403,8 +403,8 @@ export default function CashPlanPage() {
                                             <button
                                                 onClick={() => setActiveScenario(s)}
                                                 className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all ${activeScenario === s
-                                                    ? 'bg-white/10 shadow-sm text-foreground'
-                                                    : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+                                                    ? 'bg-muted/30 shadow-sm text-foreground'
+                                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                                                     }`}
                                                 style={activeScenario === s ? { boxShadow: `0 0 12px ${SCENARIO_CONFIG[s].color}20` } : {}}
                                             >
@@ -419,14 +419,14 @@ export default function CashPlanPage() {
                             </div>
 
                             {/* Horizon selector */}
-                            <div className="flex items-center gap-1 bg-white/[0.03] p-1 rounded-lg border border-white/[0.06]">
+                            <div className="flex items-center gap-1 bg-muted/10 p-1 rounded-lg border border-border/40">
                                 {[3, 6, 12].map((m) => (
                                     <button
                                         key={m}
                                         onClick={() => setHorizon(m as 3 | 6 | 12)}
                                         className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${horizon === m
-                                            ? 'bg-emerald-500/15 text-emerald-400 shadow-sm shadow-emerald-500/10'
-                                            : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+                                            ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 shadow-sm shadow-emerald-500/10'
+                                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                                             }`}
                                     >
                                         {m} Ay
@@ -444,7 +444,7 @@ export default function CashPlanPage() {
                         className="grid grid-cols-2 lg:grid-cols-4 gap-3"
                     >
                         {/* Card: En Düşük Kasa */}
-                        <div className="group relative overflow-hidden rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.03] to-transparent p-4 hover:border-white/[0.1] transition-all">
+                        <div className="group relative overflow-hidden rounded-xl border border-border/40 bg-card p-4 hover:border-border/60 transition-all">
                             <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                             <div className="relative">
                                 <div className="flex items-center gap-2 mb-3">
@@ -465,12 +465,12 @@ export default function CashPlanPage() {
                         </div>
 
                         {/* Card: Açık Veren Aylar */}
-                        <div className="group relative overflow-hidden rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.03] to-transparent p-4 hover:border-white/[0.1] transition-all">
+                        <div className="group relative overflow-hidden rounded-xl border border-border/40 bg-card p-4 hover:border-border/60 transition-all">
                             <div className={`absolute inset-0 bg-gradient-to-br ${stats.negativeMonths > 0 ? 'from-red-500/8' : 'from-emerald-500/5'} to-transparent opacity-0 group-hover:opacity-100 transition-opacity`} />
                             <div className="relative">
                                 <div className="flex items-center gap-2 mb-3">
                                     <div className={`p-1.5 rounded-lg ${stats.negativeMonths > 0 ? 'bg-red-500/10' : 'bg-emerald-500/10'}`}>
-                                        <ShieldAlert className={`h-3.5 w-3.5 ${stats.negativeMonths > 0 ? 'text-red-400' : 'text-emerald-400'}`} />
+                                        <ShieldAlert className={`h-3.5 w-3.5 ${stats.negativeMonths > 0 ? 'text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`} />
                                     </div>
                                     <span className="text-xs font-medium text-muted-foreground">Risk Durumu</span>
                                 </div>
@@ -478,7 +478,7 @@ export default function CashPlanPage() {
                                     {stats.negativeMonths > 0 ? (
                                         <span className="text-red-400">{stats.negativeMonths} ay riskli</span>
                                     ) : (
-                                        <span className="text-emerald-400">Guvende</span>
+                                        <span className="text-emerald-700 dark:text-emerald-400">Guvende</span>
                                     )}
                                 </div>
                                 <p className="text-[11px] text-muted-foreground mt-1">
@@ -488,7 +488,7 @@ export default function CashPlanPage() {
                         </div>
 
                         {/* Card: Nakit Pisti */}
-                        <div className="group relative overflow-hidden rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.03] to-transparent p-4 hover:border-white/[0.1] transition-all">
+                        <div className="group relative overflow-hidden rounded-xl border border-border/40 bg-card p-4 hover:border-border/60 transition-all">
                             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                             <div className="relative">
                                 <div className="flex items-center gap-2 mb-3">
@@ -499,7 +499,7 @@ export default function CashPlanPage() {
                                 </div>
                                 <div className="text-xl font-bold tabular-nums">
                                     {stats.runway >= horizon ? (
-                                        <span className="text-emerald-400">{horizon}+ ay</span>
+                                        <span className="text-emerald-700 dark:text-emerald-400">{horizon}+ ay</span>
                                     ) : (
                                         <span className={stats.runway < 3 ? 'text-red-400' : 'text-orange-400'}>{stats.runway} ay</span>
                                     )}
@@ -511,7 +511,7 @@ export default function CashPlanPage() {
                         </div>
 
                         {/* Card: Ortalama Aylık Net */}
-                        <div className="group relative overflow-hidden rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.03] to-transparent p-4 hover:border-white/[0.1] transition-all">
+                        <div className="group relative overflow-hidden rounded-xl border border-border/40 bg-card p-4 hover:border-border/60 transition-all">
                             <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                             <div className="relative">
                                 <div className="flex items-center gap-2 mb-3">
@@ -520,7 +520,7 @@ export default function CashPlanPage() {
                                     </div>
                                     <span className="text-xs font-medium text-muted-foreground">Ort. Aylik Net</span>
                                 </div>
-                                <div className={`text-xl font-bold tabular-nums ${stats.avgMonthlyNet < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                                <div className={`text-xl font-bold tabular-nums ${stats.avgMonthlyNet < 0 ? 'text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
                                     {formatCurrency(stats.avgMonthlyNet)}
                                 </div>
                                 <p className="text-[11px] text-muted-foreground mt-1">
@@ -535,11 +535,11 @@ export default function CashPlanPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
-                        className="rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.02] to-transparent overflow-hidden"
+                        className="rounded-xl border border-border/40 bg-card overflow-hidden"
                     >
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
                             <div className="flex items-center gap-2">
-                                <Activity className="h-4 w-4 text-emerald-400" />
+                                <Activity className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
                                 <span className="text-sm font-semibold">Nakit Akis Grafigi</span>
                             </div>
                             <div className="flex items-center gap-3">
@@ -637,7 +637,7 @@ export default function CashPlanPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.15 }}
                     >
-                        <Card className="border-white/[0.06] bg-gradient-to-r from-blue-500/[0.03] to-transparent overflow-hidden">
+                        <Card className="border-border/40 bg-gradient-to-r from-blue-500/[0.03] to-transparent overflow-hidden">
                             <CardContent className="pt-5 pb-4">
                                 <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
                                     <div className="flex items-center gap-3">
@@ -707,7 +707,7 @@ export default function CashPlanPage() {
                                     const colorMap = {
                                         danger: { bg: 'from-red-500/8', border: 'border-red-500/15', icon: 'bg-red-500/10 text-red-400' },
                                         warning: { bg: 'from-orange-500/8', border: 'border-orange-500/15', icon: 'bg-orange-500/10 text-orange-400' },
-                                        success: { bg: 'from-emerald-500/8', border: 'border-emerald-500/15', icon: 'bg-emerald-500/10 text-emerald-400' },
+                                        success: { bg: 'from-emerald-500/8', border: 'border-emerald-500/15', icon: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' },
                                     };
                                     const c = colorMap[tip.type];
                                     return (
@@ -740,16 +740,16 @@ export default function CashPlanPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.02] to-transparent overflow-hidden"
+                        className="rounded-xl border border-border/40 bg-card overflow-hidden"
                     >
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead className="sticky top-0 z-10">
-                                    <tr className="bg-[#0f1117]/95 backdrop-blur-sm border-b border-white/[0.06]">
+                                    <tr className="bg-card/95 backdrop-blur-sm border-b border-border/40">
                                         <th className="py-3 px-4 text-left font-semibold text-muted-foreground text-xs uppercase tracking-wider min-w-[150px]">Ay</th>
                                         <th className="py-3 px-4 text-right font-semibold text-muted-foreground text-xs uppercase tracking-wider min-w-[140px]">Baslangic</th>
                                         <th className="py-3 px-4 text-right font-semibold text-xs uppercase tracking-wider min-w-[140px]">
-                                            <span className="text-emerald-400 flex items-center justify-end gap-1">
+                                            <span className="text-emerald-700 dark:text-emerald-400 flex items-center justify-end gap-1">
                                                 <ArrowDown className="h-3 w-3" /> Giris
                                             </span>
                                         </th>
@@ -776,19 +776,19 @@ export default function CashPlanPage() {
                                         return (
                                             <tr
                                                 key={row.month}
-                                                className={`group transition-colors border-b border-white/[0.03] ${isNegative
+                                                className={`group transition-colors border-b border-border/20 ${isNegative
                                                     ? 'bg-red-500/[0.04] hover:bg-red-500/[0.07] border-l-2 border-l-red-500/40'
-                                                    : 'hover:bg-white/[0.02]'
+                                                    : 'hover:bg-muted/10'
                                                     } ${isCurrent ? 'bg-emerald-500/[0.03]' : ''}`}
                                             >
                                                 <td className="py-3 px-4">
                                                     <div className="flex items-center gap-2">
-                                                        <Calendar className={`h-3.5 w-3.5 ${isCurrent ? 'text-emerald-400' : 'text-muted-foreground/40'}`} />
+                                                        <Calendar className={`h-3.5 w-3.5 ${isCurrent ? 'text-emerald-700 dark:text-emerald-400' : 'text-muted-foreground/40'}`} />
                                                         <span className={`font-medium text-sm ${isCurrent ? 'text-foreground' : ''}`}>
                                                             {formatMonth(row.month)}
                                                         </span>
                                                         {isCurrent && (
-                                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-emerald-500/30 text-emerald-400 bg-emerald-500/10">
+                                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10">
                                                                 Bu Ay
                                                             </Badge>
                                                         )}
@@ -800,7 +800,7 @@ export default function CashPlanPage() {
                                                             type="number"
                                                             value={rows[idx].opening_cash}
                                                             onChange={(e) => handleInputChange(idx, 'opening_cash', parseFloat(e.target.value) || 0)}
-                                                            className="h-8 text-right pr-2 tabular-nums bg-white/[0.03] border-white/10 max-w-[130px] ml-auto block text-sm"
+                                                            className="h-8 text-right pr-2 tabular-nums bg-muted/10 border-border/50 max-w-[130px] ml-auto block text-sm"
                                                         />
                                                     ) : (
                                                         <span className="tabular-nums text-muted-foreground block text-right text-sm">
@@ -813,7 +813,7 @@ export default function CashPlanPage() {
                                                         type="number"
                                                         value={rows[idx].cash_in}
                                                         onChange={(e) => handleInputChange(idx, 'cash_in', parseFloat(e.target.value) || 0)}
-                                                        className="h-8 text-right tabular-nums text-emerald-400 font-medium max-w-[130px] ml-auto block bg-emerald-500/[0.06] border-emerald-500/15 focus-visible:ring-emerald-500/30 text-sm"
+                                                        className="h-8 text-right tabular-nums text-emerald-700 dark:text-emerald-400 font-medium max-w-[130px] ml-auto block bg-emerald-500/[0.06] border-emerald-500/15 focus-visible:ring-emerald-500/30 text-sm"
                                                     />
                                                 </td>
                                                 <td className="py-3 px-4">
@@ -825,7 +825,7 @@ export default function CashPlanPage() {
                                                     />
                                                 </td>
                                                 <td className="py-3 px-4">
-                                                    <div className={`text-right tabular-nums text-sm ${netChange >= 0 ? 'text-emerald-400/70' : 'text-red-400/70'}`}>
+                                                    <div className={`text-right tabular-nums text-sm ${netChange >= 0 ? 'text-emerald-700 dark:text-emerald-400/70' : 'text-red-400/70'}`}>
                                                         {netChange >= 0 ? '+' : ''}{formatCurrency(netChange)}
                                                     </div>
                                                 </td>
@@ -834,11 +834,11 @@ export default function CashPlanPage() {
                                                         <TooltipTrigger asChild>
                                                             <div className={`tabular-nums font-bold text-sm py-1.5 px-3 rounded-lg text-right inline-flex items-center gap-2 float-right ${isNegative
                                                                 ? 'bg-red-500/15 text-red-400 border border-red-500/20'
-                                                                : 'bg-white/[0.04] border border-white/[0.06]'
+                                                                : 'bg-muted/10 border border-border/40'
                                                                 }`}>
                                                                 {formatCurrency(row.closing_cash)}
                                                                 {changePercent !== null && (
-                                                                    <span className={`text-[10px] font-normal ${changePercent >= 0 ? 'text-emerald-400/60' : 'text-red-400/60'}`}>
+                                                                    <span className={`text-[10px] font-normal ${changePercent >= 0 ? 'text-emerald-700 dark:text-emerald-400/60' : 'text-red-400/60'}`}>
                                                                         {changePercent >= 0 ? '+' : ''}{changePercent.toFixed(0)}%
                                                                     </span>
                                                                 )}
@@ -871,7 +871,7 @@ export default function CashPlanPage() {
                             className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none"
                         >
                             <div className="max-w-7xl mx-auto px-4 pb-4 pointer-events-auto">
-                                <div className="flex items-center justify-between rounded-xl border border-white/10 bg-[#0f1117]/90 backdrop-blur-xl px-5 py-3 shadow-2xl shadow-black/40">
+                                <div className="flex items-center justify-between rounded-xl border border-border/50 bg-card backdrop-blur-xl px-5 py-3 shadow-md">
                                     <div className="flex items-center gap-3">
                                         <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                                         <span className="text-sm text-muted-foreground">Kaydedilmemis degisiklikler var</span>

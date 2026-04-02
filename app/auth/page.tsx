@@ -59,7 +59,7 @@ function getPasswordStrength(pwd: string): { level: 0 | 1 | 2 | 3; label: string
 
 // ── Input ortak sınıflar ──
 const inputClasses =
-  'h-11 w-full rounded-xl bg-white/5 border border-white/10 px-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 transition-all disabled:opacity-50';
+  'h-11 w-full rounded-xl bg-muted/20 border border-border/50 px-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 transition-all disabled:opacity-50';
 
 const autofillStyle = { WebkitBoxShadow: '0 0 0 30px #0c0a09 inset', WebkitTextFillColor: 'white' };
 
@@ -209,12 +209,12 @@ function AuthPageContent() {
   };
   const strengthTextColors: Record<1 | 2 | 3, string> = {
     1: 'text-red-400',
-    2: 'text-amber-400',
-    3: 'text-emerald-400',
+    2: 'text-amber-700 dark:text-amber-400',
+    3: 'text-emerald-700 dark:text-emerald-400',
   };
 
   return (
-    <div className="flex h-screen bg-stone-950 text-white relative overflow-hidden">
+    <div className="flex h-screen bg-background text-foreground relative overflow-hidden">
 
       {/* ── LEFT PANEL — Auth form ── */}
       <div className="flex flex-1 flex-col items-center justify-center px-6 sm:px-10 py-10 relative z-10 overflow-y-auto">
@@ -247,19 +247,19 @@ function AuthPageContent() {
           <div className="w-full max-w-[400px] text-center space-y-6">
             <div className="flex justify-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/20">
-                <Mail className="h-8 w-8 text-amber-400" />
+                <Mail className="h-8 w-8 text-amber-700 dark:text-amber-400" />
               </div>
             </div>
             <div className="space-y-2">
-              <h2 className="text-xl font-bold text-white">E-postanızı Doğrulayın</h2>
-              <p className="text-sm text-white/50 leading-relaxed">
-                <span className="font-medium text-white/70">{email}</span> adresine bir doğrulama bağlantısı gönderdik.
+              <h2 className="text-xl font-bold text-foreground">E-postanızı Doğrulayın</h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                <span className="font-medium text-foreground/80">{email}</span> adresine bir doğrulama bağlantısı gönderdik.
                 Gelen kutunuzu kontrol edin ve bağlantıya tıklayın.
               </p>
             </div>
-            <div className="rounded-xl bg-white/5 border border-white/10 p-4 text-left space-y-2">
-              <p className="text-xs text-white/40">E-posta gelmedi mi?</p>
-              <ul className="text-xs text-white/50 space-y-1">
+            <div className="rounded-xl bg-muted/20 border border-border/50 p-4 text-left space-y-2">
+              <p className="text-xs text-muted-foreground/70">E-posta gelmedi mi?</p>
+              <ul className="text-xs text-muted-foreground space-y-1">
                 <li>Spam/gereksiz klasörünü kontrol edin</li>
                 <li>E-posta adresinin doğru olduğundan emin olun</li>
                 <li>Birkaç dakika bekleyin ve tekrar deneyin</li>
@@ -271,7 +271,7 @@ function AuthPageContent() {
                 setAwaitingEmailVerification(false);
                 switchMode('login');
               }}
-              className="w-full h-11 rounded-xl bg-white/5 border border-white/10 text-sm font-medium text-white/70 hover:bg-white/10 transition-all"
+              className="w-full h-11 rounded-xl bg-muted/20 border border-border/50 text-sm font-medium text-foreground/80 hover:bg-muted/60 transition-all"
             >
               Giriş Sayfasına Dön
             </button>
@@ -283,14 +283,14 @@ function AuthPageContent() {
 
         {/* Tab Switcher */}
         <div className="w-full max-w-[400px] mb-6">
-          <div className="flex bg-white/5 rounded-xl p-1">
+          <div className="flex bg-muted/20 rounded-xl p-1">
             <button
               type="button"
               onClick={() => switchMode('login')}
               className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${
                 mode === 'login'
                   ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/20'
-                  : 'text-white/50 hover:text-white/70'
+                  : 'text-muted-foreground hover:text-foreground/80'
               }`}
             >
               Giriş Yap
@@ -301,7 +301,7 @@ function AuthPageContent() {
               className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${
                 mode === 'register'
                   ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/20'
-                  : 'text-white/50 hover:text-white/70'
+                  : 'text-muted-foreground hover:text-foreground/80'
               }`}
             >
               Kayıt Ol
@@ -321,7 +321,7 @@ function AuthPageContent() {
             type="button"
             onClick={handleGoogleSignIn}
             disabled={googleLoading || loading}
-            className="w-full flex items-center justify-center gap-3 h-11 rounded-xl bg-white/5 border border-white/10 text-sm font-medium text-white/90 hover:bg-white/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-3 h-11 rounded-xl bg-muted/20 border border-border/50 text-sm font-medium text-foreground hover:bg-muted/60 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {googleLoading ? (
               <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -339,10 +339,10 @@ function AuthPageContent() {
           {/* Divider */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/10" />
+              <div className="w-full border-t border-border/50" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-stone-950 px-3 text-white/40">veya</span>
+              <span className="bg-background px-3 text-muted-foreground/70">veya</span>
             </div>
           </div>
 
@@ -352,7 +352,7 @@ function AuthPageContent() {
             {/* Ad Soyad — sadece kayıt modunda */}
             {mode === 'register' && (
               <div className="space-y-2">
-                <label htmlFor="fullName" className="text-sm font-medium text-white/70">Ad Soyad</label>
+                <label htmlFor="fullName" className="text-sm font-medium text-foreground/80">Ad Soyad</label>
                 <input
                   id="fullName"
                   type="text"
@@ -370,7 +370,7 @@ function AuthPageContent() {
 
             {/* E-posta */}
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-white/70">E-posta</label>
+              <label htmlFor="email" className="text-sm font-medium text-foreground/80">E-posta</label>
               <input
                 id="email"
                 type="email"
@@ -388,11 +388,11 @@ function AuthPageContent() {
             {/* Şifre */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label htmlFor="password" className="text-sm font-medium text-white/70">Şifre</label>
+                <label htmlFor="password" className="text-sm font-medium text-foreground/80">Şifre</label>
                 {mode === 'login' && (
                   <Link
                     href="/auth/forgot-password"
-                    className="text-xs text-amber-500 hover:text-amber-400 transition-colors"
+                    className="text-xs text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 transition-colors"
                   >
                     Şifremi unuttum
                   </Link>
@@ -415,7 +415,7 @@ function AuthPageContent() {
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-muted-foreground transition-colors"
                   onClick={() => setShowPassword(!showPassword)}
                   tabIndex={-1}
                 >
@@ -425,7 +425,7 @@ function AuthPageContent() {
 
               {/* Caps Lock uyarısı */}
               {capsLockOn && (
-                <p className="text-xs text-amber-400 flex items-center gap-1">
+                <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1">
                   ⚠️ Caps Lock açık
                 </p>
               )}
@@ -440,7 +440,7 @@ function AuthPageContent() {
                         className={`h-1 flex-1 rounded-full transition-all ${
                           n <= pwdStrength.level
                             ? strengthColors[pwdStrength.level as 1 | 2 | 3]
-                            : 'bg-white/10'
+                            : 'bg-muted/30'
                         }`}
                       />
                     ))}
@@ -457,7 +457,7 @@ function AuthPageContent() {
             {/* Şifre tekrar — sadece kayıt modunda */}
             {mode === 'register' && (
               <div className="space-y-2">
-                <label htmlFor="confirmPassword" className="text-sm font-medium text-white/70">Şifre Tekrar</label>
+                <label htmlFor="confirmPassword" className="text-sm font-medium text-foreground/80">Şifre Tekrar</label>
                 <div className="relative">
                   <input
                     id="confirmPassword"
@@ -476,7 +476,7 @@ function AuthPageContent() {
                   />
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-muted-foreground transition-colors"
                     onClick={() => setShowConfirm(!showConfirm)}
                     tabIndex={-1}
                   >
@@ -505,12 +505,12 @@ function AuthPageContent() {
                   type="checkbox"
                   checked={acceptTerms}
                   onChange={(e) => setAcceptTerms(e.target.checked)}
-                  className="h-4 w-4 mt-0.5 rounded border-white/20 accent-amber-600 cursor-pointer shrink-0"
+                  className="h-4 w-4 mt-0.5 rounded border-border accent-amber-600 cursor-pointer shrink-0"
                 />
-                <label htmlFor="acceptTerms" className="text-sm text-white/50 cursor-pointer select-none leading-relaxed">
-                  <Link href="/kullanim-sartlari" className="text-amber-500 hover:text-amber-400" target="_blank">Kullanım Şartları</Link>
+                <label htmlFor="acceptTerms" className="text-sm text-muted-foreground cursor-pointer select-none leading-relaxed">
+                  <Link href="/kullanim-sartlari" className="text-amber-500 hover:text-amber-700 dark:hover:text-amber-400" target="_blank">Kullanım Şartları</Link>
                   {' '}ve{' '}
-                  <Link href="/gizlilik-politikasi" className="text-amber-500 hover:text-amber-400" target="_blank">Gizlilik Politikası</Link>
+                  <Link href="/gizlilik-politikasi" className="text-amber-500 hover:text-amber-700 dark:hover:text-amber-400" target="_blank">Gizlilik Politikası</Link>
                   &apos;nı okudum, kabul ediyorum.
                 </label>
               </div>
@@ -547,16 +547,16 @@ function AuthPageContent() {
           {/* Bottom Toggle */}
           <div className="text-center text-sm pt-2">
             {mode === 'login' ? (
-              <p className="text-white/40">
+              <p className="text-muted-foreground/70">
                 Hesabın yok mu?{' '}
-                <button onClick={() => switchMode('register')} className="font-semibold text-amber-500 hover:text-amber-400 transition-colors">
+                <button onClick={() => switchMode('register')} className="font-semibold text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 transition-colors">
                   Ücretsiz Başla
                 </button>
               </p>
             ) : (
-              <p className="text-white/40">
+              <p className="text-muted-foreground/70">
                 Zaten üye misiniz?{' '}
-                <button onClick={() => switchMode('login')} className="font-semibold text-amber-500 hover:text-amber-400 transition-colors">
+                <button onClick={() => switchMode('login')} className="font-semibold text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 transition-colors">
                   Giriş Yap
                 </button>
               </p>
@@ -566,12 +566,12 @@ function AuthPageContent() {
 
         {/* Mobile Stats */}
         <div className="md:hidden w-full max-w-[400px] mt-8 text-center space-y-4">
-          <p className="text-sm text-white/40">Her satışında gerçek kârını bil.</p>
-          <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-white/30">
+          <p className="text-sm text-muted-foreground/70">Her satışında gerçek kârını bil.</p>
+          <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground/60">
             <span>5.000+ Satıcı</span>
-            <span className="text-white/10">|</span>
+            <span className="text-border/30">|</span>
             <span>1M+ Analiz</span>
-            <span className="text-white/10">|</span>
+            <span className="text-border/30">|</span>
             <span>%99.9 Uptime</span>
           </div>
         </div>
@@ -612,9 +612,9 @@ function AuthPageContent() {
           >
             <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold leading-tight tracking-tight">
               Kârını{' '}
-              <span className="text-amber-400">kontrol altına al</span>
+              <span className="text-amber-700 dark:text-amber-400">kontrol altına al</span>
             </h1>
-            <p className="mt-4 text-base lg:text-lg text-white/45 leading-relaxed max-w-md">
+            <p className="mt-4 text-base lg:text-lg text-muted-foreground leading-relaxed max-w-md">
               Komisyon, kargo, iade — tüm gizli maliyetleri tek ekranda gör. Veriye dayalı kararlar al.
             </p>
           </motion.div>
@@ -631,13 +631,13 @@ function AuthPageContent() {
               { icon: TestTube2, title: 'Kampanya Simülatörü', desc: 'İndirimi uygulamadan önce test et.' },
               { icon: Plug, title: 'Pazaryeri Entegrasyonu', desc: 'Trendyol, Hepsiburada, n11, Amazon.' },
             ].map((card) => (
-              <div key={card.title} className="flex items-start gap-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] p-4">
+              <div key={card.title} className="flex items-start gap-4 rounded-2xl bg-card border border-border/40 p-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/15">
-                  <card.icon className="h-5 w-5 text-amber-400" />
+                  <card.icon className="h-5 w-5 text-amber-700 dark:text-amber-400" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-white/95">{card.title}</h3>
-                  <p className="text-sm text-white/40 mt-0.5 leading-relaxed">{card.desc}</p>
+                  <h3 className="text-sm font-semibold text-foreground">{card.title}</h3>
+                  <p className="text-sm text-muted-foreground/70 mt-0.5 leading-relaxed">{card.desc}</p>
                 </div>
               </div>
             ))}
@@ -656,8 +656,8 @@ function AuthPageContent() {
               { value: '%99.9', label: 'Uptime' },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
-                <div className="text-xl lg:text-2xl font-bold text-amber-400">{stat.value}</div>
-                <div className="text-xs text-white/40 mt-1">{stat.label}</div>
+                <div className="text-xl lg:text-2xl font-bold text-amber-700 dark:text-amber-400">{stat.value}</div>
+                <div className="text-xs text-muted-foreground/70 mt-1">{stat.label}</div>
               </div>
             ))}
           </motion.div>

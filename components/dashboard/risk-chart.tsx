@@ -35,10 +35,10 @@ export function RiskChart({ analyses }: RiskChartProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.02] to-transparent p-5"
+            className="rounded-xl border border-border/40 bg-card p-5"
         >
             <div className="flex items-center gap-2 mb-4">
-                <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                <ShieldCheck className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
                 <span className="text-sm font-semibold">Risk Dagilimi</span>
             </div>
 

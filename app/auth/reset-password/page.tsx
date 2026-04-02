@@ -26,8 +26,8 @@ const strengthColors: Record<1 | 2 | 3, string> = {
 };
 const strengthTextColors: Record<1 | 2 | 3, string> = {
   1: 'text-red-400',
-  2: 'text-amber-400',
-  3: 'text-emerald-400',
+  2: 'text-amber-700 dark:text-amber-400',
+  3: 'text-emerald-700 dark:text-emerald-400',
 };
 
 export default function ResetPasswordPage() {
@@ -95,7 +95,7 @@ export default function ResetPasswordPage() {
         </div>
 
         <div
-          className="rounded-2xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] p-8 space-y-6"
+          className="rounded-2xl bg-card border border-border/40 p-8 space-y-6"
           style={{
             boxShadow: '0 20px 60px hsl(221 83% 53% / 0.08)',
             border: '1px solid hsl(221 83% 53% / 0.1)',
@@ -106,7 +106,7 @@ export default function ResetPasswordPage() {
             <div className="text-center space-y-4">
               <div className="flex justify-center">
                 <div className="h-14 w-14 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                  <Check className="h-7 w-7 text-emerald-400" />
+                  <Check className="h-7 w-7 text-emerald-700 dark:text-emerald-400" />
                 </div>
               </div>
               <div className="space-y-2">

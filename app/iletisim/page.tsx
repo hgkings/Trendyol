@@ -12,7 +12,7 @@ export default function IletisimPage() {
     <LegalPageLayout title="İletişim" description="Kârnet ile ilgili destek, soru veya önerileriniz için aşağıdaki kanallardan bize ulaşabilirsiniz.">
       
       <div className="mt-8 space-y-6">
-        <div className="flex items-start gap-4 rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6">
+        <div className="flex items-start gap-4 rounded-xl border border-border/40 bg-card p-6">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <Mail className="h-6 w-6" />
           </div>
@@ -26,7 +26,7 @@ export default function IletisimPage() {
           </div>
         </div>
 
-        <div className="flex items-start gap-4 rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6">
+        <div className="flex items-start gap-4 rounded-xl border border-border/40 bg-card p-6">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <Phone className="h-6 w-6" />
           </div>
@@ -38,7 +38,7 @@ export default function IletisimPage() {
           </div>
         </div>
 
-        <div className="flex items-start gap-4 rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6">
+        <div className="flex items-start gap-4 rounded-xl border border-border/40 bg-card p-6">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <MapPin className="h-6 w-6" />
           </div>

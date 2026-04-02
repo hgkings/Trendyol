@@ -20,7 +20,7 @@ function Cell({ value }: { value: string }) {
     return (
       <span className="inline-flex items-center justify-center">
         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/12">
-          <Check className="h-4 w-4 text-emerald-400" strokeWidth={2.5} />
+          <Check className="h-4 w-4 text-emerald-700 dark:text-emerald-400" strokeWidth={2.5} />
         </span>
       </span>
     );
@@ -29,7 +29,7 @@ function Cell({ value }: { value: string }) {
     return (
       <span className="inline-flex items-center justify-center">
         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/12">
-          <Check className="h-4 w-4 text-emerald-400" strokeWidth={2.5} />
+          <Check className="h-4 w-4 text-emerald-700 dark:text-emerald-400" strokeWidth={2.5} />
         </span>
       </span>
     );
@@ -45,7 +45,7 @@ function Cell({ value }: { value: string }) {
   }
   return (
     <span className="inline-flex items-center justify-center">
-      <span className="text-xs font-medium text-amber-400 bg-amber-500/12 px-2 py-1 rounded-lg">
+      <span className="text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-500/12 px-2 py-1 rounded-lg">
         Kısmi
       </span>
     </span>
@@ -57,22 +57,22 @@ export function ComparisonTable() {
     <section className="py-20 px-4">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-12">
-          <p className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: '#FBBF24' }}>
+          <p className="text-sm font-semibold uppercase tracking-wider mb-3 text-amber-800 dark:text-amber-300">
             Karşılaştırma
           </p>
           <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4" style={{ letterSpacing: '-0.5px' }}>
             Rakiplerle Karşılaştırma
           </h2>
-          <p className="text-[rgba(255,255,255,0.5)] text-base max-w-2xl mx-auto">
+          <p className="text-muted-foreground text-base max-w-2xl mx-auto">
             Kârnet neden öne çıkıyor?
           </p>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)]">
+        <div className="overflow-x-auto rounded-2xl border border-border/40 bg-card">
           <table className="w-full min-w-[560px]">
             <thead>
               <tr>
-                <th className="text-left px-6 py-5 text-sm font-semibold text-[rgba(255,255,255,0.5)] w-1/2 rounded-tl-2xl">
+                <th className="text-left px-6 py-5 text-sm font-semibold text-muted-foreground w-1/2 rounded-tl-2xl">
                   Özellik
                 </th>
                 <th className="px-6 py-5 bg-amber-500/5 border-x border-amber-500/10 w-[18%] relative">
@@ -81,22 +81,22 @@ export function ComparisonTable() {
                     <span className="text-[10px] font-bold text-white px-2 py-0.5 rounded-lg leading-none" style={{ background: 'linear-gradient(135deg, #D97706, #92400E)' }}>
                       En İyi Seçim
                     </span>
-                    <span className="text-sm font-bold text-amber-400">Kârnet</span>
+                    <span className="text-sm font-bold text-amber-700 dark:text-amber-400">Kârnet</span>
                   </div>
                 </th>
-                <th className="px-6 py-5 text-sm font-semibold text-[rgba(255,255,255,0.5)] text-center w-[16%]">
+                <th className="px-6 py-5 text-sm font-semibold text-muted-foreground text-center w-[16%]">
                   Excel
                 </th>
-                <th className="px-6 py-5 text-sm font-semibold text-[rgba(255,255,255,0.5)] text-center w-[16%] rounded-tr-2xl">
+                <th className="px-6 py-5 text-sm font-semibold text-muted-foreground text-center w-[16%] rounded-tr-2xl">
                   Rakip Araçlar
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[rgba(255,255,255,0.06)]">
+            <tbody className="divide-y divide-border/40">
               {rows.map((row, i) => (
                 <tr
                   key={row.label}
-                  className="hover:bg-white/[0.02] transition-colors duration-150"
+                  className="hover:bg-muted/20 transition-colors duration-150"
                 >
                   <td className="px-6 py-4 text-sm font-medium text-foreground/80">
                     {row.label}

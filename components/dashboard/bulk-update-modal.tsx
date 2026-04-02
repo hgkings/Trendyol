@@ -156,7 +156,7 @@ export function BulkUpdateModal({ open, onOpenChange, analyses, onComplete }: Bu
                         <div className="rounded-lg bg-amber-500/10 p-3 border border-amber-500/20">
                             <div className="flex gap-2">
                                 <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-                                <p className="text-xs text-amber-400">
+                                <p className="text-xs text-amber-700 dark:text-amber-400">
                                     Bu islem {filteredAnalyses.length} urunun verilerini kalici olarak degistirecek ve kar oranlarini yeniden hesaplayacaktir.
                                 </p>
                             </div>

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Play, Shield, TrendingUp, TrendingDown, Percent, AlertTriangle } from 'lucide-react';
+import { ArrowRight, Play, Shield, TrendingUp, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
@@ -32,7 +32,7 @@ function ProgressRing({ percent, size = 64, stroke = 5 }: { percent: number; siz
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size/2} cy={size/2} r={radius} stroke="rgba(255,255,255,0.06)" strokeWidth={stroke} fill="none" />
+        <circle cx={size/2} cy={size/2} r={radius} stroke="hsl(var(--border))" strokeWidth={stroke} fill="none" />
         <motion.circle
           cx={size/2} cy={size/2} r={radius}
           stroke="url(#ring-gradient)"
@@ -55,7 +55,7 @@ function ProgressRing({ percent, size = 64, stroke = 5 }: { percent: number; siz
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 1.5, duration: 0.4 }}
-          className="text-sm font-bold text-emerald-400"
+          className="text-sm font-bold text-emerald-600 dark:text-emerald-400"
         >
           %{percent}
         </motion.span>
@@ -110,11 +110,10 @@ export function Hero() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="mb-6 inline-flex items-center gap-2 rounded-lg px-3 py-1 text-xs font-semibold"
-              style={{ background: 'rgba(217,119,6,0.12)', color: '#FBBF24' }}
+              className="mb-6 inline-flex items-center gap-2 rounded-lg px-3 py-1 text-xs font-semibold bg-amber-500/12 text-amber-800 dark:text-amber-300"
             >
               <PulseDot color="#F59E0B" />
-              Yeni: Trendyol & Hepsiburada API Entegrasyonu
+              Türkiye'nin İlk Pazaryeri Kâr Analiz Platformu
             </motion.div>
 
             <motion.h1
@@ -124,13 +123,13 @@ export function Hero() {
               className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-[3.4rem] lg:leading-[1.1] mb-6 text-foreground"
               style={{ letterSpacing: '-0.5px' }}
             >
-              Satıyorsun ama{' '}
+              Komisyonlar, kargolar, iadeler...{' '}
               <span style={{
                 background: 'linear-gradient(135deg, #F59E0B, #D97706)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}>
-                kazanıyor musun?
+                Gerçek kârını biliyor musun?
               </span>
             </motion.h1>
 
@@ -138,7 +137,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="mb-8 text-lg text-[rgba(255,255,255,0.5)] leading-relaxed max-w-xl mx-auto lg:mx-0"
+              className="mb-8 text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto lg:mx-0"
             >
               Pazaryeri komisyonları, kargo maliyetleri, iade kayıpları... Hepsini görünür kıl, kontrolü ele al.
             </motion.p>
@@ -160,7 +159,7 @@ export function Hero() {
               </Link>
               <Link href="#how-it-works">
                 <Button variant="outline" size="lg"
-                  className="w-full sm:w-auto h-12 px-8 text-base font-medium rounded-xl gap-2 transition-all duration-300 border-[rgba(255,255,255,0.06)] hover:bg-white/5"
+                  className="w-full sm:w-auto h-12 px-8 text-base font-medium rounded-xl gap-2 transition-all duration-300 border-border/40 hover:bg-muted/50"
                 >
                   <Play className="h-4 w-4 fill-current" /> Nasıl Çalışır?
                 </Button>
@@ -171,7 +170,7 @@ export function Hero() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="flex flex-wrap items-center gap-x-5 gap-y-2 justify-center lg:justify-start text-sm text-[rgba(255,255,255,0.5)]"
+              className="flex flex-wrap items-center gap-x-5 gap-y-2 justify-center lg:justify-start text-sm text-muted-foreground"
             >
               <span className="flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-emerald-400" /> Kredi kartı gerekmez</span>
               <span className="flex items-center gap-1.5">👥 5.000+ satıcı</span>
@@ -195,26 +194,20 @@ export function Hero() {
               style={{ perspective: '1000px' }}
             >
 
-              {/* ── Ana Kart ── */}
-              <div className="relative rounded-3xl overflow-hidden"
-                style={{
-                  background: 'linear-gradient(180deg, rgba(12,10,9,0.95) 0%, rgba(6,6,8,0.98) 100%)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  boxShadow: '0 25px 60px -12px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.03) inset',
-                }}
-              >
-                {/* Üst gradient line */}
-                <div className="h-[2px]" style={{ background: 'linear-gradient(90deg, transparent 10%, #D97706 30%, #F59E0B 50%, #D97706 70%, transparent 90%)' }} />
-
-                {/* Status bar */}
-                <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.04]">
-                  <div className="flex items-center gap-3">
-                    <div className="flex gap-1">
-                      <div className="h-2.5 w-2.5 rounded-full bg-red-500/80" />
-                      <div className="h-2.5 w-2.5 rounded-full bg-amber-500/80" />
-                      <div className="h-2.5 w-2.5 rounded-full bg-emerald-500/80" />
+              {/* ── Browser Frame ── */}
+              <div className="hero-mock-card relative rounded-2xl overflow-hidden">
+                {/* Browser Chrome */}
+                <div className="flex items-center gap-3 px-4 py-3 border-b border-border/40 bg-muted/30 dark:bg-white/[0.02]">
+                  <div className="flex gap-1.5">
+                    <div className="h-3 w-3 rounded-full bg-red-400 dark:bg-red-500/80" />
+                    <div className="h-3 w-3 rounded-full bg-amber-400 dark:bg-amber-500/80" />
+                    <div className="h-3 w-3 rounded-full bg-emerald-400 dark:bg-emerald-500/80" />
+                  </div>
+                  <div className="flex-1 flex items-center justify-center">
+                    <div className="flex items-center gap-2 bg-background/80 dark:bg-white/[0.04] rounded-lg px-3 py-1 text-[10px] text-muted-foreground font-mono border border-border/40 dark:border-white/[0.06]">
+                      <svg className="h-2.5 w-2.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd"/></svg>
+                      karnet.com/analysis
                     </div>
-                    <span className="text-[10px] text-white/20 font-mono">karnet.com/analysis</span>
                   </div>
                   <motion.div
                     initial={{ opacity: 0 }}
@@ -222,11 +215,12 @@ export function Hero() {
                     transition={{ delay: 0.8 }}
                     className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2 py-0.5"
                   >
-                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-[9px] font-semibold text-emerald-400">Canlı</span>
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">Canlı</span>
                   </motion.div>
                 </div>
 
+                {/* Dashboard Content */}
                 <div className="p-5 space-y-5">
 
                   {/* Ürün Header */}
@@ -237,11 +231,11 @@ export function Hero() {
                     className="flex items-start justify-between"
                   >
                     <div>
-                      <h3 className="text-base font-bold text-white">Bluetooth Kulaklık TWS</h3>
+                      <h3 className="text-base font-bold text-foreground">Bluetooth Kulaklık TWS</h3>
                       <div className="flex items-center gap-1.5 mt-1">
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400/80 font-medium">Trendyol</span>
-                        <span className="text-[9px] text-white/20">·</span>
-                        <span className="text-[9px] text-white/30">Elektronik</span>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400/80 font-medium">Trendyol</span>
+                        <span className="text-[9px] text-muted-foreground/50">·</span>
+                        <span className="text-[9px] text-muted-foreground">Elektronik</span>
                       </div>
                     </div>
                     <ProgressRing percent={17.8} size={56} stroke={4} />
@@ -254,28 +248,28 @@ export function Hero() {
                     transition={{ delay: 0.7, duration: 0.5 }}
                     className="grid grid-cols-4 gap-2"
                   >
-                    <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                      <p className="text-[7px] text-white/25 uppercase tracking-wider font-bold mb-1">Satış</p>
-                      <p className="text-[13px] font-bold text-white tabular-nums"><AnimatedNumber value={349} /> <span className="text-[9px] text-white/30">TL</span></p>
+                    <div className="hero-mock-stat">
+                      <p className="text-[7px] text-muted-foreground uppercase tracking-wider font-bold mb-1">Satış</p>
+                      <p className="text-[13px] font-bold text-foreground tabular-nums"><AnimatedNumber value={349} /> <span className="text-[9px] text-muted-foreground">TL</span></p>
                     </div>
-                    <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                      <p className="text-[7px] text-white/25 uppercase tracking-wider font-bold mb-1">Maliyet</p>
-                      <p className="text-[13px] font-bold text-white tabular-nums"><AnimatedNumber value={287} /> <span className="text-[9px] text-white/30">TL</span></p>
+                    <div className="hero-mock-stat">
+                      <p className="text-[7px] text-muted-foreground uppercase tracking-wider font-bold mb-1">Maliyet</p>
+                      <p className="text-[13px] font-bold text-foreground tabular-nums"><AnimatedNumber value={287} /> <span className="text-[9px] text-muted-foreground">TL</span></p>
                     </div>
-                    <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.12)' }}>
-                      <p className="text-[7px] text-emerald-400/50 uppercase tracking-wider font-bold mb-1">Kâr</p>
-                      <p className="text-[13px] font-bold text-emerald-400 tabular-nums">+<AnimatedNumber value={62} /> <span className="text-[9px] text-emerald-400/50">TL</span></p>
+                    <div className="rounded-xl p-2.5 text-center bg-emerald-500/10 border border-emerald-500/20">
+                      <p className="text-[7px] text-emerald-600 dark:text-emerald-400/50 uppercase tracking-wider font-bold mb-1">Kâr</p>
+                      <p className="text-[13px] font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">+<AnimatedNumber value={62} /> <span className="text-[9px] text-emerald-600/60 dark:text-emerald-400/50">TL</span></p>
                     </div>
-                    <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.12)' }}>
-                      <p className="text-[7px] text-amber-400/50 uppercase tracking-wider font-bold mb-1">Risk</p>
+                    <div className="rounded-xl p-2.5 text-center bg-amber-500/10 border border-amber-500/20">
+                      <p className="text-[7px] text-amber-600 dark:text-amber-400/50 uppercase tracking-wider font-bold mb-1">Risk</p>
                       <div className="flex items-center justify-center gap-0.5">
-                        <AlertTriangle className="h-3 w-3 text-amber-400" />
-                        <p className="text-[11px] font-bold text-amber-400">Orta</p>
+                        <AlertTriangle className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                        <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400">Orta</p>
                       </div>
                     </div>
                   </motion.div>
 
-                  {/* Maliyet Dağılımı - Animated Bars */}
+                  {/* Maliyet Dağılımı */}
                   <motion.div
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -283,14 +277,14 @@ export function Hero() {
                     className="space-y-2"
                   >
                     <div className="flex items-center justify-between">
-                      <p className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Maliyet Dağılımı</p>
-                      <p className="text-[9px] text-white/20"><AnimatedNumber value={287} duration={2.5} /> TL toplam</p>
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-bold">Maliyet Dağılımı</p>
+                      <p className="text-[9px] text-muted-foreground"><AnimatedNumber value={287} duration={2.5} /> TL toplam</p>
                     </div>
 
                     {costs.map((cost, i) => (
                       <div key={cost.label} className="flex items-center gap-2">
-                        <span className="text-[9px] text-white/40 w-14 text-right shrink-0">{cost.label}</span>
-                        <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                        <span className="text-[9px] text-muted-foreground w-14 text-right shrink-0">{cost.label}</span>
+                        <div className="flex-1 h-2 rounded-full overflow-hidden hero-mock-bar-bg">
                           <motion.div
                             initial={{ width: '0%' }}
                             animate={{ width: `${cost.pct}%` }}
@@ -299,41 +293,39 @@ export function Hero() {
                             style={{ background: cost.color }}
                           />
                         </div>
-                        <span className="text-[9px] text-white/30 w-7 tabular-nums">%{cost.pct}</span>
+                        <span className="text-[9px] text-muted-foreground w-7 tabular-nums">%{cost.pct}</span>
                       </div>
                     ))}
                   </motion.div>
 
-                  {/* Alt bölüm: Aylık projeksiyon */}
+                  {/* Aylık projeksiyon */}
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 1.5, duration: 0.4 }}
-                    className="flex items-center justify-between rounded-xl px-4 py-3"
-                    style={{ background: 'linear-gradient(135deg, rgba(217,119,6,0.08), rgba(217,119,6,0.02))', border: '1px solid rgba(217,119,6,0.12)' }}
+                    className="hero-mock-cta flex items-center justify-between px-4 py-3"
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(217,119,6,0.15)' }}>
-                        <TrendingUp className="h-4 w-4 text-amber-400" />
+                      <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-amber-500/15">
+                        <TrendingUp className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                       </div>
                       <div>
-                        <p className="text-[8px] text-white/30 uppercase tracking-wider font-medium">Aylık Tahmini</p>
-                        <p className="text-sm font-bold text-amber-400 tabular-nums">+<AnimatedNumber value={6200} duration={2.5} /> TL</p>
+                        <p className="text-[8px] text-muted-foreground uppercase tracking-wider font-medium">Aylık Tahmini</p>
+                        <p className="text-sm font-bold text-amber-600 dark:text-amber-400 tabular-nums">+<AnimatedNumber value={6200} duration={2.5} /> TL</p>
                       </div>
                     </div>
                     <motion.div
                       animate={{ x: [0, 4, 0] }}
                       transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
                     >
-                      <ArrowRight className="h-4 w-4 text-amber-400/50" />
+                      <ArrowRight className="h-4 w-4 text-amber-500/50" />
                     </motion.div>
                   </motion.div>
                 </div>
 
-                {/* Alt gradient line */}
-                <div className="h-[1px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(217,119,6,0.2), transparent)' }} />
+                {/* Alt amber accent line */}
+                <div className="h-[2px] bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
               </div>
-
 
             </motion.div>
           </div>

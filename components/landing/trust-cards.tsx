@@ -44,7 +44,7 @@ export function TrustCards() {
           <h2 className="text-3xl font-extrabold tracking-tight" style={{ letterSpacing: '-0.5px' }}>
             Verileriniz Bizimle Güvende
           </h2>
-          <p className="text-[rgba(255,255,255,0.5)] max-w-2xl mx-auto">
+          <p className="text-muted-foreground max-w-2xl mx-auto">
             Banka düzeyinde şifreleme ve katmanlı güvenlik mimarisi ile verilerinizi koruyoruz
           </p>
         </div>
@@ -53,13 +53,13 @@ export function TrustCards() {
           {cards.map((card, idx) => (
             <div
               key={idx}
-              className="rounded-2xl p-6 border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] hover:border-emerald-500/20 hover:shadow-md transition-all duration-300 flex flex-col items-start text-left"
+              className="rounded-2xl p-6 border border-border/40 bg-card hover:border-emerald-500/20 hover:shadow-md transition-all duration-300 flex flex-col items-start text-left"
             >
-              <div className="bg-emerald-500/8 border border-emerald-500/15 text-emerald-400 p-3 rounded-xl mb-4">
+              <div className="bg-emerald-500/8 border border-emerald-500/15 text-emerald-700 dark:text-emerald-400 p-3 rounded-xl mb-4">
                 <card.icon className="h-6 w-6" />
               </div>
               <h3 className="text-lg font-bold mb-2">{card.title}</h3>
-              <p className="text-sm text-[rgba(255,255,255,0.5)] leading-relaxed">
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 {card.desc}
               </p>
             </div>

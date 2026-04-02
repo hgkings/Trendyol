@@ -41,15 +41,15 @@ export function CookieConsent() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-[100] p-4 animate-in slide-in-from-bottom-4 fade-in duration-500">
-      <div className="mx-auto max-w-2xl rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(12,10,9,0.95)] backdrop-blur-xl p-5 shadow-2xl">
+      <div className="mx-auto max-w-2xl rounded-2xl border border-border/50 bg-background p-5 shadow-md">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-[rgba(255,255,255,0.7)] leading-relaxed">
+            <p className="text-sm text-foreground/80 leading-relaxed">
               Sitemizde oturum yonetimi icin zorunlu cerezler kullanilmaktadir.
               Analitik cerezler ise onayinizla aktif edilir.{' '}
               <Link
                 href="/cerez-politikasi"
-                className="text-amber-500 hover:text-amber-400 underline underline-offset-2"
+                className="text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 underline underline-offset-2"
               >
                 Cerez Politikasi
               </Link>
@@ -58,7 +58,7 @@ export function CookieConsent() {
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={handleReject}
-              className="px-4 py-2 rounded-xl text-xs font-medium text-[rgba(255,255,255,0.5)] hover:text-[rgba(255,255,255,0.8)] border border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] transition-all"
+              className="px-4 py-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground/90 border border-border/60 hover:border-border transition-all"
             >
               Reddet
             </button>

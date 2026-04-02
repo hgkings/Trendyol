@@ -58,20 +58,20 @@ export function CommentsSection({ slug }: Props) {
   }
 
   return (
-    <section className="mt-16 border-t border-[rgba(255,255,255,0.06)] pt-10">
+    <section className="mt-16 border-t border-border/40 pt-10">
       <h2 className="text-lg font-semibold text-foreground mb-6">
-        Yorumlar{comments.length > 0 && <span className="ml-2 text-sm font-normal text-[rgba(255,255,255,0.4)]">({comments.length})</span>}
+        Yorumlar{comments.length > 0 && <span className="ml-2 text-sm font-normal text-muted-foreground/70">({comments.length})</span>}
       </h2>
 
       {/* Yorum Listesi */}
       {loading ? (
         <div className="space-y-3">
           {[1, 2].map((i) => (
-            <div key={i} className="animate-pulse rounded-xl bg-[rgba(255,255,255,0.04)] h-20" />
+            <div key={i} className="animate-pulse rounded-xl bg-muted/15 h-20" />
           ))}
         </div>
       ) : comments.length === 0 ? (
-        <p className="text-sm text-[rgba(255,255,255,0.35)] mb-8">
+        <p className="text-sm text-muted-foreground/60 mb-8">
           Henüz yorum yok. İlk yorumu sen yap!
         </p>
       ) : (
@@ -79,11 +79,11 @@ export function CommentsSection({ slug }: Props) {
           {comments.map((c) => (
             <div
               key={c.id}
-              className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-5 py-4"
+              className="rounded-xl border border-border/40 bg-card px-5 py-4"
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-foreground">{c.author_name}</span>
-                <span className="text-xs text-[rgba(255,255,255,0.3)]">
+                <span className="text-xs text-muted-foreground/60">
                   {new Date(c.created_at).toLocaleDateString('tr-TR', {
                     day: 'numeric',
                     month: 'long',
@@ -91,7 +91,7 @@ export function CommentsSection({ slug }: Props) {
                   })}
                 </span>
               </div>
-              <p className="text-sm text-[rgba(255,255,255,0.7)] leading-relaxed whitespace-pre-wrap">
+              <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
                 {c.content}
               </p>
             </div>
@@ -100,11 +100,11 @@ export function CommentsSection({ slug }: Props) {
       )}
 
       {/* Yorum Formu */}
-      <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] p-6">
+      <div className="rounded-2xl border border-border/50 bg-card p-6">
         <h3 className="text-sm font-semibold text-foreground mb-4">Yorum Yaz</h3>
 
         {submitted ? (
-          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-sm text-amber-400">
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
             Yorumunuz alındı, incelendikten sonra yayınlanacak.
           </div>
         ) : (
@@ -116,7 +116,7 @@ export function CommentsSection({ slug }: Props) {
               onChange={(e) => setAuthorName(e.target.value)}
               required
               maxLength={100}
-              className="w-full rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] px-4 py-2.5 text-sm text-foreground placeholder:text-[rgba(255,255,255,0.25)] focus:outline-none focus:border-amber-500/50 transition-colors"
+              className="w-full rounded-xl border border-border/50 bg-muted/15 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-amber-500/50 transition-colors"
             />
             <textarea
               placeholder="Yorumunuzu yazın..."
@@ -125,7 +125,7 @@ export function CommentsSection({ slug }: Props) {
               required
               maxLength={2000}
               rows={4}
-              className="w-full rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] px-4 py-2.5 text-sm text-foreground placeholder:text-[rgba(255,255,255,0.25)] focus:outline-none focus:border-amber-500/50 transition-colors resize-none"
+              className="w-full rounded-xl border border-border/50 bg-muted/15 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-amber-500/50 transition-colors resize-none"
             />
             {error && (
               <p className="text-xs text-red-400">{error}</p>

@@ -29,7 +29,7 @@ const SCENARIOS: Scenario[] = [
     netProfit: 89,
     margin: 13.7,
     riskLabel: 'Orta',
-    riskColor: 'text-amber-400',
+    riskColor: 'text-amber-700 dark:text-amber-400',
     riskBg: 'bg-amber-500/10',
     barColor: 'bg-amber-500',
     barWidth: 'w-[45%]',
@@ -58,7 +58,7 @@ const SCENARIOS: Scenario[] = [
     netProfit: 62,
     margin: 21.4,
     riskLabel: 'Düşük',
-    riskColor: 'text-emerald-400',
+    riskColor: 'text-emerald-700 dark:text-emerald-400',
     riskBg: 'bg-emerald-500/10',
     barColor: 'bg-emerald-500',
     barWidth: 'w-[72%]',
@@ -150,10 +150,10 @@ export function LiveAnalysisShowcase() {
   const s = SCENARIOS[activeIndex];
   const profitColor =
     s.netProfit > 0
-      ? 'text-emerald-400'
+      ? 'text-emerald-700 dark:text-emerald-400'
       : s.netProfit < 0
         ? 'text-red-400'
-        : 'text-amber-400';
+        : 'text-amber-700 dark:text-amber-400';
 
   return (
     <div className="space-y-3">
@@ -172,7 +172,7 @@ export function LiveAnalysisShowcase() {
       </div>
 
       {/* Animated Card */}
-      <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] backdrop-blur-sm p-5 space-y-3 relative overflow-hidden">
+      <div className="rounded-xl border border-border/40 bg-card p-5 space-y-3 relative overflow-hidden">
         {/* Risk badge — top right */}
         <div
           className={`absolute top-3 right-3 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'} ${s.riskBg} ${s.riskColor}`}
@@ -280,10 +280,10 @@ export function LiveAnalysisShowcase() {
 function StaticCard({ scenario: s }: { scenario: Scenario }) {
   const profitColor =
     s.netProfit > 0
-      ? 'text-emerald-400'
+      ? 'text-emerald-700 dark:text-emerald-400'
       : s.netProfit < 0
         ? 'text-red-400'
-        : 'text-amber-400';
+        : 'text-amber-700 dark:text-amber-400';
 
   return (
     <div className="space-y-3">
@@ -292,7 +292,7 @@ function StaticCard({ scenario: s }: { scenario: Scenario }) {
           📊 Gerçek Analiz Örnekleri
         </span>
       </div>
-      <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] backdrop-blur-sm p-5 space-y-3 relative overflow-hidden">
+      <div className="rounded-xl border border-border/40 bg-card p-5 space-y-3 relative overflow-hidden">
         <div className={`absolute top-3 right-3 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${s.riskBg} ${s.riskColor}`}>
           Risk: {s.riskLabel}
         </div>

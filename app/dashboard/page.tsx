@@ -79,7 +79,7 @@ export default function DashboardPage() {
                     {/* KPI cards skeleton */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {[1, 2, 3, 4].map(i => (
-                            <div key={i} className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-5 space-y-3">
+                            <div key={i} className="rounded-xl border border-border/40 bg-card p-5 space-y-3">
                                 <div className="h-3 w-20 bg-muted/20 rounded" />
                                 <div className="h-6 w-24 bg-muted/30 rounded" />
                             </div>
@@ -87,11 +87,11 @@ export default function DashboardPage() {
                     </div>
                     {/* Charts skeleton */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] h-64" />
-                        <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] h-64" />
+                        <div className="rounded-xl border border-border/40 bg-card h-64" />
+                        <div className="rounded-xl border border-border/40 bg-card h-64" />
                     </div>
                     {/* Table skeleton */}
-                    <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] h-48" />
+                    <div className="rounded-xl border border-border/40 bg-card h-48" />
                 </div>
             </DashboardLayout>
         );
@@ -180,7 +180,7 @@ export default function DashboardPage() {
                         className="space-y-4"
                     >
                         <div className="flex items-center gap-2 px-1">
-                            <BarChart3 className="h-4 w-4 text-emerald-400" />
+                            <BarChart3 className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
                             <h2 className="text-sm font-semibold">Son Analizler</h2>
                         </div>
                         <ProductsTable analyses={analyses.slice(0, 10)} onDelete={handleDelete} />

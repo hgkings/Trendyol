@@ -34,13 +34,13 @@ export function MarketplaceCards() {
     <section className="py-16 px-4">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-10">
-          <p className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: '#FBBF24' }}>
+          <p className="text-sm font-semibold uppercase tracking-wider mb-3 text-amber-800 dark:text-amber-300">
             Entegrasyonlar
           </p>
           <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4" style={{ letterSpacing: '-0.5px' }}>
             Desteklenen Pazaryerleri
           </h2>
-          <p className="text-[rgba(255,255,255,0.5)] text-base max-w-2xl mx-auto">
+          <p className="text-muted-foreground text-base max-w-2xl mx-auto">
             Tüm büyük pazaryerlerinde kârlılığınızı hesaplayın
           </p>
         </div>
@@ -49,10 +49,10 @@ export function MarketplaceCards() {
           {marketplaces.map((mp) => (
             <div
               key={mp.name}
-              className="group relative rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6 hover:scale-[1.02] hover:border-amber-500/30 hover:shadow-lg transition-all duration-300 cursor-default"
+              className="group relative rounded-2xl border border-border/40 bg-card p-6 hover:scale-[1.02] hover:border-amber-500/30 hover:shadow-lg transition-all duration-300 cursor-default"
             >
               {mp.badge && (
-                <span className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-500/12 text-amber-400">
+                <span className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-500/12 text-amber-700 dark:text-amber-400">
                   {mp.badge}
                 </span>
               )}
@@ -66,7 +66,7 @@ export function MarketplaceCards() {
                 />
               </div>
               <h3 className="font-bold text-foreground mb-2">{mp.name}</h3>
-              <p className="text-sm text-[rgba(255,255,255,0.5)] leading-relaxed">{mp.desc}</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">{mp.desc}</p>
             </div>
           ))}
         </div>

@@ -34,7 +34,7 @@ export function CashflowEstimator({ input }: CashflowEstimatorProps) {
   ];
 
   return (
-    <div className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6">
+    <div className="rounded-2xl border border-border/40 bg-card p-6">
       <h3 className="text-sm font-semibold">Nakit Akisi Tahmini</h3>
       <p className="mt-1 text-xs text-muted-foreground">
         Odeme gecikmeleri ve maliyetlere gore nakit akisi tahmini.

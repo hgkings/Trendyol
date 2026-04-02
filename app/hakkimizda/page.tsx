@@ -72,7 +72,7 @@ export default function HakkimizdaPage() {
         {VALUES.map((v) => (
           <div
             key={v.title}
-            className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-5 space-y-2"
+            className="rounded-2xl border border-border/40 bg-card p-5 space-y-2"
           >
             <div className="text-xl leading-none">{v.icon}</div>
             <div className="font-semibold text-foreground">{v.title}</div>

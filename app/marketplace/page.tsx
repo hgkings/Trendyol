@@ -534,17 +534,17 @@ export default function MarketplacePage() {
         connected: {
             icon: <CheckCircle2 className="h-5 w-5" />,
             label: 'Bağlı',
-            color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+            color: 'text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
         },
         disconnected: {
             icon: <XCircle className="h-5 w-5" />,
             label: 'Bağlı Değil',
-            color: 'text-[rgba(255,255,255,0.4)] bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.06)]',
+            color: 'text-muted-foreground/70 bg-muted/20 border-border/40',
         },
         pending_test: {
             icon: <Loader2 className="h-5 w-5 animate-spin" />,
             label: 'Test Ediliyor',
-            color: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+            color: 'text-amber-700 dark:text-amber-400 bg-amber-500/10 border-amber-500/20',
         },
         error: {
             icon: <AlertTriangle className="h-5 w-5" />,
@@ -572,7 +572,7 @@ export default function MarketplacePage() {
                 </div>
 
                 {/* Marketplace Card */}
-                <div className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] overflow-hidden">
+                <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
                     {/* Card Header */}
                     <div className={`flex items-center justify-between p-6 border-b bg-gradient-to-r ${mpConfig.gradient}`}>
                         <div className="flex items-center gap-4">
@@ -584,7 +584,7 @@ export default function MarketplacePage() {
                                     <PopoverTrigger asChild>
                                         <button className="flex items-center gap-2 group text-left focus:outline-none">
                                             <h2 className="text-xl font-bold">{mpConfig.label}</h2>
-                                            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-[rgba(255,255,255,0.06)] group-hover:bg-white/10 transition-colors">
+                                            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-muted/30 group-hover:bg-muted/60 transition-colors">
                                                 <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                                             </div>
                                         </button>
@@ -595,7 +595,7 @@ export default function MarketplacePage() {
                                                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                                 <Input
                                                     placeholder="Pazaryeri ara..."
-                                                    className="pl-9 bg-[rgba(255,255,255,0.04)] border-none focus-visible:ring-1"
+                                                    className="pl-9 bg-muted/20 border-none focus-visible:ring-1"
                                                     value={searchQuery}
                                                     onChange={(e) => setSearchQuery(e.target.value)}
                                                 />
@@ -609,7 +609,7 @@ export default function MarketplacePage() {
                                                     return (
                                                         <button
                                                             key={key}
-                                                            className={`flex items-start w-full gap-3 p-2.5 rounded-lg text-left transition-all hover:bg-white/5 ${isSelected ? 'bg-white/[0.03]' : ''}`}
+                                                            className={`flex items-start w-full gap-3 p-2.5 rounded-lg text-left transition-all hover:bg-muted/50 ${isSelected ? 'bg-muted/10' : ''}`}
                                                             onClick={() => {
                                                                 setSelectedMarketplace(key as MarketplaceKey);
                                                                 setMarketplaceOpen(false);
@@ -712,8 +712,8 @@ export default function MarketplacePage() {
 
                                 {/* Security Notice */}
                                 <div className="flex items-start gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4">
-                                    <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
-                                    <div className="text-xs text-emerald-400">
+                                    <ShieldCheck className="h-5 w-5 text-emerald-700 dark:text-emerald-400 shrink-0 mt-0.5" />
+                                    <div className="text-xs text-emerald-700 dark:text-emerald-400">
                                         <p className="font-semibold">API bilgileriniz güvende</p>
                                         <p className="mt-0.5 opacity-80">Tüm kimlik bilgileri AES-256-GCM ile şifreli olarak saklanır. Hiçbir zaman düz metin olarak depolanmaz.</p>
                                     </div>
@@ -787,7 +787,7 @@ export default function MarketplacePage() {
                                                 </Button>
                                             )
                                         ) : (
-                                            <span className="text-xs text-muted-foreground font-medium px-2 py-1 rounded-md bg-white/5 border border-white/10">
+                                            <span className="text-xs text-muted-foreground font-medium px-2 py-1 rounded-md bg-muted/20 border border-border/50">
                                                 Yakında
                                             </span>
                                         )}
@@ -798,12 +798,12 @@ export default function MarketplacePage() {
                                 {orderMetrics && (
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                         <div className="rounded-lg border bg-emerald-500/10 border-emerald-500/20 p-4 space-y-1">
-                                            <p className="text-xs font-medium text-emerald-400 uppercase tracking-wider">Bu Ay Satış</p>
-                                            <p className="text-xl font-bold text-emerald-400">{orderMetrics.currentMonthSales}</p>
+                                            <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Bu Ay Satış</p>
+                                            <p className="text-xl font-bold text-emerald-700 dark:text-emerald-400">{orderMetrics.currentMonthSales}</p>
                                         </div>
                                         <div className="rounded-lg border bg-amber-500/10 border-amber-500/20 p-4 space-y-1">
-                                            <p className="text-xs font-medium text-amber-400 uppercase tracking-wider">Eşleşmeyen Sipariş</p>
-                                            <p className="text-xl font-bold text-amber-400">{orderMetrics.unmatchedOrders}</p>
+                                            <p className="text-xs font-medium text-amber-700 dark:text-amber-400 uppercase tracking-wider">Eşleşmeyen Sipariş</p>
+                                            <p className="text-xl font-bold text-amber-700 dark:text-amber-400">{orderMetrics.unmatchedOrders}</p>
                                         </div>
                                         <div className="rounded-lg border p-4 space-y-1">
                                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Metrik Güncelleme</p>
@@ -955,7 +955,7 @@ export default function MarketplacePage() {
 
                                 {/* Last Log */}
                                 {lastLog && (
-                                    <div className="flex items-center gap-2 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-3">
+                                    <div className="flex items-center gap-2 rounded-lg border border-border/40 bg-card p-3">
                                         <RefreshCw className="h-4 w-4 text-muted-foreground shrink-0" />
                                         <p className="text-xs text-muted-foreground truncate">{lastLog}</p>
                                     </div>
@@ -1232,8 +1232,8 @@ export default function MarketplacePage() {
                                 </div>
 
                                 {/* Security Notice */}
-                                <div className="flex items-start gap-3 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-4">
-                                    <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
+                                <div className="flex items-start gap-3 rounded-lg border border-border/40 bg-card p-4">
+                                    <ShieldCheck className="h-5 w-5 text-emerald-700 dark:text-emerald-400 shrink-0 mt-0.5" />
                                     <p className="text-xs text-muted-foreground">
                                         API bilgileriniz AES-256-GCM ile şifrelenerek güvenli sunucularımızda saklanır.
                                         Bilgileriniz hiçbir zaman tarayıcınızda depolanmaz veya loglara yazılmaz.

@@ -319,27 +319,27 @@ export default function AnalysisResultPage() {
 
         {/* Compact Key Metrics Grid */}
         <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-4">
+          <div className="rounded-xl border border-border/40 bg-card p-4">
             <p className="text-xs font-medium text-muted-foreground">Birim net kâr</p>
-            <p className={`mt-0.5 text-xl sm:text-2xl font-bold tracking-tight ${result.unit_net_profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <p className={`mt-0.5 text-xl sm:text-2xl font-bold tracking-tight ${result.unit_net_profit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
               {formatCurrency(result.unit_net_profit)}
             </p>
           </div>
-          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-4">
+          <div className="rounded-xl border border-border/40 bg-card p-4">
             <p className="text-xs font-medium text-muted-foreground">Kâr marjı</p>
-            <p className={`mt-0.5 text-xl sm:text-2xl font-bold tracking-tight ${result.margin_pct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <p className={`mt-0.5 text-xl sm:text-2xl font-bold tracking-tight ${result.margin_pct >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
               {formatPercent(result.margin_pct)}
             </p>
           </div>
-          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-4">
+          <div className="rounded-xl border border-border/40 bg-card p-4">
             <p className="text-xs font-medium text-muted-foreground">Aylık net kâr</p>
-            <p className={`mt-0.5 text-xl sm:text-2xl font-bold tracking-tight ${result.monthly_net_profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <p className={`mt-0.5 text-xl sm:text-2xl font-bold tracking-tight ${result.monthly_net_profit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
               {formatCurrency(result.monthly_net_profit)}
             </p>
           </div>
 
           {/* Integrated Ad Ceiling */}
-          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-4">
+          <div className="rounded-xl border border-border/40 bg-card p-4">
             {(() => {
               const adCeiling = calculateAdCeiling(input);
               const isLoss = adCeiling <= 0;
@@ -362,7 +362,7 @@ export default function AnalysisResultPage() {
 
 
         {/* Minimum Kârlı Satış Fiyatı — 3 kart */}
-        <div className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6">
+        <div className="rounded-2xl border border-border/40 bg-card p-6">
           <MinPriceCards input={input} currentPrice={input.sale_price} />
         </div>
 
@@ -392,7 +392,7 @@ export default function AnalysisResultPage() {
               const isProMode = input.pro_mode === true;
 
               return (
-                <div className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6 space-y-4">
+                <div className="rounded-2xl border border-border/40 bg-card p-6 space-y-4">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">📦</span>
                     <h3 className="text-sm font-semibold text-foreground border-b border-border/20 pb-2 mb-2">İade analizi</h3>
@@ -405,7 +405,7 @@ export default function AnalysisResultPage() {
                     </div>
                   )}
                   {!isNegativeAfterReturn && isHighReturn && (
-                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-400">
+                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400">
                       ⚠️ Yüksek iade oranı! {monthlySales > 0 ? `${monthlySales} satışta ~${expectedReturns} iade bekleniyor.` : ''} Net kârınız iade maliyetlerini karşılıyor mu? Fiyatlandırmanızı gözden geçirmenizi öneririz.
                     </div>
                   )}
@@ -445,14 +445,14 @@ export default function AnalysisResultPage() {
                       )}
                       <div className="flex justify-between items-center text-sm">
                         <span className="text-muted-foreground">İade Öncesi Kâr</span>
-                        <span className={`font-semibold ${profitBeforeReturn >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        <span className={`font-semibold ${profitBeforeReturn >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
                           {formatCurrency(profitBeforeReturn)}
                         </span>
                       </div>
                       <div className="flex justify-between items-center border-t pt-2">
                         <span className="font-bold text-sm">İade Sonrası Net</span>
                         <div className="text-right">
-                          <p className={`text-xl font-black ${result.unit_net_profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          <p className={`text-xl font-black ${result.unit_net_profit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
                             {formatCurrency(result.unit_net_profit)}
                             <span className="ml-1 text-base">{result.unit_net_profit >= 0 ? '✅' : '🔴'}</span>
                           </p>
@@ -468,7 +468,7 @@ export default function AnalysisResultPage() {
             {/* VAT Impact & Monthly Revenue */}
             <div className="grid gap-6 md:grid-cols-2">
               <VatImpactCard input={input} result={result} />
-              <div className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-5">
+              <div className="rounded-2xl border border-border/40 bg-card p-5">
                 <p className="text-xs font-medium text-muted-foreground">Aylik Ciro</p>
                 <p className="mt-1 text-2xl font-bold">{formatCurrency(result.monthly_revenue)}</p>
                 <p className="mt-1 text-xs text-muted-foreground break-all">{input.monthly_sales_volume} adet x {formatCurrency(input.sale_price)}</p>
@@ -509,7 +509,7 @@ export default function AnalysisResultPage() {
           {/* RIGHT COLUMN (4/12) */}
           <div className="lg:col-span-4 space-y-6 min-w-0">
             {/* Risk Gauge */}
-            <div className="flex flex-col items-center rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-5">
+            <div className="flex flex-col items-center rounded-xl border border-border/40 bg-card p-5">
               <h3 className="mb-4 self-start text-sm font-semibold text-foreground border-b border-border/20 pb-2 w-full">Risk skoru</h3>
               <RiskGauge score={risk.score} level={risk.level} />
               {risk.factors.length > 0 && (
@@ -527,10 +527,10 @@ export default function AnalysisResultPage() {
             </div>
 
             {/* Smart Recommendations */}
-            <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-5">
+            <div className="rounded-xl border border-border/40 bg-card p-5">
               <div className="flex items-center gap-2 mb-4">
                 <div className="p-1.5 bg-amber-500/10 rounded-md">
-                  <TrendingUp className="h-4 w-4 text-amber-400" />
+                  <TrendingUp className="h-4 w-4 text-amber-700 dark:text-amber-400" />
                 </div>
                 <h3 className="text-sm font-semibold text-foreground">Akıllı öneriler</h3>
               </div>
@@ -545,7 +545,7 @@ export default function AnalysisResultPage() {
                     🛑 Reklam Zararı: Reklam maliyeti kârı aşıyor.
                   </div>
                 )}
-                <div className="flex gap-2 text-xs text-muted-foreground p-2 rounded-lg bg-[rgba(255,255,255,0.04)]">
+                <div className="flex gap-2 text-xs text-muted-foreground p-2 rounded-lg bg-muted/10">
                   <ChevronRight className="h-3 w-3 mt-0.5 shrink-0 text-primary" />
                   <p>İadeyi %1 düşürmek aylık <b>{formatCurrency(result.monthly_revenue * 0.01)}</b> kazandırır.</p>
                 </div>
@@ -555,7 +555,7 @@ export default function AnalysisResultPage() {
             {/* Competitor Analysis Link/Card - Keep it compact or move functionality inside? 
                 The user had it in a card before. Let's keep the Competitor logic here to avoid losing it.
             */}
-            <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-5 space-y-4">
+            <div className="rounded-xl border border-border/40 bg-card p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <User2 className="h-4 w-4 text-primary" />
@@ -593,7 +593,7 @@ export default function AnalysisResultPage() {
                   <div className="pt-2 border-t mt-2">
                     <div className="flex justify-between text-xs mb-2">
                       <span className="text-muted-foreground">Fark:</span>
-                      <span className={input.sale_price > compPrice ? 'text-red-400' : 'text-emerald-400'}>
+                      <span className={input.sale_price > compPrice ? 'text-red-400' : 'text-emerald-700 dark:text-emerald-400'}>
                         {formatCurrency(input.sale_price - compPrice)}
                       </span>
                     </div>
@@ -616,7 +616,7 @@ export default function AnalysisResultPage() {
         </div>
 
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4">
-          <p className="text-xs text-amber-400">
+          <p className="text-xs text-amber-700 dark:text-amber-400">
             Bu arac tahmini hesaplama yapar. Muhasebecinize danismadan finansal karar vermeyin.
           </p>
         </div>

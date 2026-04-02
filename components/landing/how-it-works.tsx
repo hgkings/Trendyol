@@ -36,7 +36,7 @@ export function HowItWorks() {
           transition={{ duration: 0.5 }}
           className="text-center max-w-2xl mx-auto mb-16"
         >
-          <span className="inline-block mb-3 rounded-lg px-3 py-1 text-xs font-semibold uppercase tracking-wider" style={{ background: 'rgba(217,119,6,0.12)', color: '#FBBF24' }}>
+          <span className="inline-block mb-3 rounded-lg px-3 py-1 text-xs font-semibold uppercase tracking-wider bg-amber-500/12 text-amber-800 dark:text-amber-300">
             Nasıl Çalışır?
           </span>
           <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl mb-4" style={{ letterSpacing: '-0.5px' }}>
@@ -45,7 +45,7 @@ export function HowItWorks() {
               kârlılığınızı
             </span>{' '}ölçün
           </h2>
-          <p className="text-base text-[rgba(255,255,255,0.5)]">
+          <p className="text-base text-muted-foreground">
             Daha doğru ticaret yapın, zarar eden ürünleri erken tespit edin.
           </p>
         </motion.div>
@@ -58,7 +58,7 @@ export function HowItWorks() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.15 }}
-                className="group flex flex-col items-center text-center w-full h-full rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-8 hover:border-amber-500/30 hover:shadow-md transition-all duration-300"
+                className="group flex flex-col items-center text-center w-full h-full rounded-2xl border border-border/40 bg-card p-8 hover:border-amber-500/30 hover:shadow-md transition-all duration-300"
               >
                 {/* Number badge */}
                 <span
@@ -69,19 +69,19 @@ export function HowItWorks() {
                 </span>
 
                 {/* Icon */}
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl mb-5 transition-all duration-300 bg-amber-500/8 border border-amber-500/12 text-amber-400 group-hover:scale-110 group-hover:shadow-lg group-hover:bg-amber-500 group-hover:text-white">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl mb-5 transition-all duration-300 bg-amber-500/8 border border-amber-500/12 text-amber-700 dark:text-amber-400 group-hover:scale-110 group-hover:shadow-lg group-hover:bg-amber-500 group-hover:text-white">
                   <step.icon className="h-8 w-8 transition-colors duration-300" />
                 </div>
 
                 <h3 className="text-lg font-semibold mb-3 text-foreground">{step.title}</h3>
-                <p className="text-sm text-[rgba(255,255,255,0.5)] leading-relaxed max-w-[220px]">
+                <p className="text-sm text-muted-foreground leading-relaxed max-w-[220px]">
                   {step.desc}
                 </p>
               </motion.div>
 
               {i < steps.length - 1 && (
-                <div className="hidden md:flex absolute -right-3 top-1/2 -translate-y-1/2 z-10 h-6 w-6 items-center justify-center rounded-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] shadow-sm">
-                  <ArrowRight className="h-3 w-3 text-[rgba(255,255,255,0.3)]" />
+                <div className="hidden md:flex absolute -right-3 top-1/2 -translate-y-1/2 z-10 h-6 w-6 items-center justify-center rounded-full bg-muted/10 border border-border/40 shadow-sm">
+                  <ArrowRight className="h-3 w-3 text-muted-foreground/60" />
                 </div>
               )}
             </div>

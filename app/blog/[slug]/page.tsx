@@ -40,7 +40,7 @@ export default function BlogPostPage({ params }: Props) {
         {/* Geri Butonu */}
         <Link
           href="/blog"
-          className="mb-8 inline-flex items-center gap-1.5 text-sm text-[rgba(255,255,255,0.4)] hover:text-amber-400 transition-colors"
+          className="mb-8 inline-flex items-center gap-1.5 text-sm text-muted-foreground/70 hover:text-amber-700 dark:hover:text-amber-400 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Tüm Yazılar
@@ -51,10 +51,10 @@ export default function BlogPostPage({ params }: Props) {
           <h1 className="text-2xl font-bold leading-snug tracking-tight text-foreground sm:text-3xl">
             {post.title}
           </h1>
-          <p className="mt-3 text-base text-[rgba(255,255,255,0.45)] leading-relaxed">
+          <p className="mt-3 text-base text-muted-foreground leading-relaxed">
             {post.description}
           </p>
-          <div className="mt-4 flex items-center gap-4 text-xs text-[rgba(255,255,255,0.3)]">
+          <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground/60">
             <span className="flex items-center gap-1.5">
               <Calendar className="h-3.5 w-3.5" />
               {formatDate(post.date)}
@@ -66,7 +66,7 @@ export default function BlogPostPage({ params }: Props) {
           </div>
         </header>
 
-        <div className="border-t border-[rgba(255,255,255,0.06)] pt-8" />
+        <div className="border-t border-border/40 pt-8" />
 
         {/* İçerik */}
         <article
@@ -83,7 +83,7 @@ export default function BlogPostPage({ params }: Props) {
           <p className="text-base font-semibold text-foreground">
             Kârlılığınızı otomatik hesaplayın
           </p>
-          <p className="mt-1.5 text-sm text-[rgba(255,255,255,0.45)]">
+          <p className="mt-1.5 text-sm text-muted-foreground">
             Kârnet ile her ürünün net kârını, iade etkisini ve başabaş noktasını
             saniyeler içinde görün.
           </p>

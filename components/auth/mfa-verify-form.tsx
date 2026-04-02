@@ -71,7 +71,7 @@ export function MFAVerifyForm({ onSuccess, onCancel }: MFAVerifyFormProps) {
     <div className="space-y-6 text-center">
       <div className="flex justify-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10">
-          <ShieldCheck className="h-8 w-8 text-emerald-400" />
+          <ShieldCheck className="h-8 w-8 text-emerald-700 dark:text-emerald-400" />
         </div>
       </div>
 

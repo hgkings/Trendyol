@@ -31,7 +31,7 @@ export function MarketplaceComparison({ input }: MarketplaceComparisonProps) {
   const best = comparisons[0];
 
   return (
-    <div className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6">
+    <div className="rounded-2xl border border-border/40 bg-card p-6">
       <h3 className="text-sm font-semibold">Pazaryeri Karşılaştırması</h3>
       <p className="mt-1 text-xs text-muted-foreground">
         Aynı ürünün farklı pazaryerlerindeki performansını karşılaştırın.
@@ -61,7 +61,7 @@ export function MarketplaceComparison({ input }: MarketplaceComparisonProps) {
               <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                 <div className="flex justify-between sm:block">
                   <p className="text-xs text-muted-foreground">Birim Kar</p>
-                  <p className={`font-semibold ${c.result.unit_net_profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <p className={`font-semibold ${c.result.unit_net_profit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
                     {formatCurrency(c.result.unit_net_profit)}
                   </p>
                 </div>
@@ -71,7 +71,7 @@ export function MarketplaceComparison({ input }: MarketplaceComparisonProps) {
                 </div>
                 <div className="flex justify-between sm:block">
                   <p className="text-xs text-muted-foreground">Aylik Kar</p>
-                  <p className={`font-semibold ${c.result.monthly_net_profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <p className={`font-semibold ${c.result.monthly_net_profit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
                     {formatCurrency(c.result.monthly_net_profit)}
                   </p>
                 </div>

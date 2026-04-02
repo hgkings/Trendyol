@@ -20,7 +20,7 @@ const benefits = [
 
 export function BenefitsList() {
   return (
-    <section className="py-24 border-y border-[rgba(255,255,255,0.06)]">
+    <section className="py-24 border-y border-border/40">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -29,7 +29,7 @@ export function BenefitsList() {
           transition={{ duration: 0.5 }}
           className="text-center max-w-2xl mx-auto mb-14"
         >
-          <span className="inline-block mb-3 rounded-lg px-3 py-1 text-xs font-semibold uppercase tracking-wider" style={{ background: 'rgba(217,119,6,0.12)', color: '#FBBF24' }}>
+          <span className="inline-block mb-3 rounded-lg px-3 py-1 text-xs font-semibold uppercase tracking-wider bg-amber-500/12 text-amber-800 dark:text-amber-300">
             Kapsam
           </span>
           <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl mb-4" style={{ letterSpacing: '-0.5px' }}>
@@ -38,7 +38,7 @@ export function BenefitsList() {
               İçeriyor?
             </span>
           </h2>
-          <p className="text-base text-[rgba(255,255,255,0.5)]">
+          <p className="text-base text-muted-foreground">
             Tüm e-ticaret giderlerinizi tek panelde görün.
           </p>
         </motion.div>
@@ -51,9 +51,9 @@ export function BenefitsList() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.3, delay: i * 0.04 }}
-              className="flex items-center gap-3 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-4 hover:border-amber-500/20 hover:bg-white/[0.04] transition-all duration-200"
+              className="flex items-center gap-3 rounded-2xl border border-border/40 bg-card p-4 hover:border-amber-500/20 hover:bg-muted/30 transition-all duration-200"
             >
-              <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
+              <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-700 dark:text-emerald-400" />
               <span className="text-sm font-medium">{item}</span>
             </motion.div>
           ))}

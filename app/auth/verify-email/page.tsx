@@ -59,7 +59,7 @@ function VerifyEmailContent() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-stone-950 px-4 py-12 text-white">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12 text-white">
       <div className="w-full max-w-[420px] space-y-8">
 
         {/* Logo */}
@@ -104,7 +104,7 @@ function VerifyEmailContent() {
 
           {/* Geri bildirim */}
           {resendSuccess && (
-            <p className="text-sm font-medium text-emerald-400">
+            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
               ✓ Doğrulama e-postası tekrar gönderildi.
             </p>
           )}

@@ -15,9 +15,9 @@ interface EnhancedKPICardProps {
 }
 
 const COLOR_MAP: Record<string, { iconBg: string; iconText: string; hoverGrad: string }> = {
-    emerald: { iconBg: 'bg-emerald-500/10', iconText: 'text-emerald-400', hoverGrad: 'from-emerald-500/5' },
+    emerald: { iconBg: 'bg-emerald-500/10', iconText: 'text-emerald-700 dark:text-emerald-400', hoverGrad: 'from-emerald-500/5' },
     red: { iconBg: 'bg-red-500/10', iconText: 'text-red-400', hoverGrad: 'from-red-500/5' },
-    amber: { iconBg: 'bg-amber-500/10', iconText: 'text-amber-400', hoverGrad: 'from-amber-500/5' },
+    amber: { iconBg: 'bg-amber-500/10', iconText: 'text-amber-700 dark:text-amber-400', hoverGrad: 'from-amber-500/5' },
     blue: { iconBg: 'bg-blue-500/10', iconText: 'text-blue-400', hoverGrad: 'from-blue-500/5' },
     violet: { iconBg: 'bg-violet-500/10', iconText: 'text-violet-400', hoverGrad: 'from-violet-500/5' },
     purple: { iconBg: 'bg-purple-500/10', iconText: 'text-purple-400', hoverGrad: 'from-purple-500/5' },
@@ -31,7 +31,7 @@ export function EnhancedKPICard({ title, value, subtitle, icon: Icon, color, hre
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay }}
-            className={`group relative overflow-hidden rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.03] to-transparent p-4 hover:border-white/[0.1] transition-all ${href ? 'cursor-pointer' : ''}`}
+            className={`group relative overflow-hidden rounded-xl border border-border/40 bg-card p-4 hover:border-border/60 transition-all ${href ? 'cursor-pointer' : ''}`}
         >
             <div className={`absolute inset-0 bg-gradient-to-br ${c.hoverGrad} to-transparent opacity-0 group-hover:opacity-100 transition-opacity`} />
             <div className="relative">

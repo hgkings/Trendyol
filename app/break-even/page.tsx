@@ -31,13 +31,13 @@ import {
 function ChartTooltipContent({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; dataKey: string; color: string }>; label?: string }) {
     if (!active || !payload?.length) return null;
     return (
-        <div className="rounded-xl border border-white/10 bg-[#1a1a2e]/95 backdrop-blur-xl px-4 py-3 shadow-2xl">
-            <p className="text-xs font-medium text-white/50 mb-2">{label} siparis</p>
+        <div className="rounded-xl border border-border/50 bg-card px-4 py-3 shadow-md">
+            <p className="text-xs font-medium text-muted-foreground mb-2">{label} siparis</p>
             {payload.map((entry, i) => (
                 <div key={i} className="flex items-center justify-between gap-6 text-sm">
                     <span className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full" style={{ background: entry.color }} />
-                        <span className="text-white/70">
+                        <span className="text-foreground/80">
                             {entry.dataKey === 'revenue' ? 'Gelir' : entry.dataKey === 'totalCost' ? 'Toplam Maliyet' : entry.dataKey === 'profit' ? 'Kar' : entry.dataKey}
                         </span>
                     </span>
@@ -236,10 +236,10 @@ export default function BreakEvenPage() {
                     >
                         <div className="flex items-center gap-3">
                             <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-600/5 border border-amber-500/10">
-                                <Calculator className="h-5 w-5 text-amber-400" />
+                                <Calculator className="h-5 w-5 text-amber-700 dark:text-amber-400" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
+                                <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
                                     Basabas & Hedef Kar
                                 </h1>
                                 <p className="text-sm text-muted-foreground">
@@ -253,14 +253,14 @@ export default function BreakEvenPage() {
                                 animate={{ opacity: 1, scale: 1 }}
                                 className="flex items-center gap-2"
                             >
-                                <Badge variant="outline" className="border-amber-500/30 text-amber-400 bg-amber-500/10 text-xs gap-1.5 py-1 px-3">
+                                <Badge variant="outline" className="border-amber-500/30 text-amber-700 dark:text-amber-400 bg-amber-500/10 text-xs gap-1.5 py-1 px-3">
                                     <Banknote className="h-3 w-3" />
                                     Katki Payi: {formatCurrency(contribution)}
                                 </Badge>
                                 <Badge variant="outline" className={`text-xs gap-1.5 py-1 px-3 ${contributionMargin >= 30
-                                    ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
+                                    ? 'border-emerald-500/30 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10'
                                     : contributionMargin >= 20
-                                        ? 'border-amber-500/30 text-amber-400 bg-amber-500/10'
+                                        ? 'border-amber-500/30 text-amber-700 dark:text-amber-400 bg-amber-500/10'
                                         : 'border-red-500/30 text-red-400 bg-red-500/10'
                                     }`}>
                                     <Percent className="h-3 w-3" />
@@ -281,10 +281,10 @@ export default function BreakEvenPage() {
                             className="lg:col-span-4"
                         >
                             <div className="sticky top-4 space-y-4">
-                                <div className="rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.03] to-transparent overflow-hidden">
-                                    <div className="px-5 py-4 border-b border-white/[0.06] bg-white/[0.01]">
+                                <div className="rounded-xl border border-border/40 bg-card overflow-hidden">
+                                    <div className="px-5 py-4 border-b border-border/40 bg-muted/5">
                                         <div className="flex items-center gap-2">
-                                            <Calculator className="h-4 w-4 text-amber-400" />
+                                            <Calculator className="h-4 w-4 text-amber-700 dark:text-amber-400" />
                                             <span className="text-sm font-semibold">Hesaplama Verileri</span>
                                         </div>
                                         <p className="text-xs text-muted-foreground mt-1">Urun ve isletme giderlerinizi girin.</p>
@@ -302,7 +302,7 @@ export default function BreakEvenPage() {
                                                     placeholder="0.00"
                                                     value={avgPrice || ''}
                                                     onChange={(e) => updateLocalPrice(parseFloat(e.target.value) || 0)}
-                                                    className="pl-8 tabular-nums h-9 text-sm bg-white/[0.03] border-white/10"
+                                                    className="pl-8 tabular-nums h-9 text-sm bg-muted/10 border-border/50"
                                                 />
                                             </div>
                                         </div>
@@ -318,7 +318,7 @@ export default function BreakEvenPage() {
                                                     placeholder="0.00"
                                                     value={avgVarCost || ''}
                                                     onChange={(e) => updateLocalVarCost(parseFloat(e.target.value) || 0)}
-                                                    className="pl-8 tabular-nums h-9 text-sm bg-white/[0.03] border-white/10"
+                                                    className="pl-8 tabular-nums h-9 text-sm bg-muted/10 border-border/50"
                                                 />
                                             </div>
                                             <p className="text-[10px] text-muted-foreground/70">Urun + kargo + paketleme + komisyon + reklam</p>
@@ -336,11 +336,11 @@ export default function BreakEvenPage() {
                                             >
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-xs text-muted-foreground">Katki Payi</span>
-                                                    <span className={`text-sm font-bold tabular-nums ${isValidContribution ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                    <span className={`text-sm font-bold tabular-nums ${isValidContribution ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
                                                         {formatCurrency(contribution)}
                                                     </span>
                                                 </div>
-                                                <div className="w-full bg-white/5 rounded-full h-1.5 mt-2">
+                                                <div className="w-full bg-muted/20 rounded-full h-1.5 mt-2">
                                                     <div
                                                         className={`h-1.5 rounded-full transition-all ${isValidContribution ? 'bg-emerald-500' : 'bg-red-500'}`}
                                                         style={{ width: `${Math.min(Math.max(contributionMargin, 0), 100)}%` }}
@@ -353,11 +353,11 @@ export default function BreakEvenPage() {
                                             </motion.div>
                                         )}
 
-                                        <div className="border-t border-dashed border-white/[0.06]" />
+                                        <div className="border-t border-dashed border-border/40" />
 
                                         {/* Fixed Cost */}
                                         <div className="space-y-2">
-                                            <Label className="text-xs font-medium text-amber-400">Aylik Sabit Giderler</Label>
+                                            <Label className="text-xs font-medium text-amber-700 dark:text-amber-400">Aylik Sabit Giderler</Label>
                                             <div className="relative">
                                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₺</span>
                                                 <Input
@@ -373,7 +373,7 @@ export default function BreakEvenPage() {
 
                                         {/* Target Profit */}
                                         <div className="space-y-2">
-                                            <Label className="text-xs font-medium text-emerald-400">Aylik Hedef Net Kar</Label>
+                                            <Label className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Aylik Hedef Net Kar</Label>
                                             <div className="relative">
                                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₺</span>
                                                 <Input
@@ -395,7 +395,7 @@ export default function BreakEvenPage() {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.2 }}
-                                        className="rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.03] to-transparent p-5"
+                                        className="rounded-xl border border-border/40 bg-card p-5"
                                     >
                                         <div className="flex items-center gap-2 mb-4">
                                             <BarChart3 className="h-4 w-4 text-blue-400" />
@@ -467,7 +467,7 @@ export default function BreakEvenPage() {
                             {/* KPI Cards */}
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                                 {/* Break-even Orders */}
-                                <div className="group relative overflow-hidden rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.03] to-transparent p-4 hover:border-white/[0.1] transition-all">
+                                <div className="group relative overflow-hidden rounded-xl border border-border/40 bg-card p-4 hover:border-border/60 transition-all">
                                     <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                     <div className="relative">
                                         <div className="flex items-center gap-2 mb-3">
@@ -484,7 +484,7 @@ export default function BreakEvenPage() {
                                 </div>
 
                                 {/* Break-even Revenue */}
-                                <div className="group relative overflow-hidden rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.03] to-transparent p-4 hover:border-white/[0.1] transition-all">
+                                <div className="group relative overflow-hidden rounded-xl border border-border/40 bg-card p-4 hover:border-border/60 transition-all">
                                     <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                     <div className="relative">
                                         <div className="flex items-center gap-2 mb-3">
@@ -501,16 +501,16 @@ export default function BreakEvenPage() {
                                 </div>
 
                                 {/* Target Orders */}
-                                <div className="group relative overflow-hidden rounded-xl border border-white/[0.06] bg-gradient-to-br from-emerald-500/[0.04] to-transparent p-4 hover:border-emerald-500/20 transition-all">
+                                <div className="group relative overflow-hidden rounded-xl border border-border/40 bg-gradient-to-br from-emerald-500/[0.04] to-transparent p-4 hover:border-emerald-500/20 transition-all">
                                     <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/8 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                     <div className="relative">
                                         <div className="flex items-center gap-2 mb-3">
                                             <div className="p-1.5 rounded-lg bg-emerald-500/10">
-                                                <Target className="h-3.5 w-3.5 text-emerald-400" />
+                                                <Target className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400" />
                                             </div>
                                             <span className="text-[11px] font-medium text-muted-foreground">Hedef Siparis</span>
                                         </div>
-                                        <div className="text-2xl font-bold tabular-nums text-emerald-400">
+                                        <div className="text-2xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
                                             {isValidContribution ? targetOrders.toLocaleString('tr-TR') : '-'}
                                         </div>
                                         <p className="text-[10px] text-muted-foreground mt-1">
@@ -520,16 +520,16 @@ export default function BreakEvenPage() {
                                 </div>
 
                                 {/* Target Revenue */}
-                                <div className="group relative overflow-hidden rounded-xl border border-white/[0.06] bg-gradient-to-br from-emerald-500/[0.04] to-transparent p-4 hover:border-emerald-500/20 transition-all">
+                                <div className="group relative overflow-hidden rounded-xl border border-border/40 bg-gradient-to-br from-emerald-500/[0.04] to-transparent p-4 hover:border-emerald-500/20 transition-all">
                                     <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/8 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                     <div className="relative">
                                         <div className="flex items-center gap-2 mb-3">
                                             <div className="p-1.5 rounded-lg bg-emerald-500/10">
-                                                <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
+                                                <TrendingUp className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400" />
                                             </div>
                                             <span className="text-[11px] font-medium text-muted-foreground">Hedef Ciro</span>
                                         </div>
-                                        <div className="text-2xl font-bold tabular-nums text-emerald-400">
+                                        <div className="text-2xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
                                             {isValidContribution ? formatCurrency(targetRevenue) : '-'}
                                         </div>
                                         <p className="text-[10px] text-muted-foreground mt-1">aylik toplam</p>
@@ -543,10 +543,10 @@ export default function BreakEvenPage() {
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.15 }}
-                                    className="rounded-xl border border-white/[0.06] bg-gradient-to-r from-white/[0.02] to-transparent p-4"
+                                    className="rounded-xl border border-border/40 bg-card p-4"
                                 >
                                     <div className="flex items-center gap-2 mb-4">
-                                        <Calendar className="h-4 w-4 text-amber-400" />
+                                        <Calendar className="h-4 w-4 text-amber-700 dark:text-amber-400" />
                                         <span className="text-sm font-semibold">Gunluk Hedef Kirilimi</span>
                                     </div>
 
@@ -557,7 +557,7 @@ export default function BreakEvenPage() {
                                                 <span className="text-muted-foreground">0 siparis</span>
                                                 <span className="text-muted-foreground">{dailyTargetOrders > 0 ? `${dailyTargetOrders} siparis (hedef)` : ''}</span>
                                             </div>
-                                            <div className="w-full h-3 bg-white/[0.04] rounded-full overflow-hidden relative">
+                                            <div className="w-full h-3 bg-muted/10 rounded-full overflow-hidden relative">
                                                 {/* Break-even zone */}
                                                 <div
                                                     className="absolute h-full bg-gradient-to-r from-amber-500/40 to-amber-500/20 rounded-full"
@@ -585,27 +585,27 @@ export default function BreakEvenPage() {
                                                     </span>
                                                     <span className="flex items-center gap-1">
                                                         <span className="w-2 h-2 rounded-full bg-amber-400" />
-                                                        <span className="text-amber-400 font-medium">Basabas ({dailyBreakEvenOrders}/gun)</span>
+                                                        <span className="text-amber-700 dark:text-amber-400 font-medium">Basabas ({dailyBreakEvenOrders}/gun)</span>
                                                     </span>
                                                     <span className="flex items-center gap-1">
                                                         <span className="w-2 h-2 rounded-full bg-emerald-500/50" />
-                                                        <span className="text-emerald-400 font-medium">Kar</span>
+                                                        <span className="text-emerald-700 dark:text-emerald-400 font-medium">Kar</span>
                                                     </span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-3 gap-3 pt-2 border-t border-white/[0.04]">
+                                        <div className="grid grid-cols-3 gap-3 pt-2 border-t border-border/30">
                                             <div className="text-center">
-                                                <div className="text-lg font-bold tabular-nums text-amber-400">{dailyBreakEvenOrders}</div>
+                                                <div className="text-lg font-bold tabular-nums text-amber-700 dark:text-amber-400">{dailyBreakEvenOrders}</div>
                                                 <div className="text-[10px] text-muted-foreground">siparis/gun (basabas)</div>
                                             </div>
-                                            <div className="text-center border-x border-white/[0.04]">
-                                                <div className="text-lg font-bold tabular-nums text-emerald-400">{dailyTargetOrders}</div>
+                                            <div className="text-center border-x border-border/30">
+                                                <div className="text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-400">{dailyTargetOrders}</div>
                                                 <div className="text-[10px] text-muted-foreground">siparis/gun (hedef)</div>
                                             </div>
                                             <div className="text-center">
-                                                <div className="text-lg font-bold tabular-nums text-emerald-400">{formatCurrency(dailyTargetRevenue)}</div>
+                                                <div className="text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-400">{formatCurrency(dailyTargetRevenue)}</div>
                                                 <div className="text-[10px] text-muted-foreground">ciro/gun (hedef)</div>
                                             </div>
                                         </div>
@@ -619,12 +619,12 @@ export default function BreakEvenPage() {
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.2 }}
-                                    className="rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.02] to-transparent overflow-hidden"
+                                    className="rounded-xl border border-border/40 bg-card overflow-hidden"
                                 >
-                                    <div className="px-5 py-4 border-b border-white/[0.06]">
+                                    <div className="px-5 py-4 border-b border-border/40">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                                <TrendingUp className="h-4 w-4 text-amber-400" />
+                                                <TrendingUp className="h-4 w-4 text-amber-700 dark:text-amber-400" />
                                                 <span className="text-sm font-semibold">Gelir vs Maliyet Grafigi</span>
                                             </div>
                                             <div className="flex items-center gap-4 text-[11px]">
@@ -718,7 +718,7 @@ export default function BreakEvenPage() {
                                             const colorMap = {
                                                 danger: { bg: 'from-red-500/8', border: 'border-red-500/15', icon: 'bg-red-500/10 text-red-400' },
                                                 warning: { bg: 'from-orange-500/8', border: 'border-orange-500/15', icon: 'bg-orange-500/10 text-orange-400' },
-                                                success: { bg: 'from-emerald-500/8', border: 'border-emerald-500/15', icon: 'bg-emerald-500/10 text-emerald-400' },
+                                                success: { bg: 'from-emerald-500/8', border: 'border-emerald-500/15', icon: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' },
                                             };
                                             const c = colorMap[tip.type];
                                             return (
@@ -746,7 +746,7 @@ export default function BreakEvenPage() {
                             </AnimatePresence>
 
                             {/* Explanation */}
-                            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 text-sm space-y-3">
+                            <div className="rounded-xl border border-border/40 bg-card p-5 text-sm space-y-3">
                                 <div className="flex items-center gap-2 font-semibold text-foreground">
                                     <Info className="h-4 w-4 text-blue-400" />
                                     <span>Bu Veriler Ne Anlama Geliyor?</span>
@@ -778,7 +778,7 @@ export default function BreakEvenPage() {
                             className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none"
                         >
                             <div className="max-w-7xl mx-auto px-4 pb-4 pointer-events-auto">
-                                <div className="flex items-center justify-between rounded-xl border border-white/10 bg-[#0f1117]/90 backdrop-blur-xl px-5 py-3 shadow-2xl shadow-black/40">
+                                <div className="flex items-center justify-between rounded-xl border border-border/50 bg-card px-5 py-3 shadow-md">
                                     <div className="flex items-center gap-3">
                                         <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                                         <span className="text-sm text-muted-foreground">Kaydedilmemis degisiklikler var</span>

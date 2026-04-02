@@ -253,7 +253,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* ─── 1. Appearance ─── */}
-                <section className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6 space-y-4">
+                <section className="rounded-2xl border border-border/40 bg-card p-6 space-y-4">
                     <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10">
                             <Sun className="h-5 w-5 text-violet-400" />
@@ -274,10 +274,10 @@ export default function SettingsPage() {
                                         onClick={() => setTheme(opt.key)}
                                         className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${active
                                             ? 'border-amber-500/50 bg-amber-500/10'
-                                            : 'border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] hover:bg-white/5 hover:border-[rgba(255,255,255,0.12)]'
+                                            : 'border-border/40 bg-muted/10 hover:bg-muted/50 hover:border-border/60'
                                             }`}
                                     >
-                                        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${active ? 'bg-amber-500/10' : 'bg-[rgba(255,255,255,0.06)]'
+                                        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${active ? 'bg-amber-500/10' : 'bg-muted/20'
                                             }`}>
                                             <opt.icon className={`h-5 w-5 ${active ? 'text-primary' : 'text-muted-foreground'}`} />
                                         </div>
@@ -298,7 +298,7 @@ export default function SettingsPage() {
                 </section>
 
                 {/* ─── 2. Plan & Billing ─── */}
-                <section className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6 space-y-6">
+                <section className="rounded-2xl border border-border/40 bg-card p-6 space-y-6">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
@@ -309,7 +309,7 @@ export default function SettingsPage() {
                                 <p className="text-xs text-muted-foreground">Mevcut planınızı ve ödeme detaylarınızı yönetin.</p>
                             </div>
                         </div>
-                        <div className={`px-3 py-1 rounded-full text-xs font-semibold ${isPro ? 'bg-emerald-500/10 text-emerald-400' : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.4)]'
+                        <div className={`px-3 py-1 rounded-full text-xs font-semibold ${isPro ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-muted/20 text-muted-foreground/70'
                             }`}>
                             {isPro ? 'Pro Aktif' : 'Ücretsiz Plan'}
                         </div>
@@ -346,19 +346,19 @@ export default function SettingsPage() {
 
                         {/* Pricing UI (Optional Toggle) */}
                         {!isPro && (
-                            <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-4 space-y-4">
+                            <div className="rounded-xl border border-border/40 bg-card p-4 space-y-4">
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-medium">Fiyatlandırma</span>
-                                    <div className="flex items-center gap-1 bg-[rgba(255,255,255,0.04)] p-0.5 rounded-lg border border-[rgba(255,255,255,0.06)]">
+                                    <div className="flex items-center gap-1 bg-muted/10 p-0.5 rounded-lg border border-border/40">
                                         <button
                                             onClick={() => setBillingCycle('monthly')}
-                                            className={`px-2 py-1 text-[10px] rounded-md transition-all ${billingCycle === 'monthly' ? 'bg-[rgba(255,255,255,0.08)] text-foreground' : 'text-[rgba(255,255,255,0.4)]'}`}
+                                            className={`px-2 py-1 text-[10px] rounded-md transition-all ${billingCycle === 'monthly' ? 'bg-muted/20 text-foreground' : 'text-muted-foreground/70'}`}
                                         >
                                             Aylık
                                         </button>
                                         <button
                                             onClick={() => setBillingCycle('yearly')}
-                                            className={`px-2 py-1 text-[10px] rounded-md transition-all ${billingCycle === 'yearly' ? 'bg-[rgba(255,255,255,0.08)] text-foreground' : 'text-[rgba(255,255,255,0.4)]'}`}
+                                            className={`px-2 py-1 text-[10px] rounded-md transition-all ${billingCycle === 'yearly' ? 'bg-muted/20 text-foreground' : 'text-muted-foreground/70'}`}
                                         >
                                             Yıllık
                                         </button>
@@ -377,7 +377,7 @@ export default function SettingsPage() {
                         )}
 
                         {isPro && (
-                            <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-4 flex flex-col justify-center items-center text-center space-y-2">
+                            <div className="rounded-xl border border-border/40 bg-card p-4 flex flex-col justify-center items-center text-center space-y-2">
                                 <div className="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center mb-1">
                                     <CreditCard className="h-5 w-5 text-emerald-600" />
                                 </div>
@@ -385,7 +385,7 @@ export default function SettingsPage() {
                                 <p className="text-[10px] text-muted-foreground">Ödeme işlemleri PayTR üzerinden güvenle gerçekleştirilmektedir.</p>
                                 <p className="text-[10px] text-muted-foreground mt-1">
                                     Ödeme geçmişiniz ve fatura bilgileriniz için{' '}
-                                    <a href="mailto:destek@karnet.com" className="text-amber-500 hover:text-amber-400">destek@karnet.com</a>
+                                    <a href="mailto:destek@karnet.com" className="text-amber-500 hover:text-amber-700 dark:hover:text-amber-400">destek@karnet.com</a>
                                     {' '}adresine yazabilirsiniz.
                                 </p>
                             </div>
@@ -394,7 +394,7 @@ export default function SettingsPage() {
                 </section>
 
                 {/* ─── 3. Email Settings & Notifications ─── */}
-                <section className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6 space-y-5 relative overflow-hidden">
+                <section className="rounded-2xl border border-border/40 bg-card p-6 space-y-5 relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 rounded-l-2xl opacity-50"></div>
                     <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10">
@@ -406,37 +406,14 @@ export default function SettingsPage() {
                         </div>
                     </div>
 
-                    {/* BÖLÜM 1 — Hesap Bildirimleri (zorunlu) */}
-                    <div className="space-y-1">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 pb-1">Hesap Bildirimleri</p>
-                        {[
-                            { label: 'Hoş geldin e-postası', desc: 'Kayıt olduğunuzda gönderilir.' },
-                            { label: 'E-posta doğrulama', desc: 'Hesap doğrulama linki.' },
-                            { label: 'Şifre sıfırlama', desc: 'Şifre sıfırlama linki.' },
-                            { label: 'Pro plan aktivasyonu', desc: 'Pro plan aktif olduğunda bildirim.' },
-                            { label: 'Pro plan sona erme', desc: 'Pro planınız sona erdiğinde bildirim.' },
-                        ].map((item, i) => (
-                            <div key={i} className="flex items-center justify-between rounded-xl p-4 hover:bg-white/5 transition-colors">
-                                <div className="flex-1">
-                                    <p className="text-sm font-medium flex items-center gap-2">
-                                        {item.label}
-                                        <span className="text-[10px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">Zorunlu</span>
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">{item.desc}</p>
-                                </div>
-                                <Switch checked={true} disabled className="opacity-50" />
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="divider border-t border-border" />
+                    {/* Tercihli Bildirimler */}
 
                     {/* BÖLÜM 2 — Tercihli Bildirimler */}
                     <div className="space-y-1">
                         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 pb-1">Tercihli Bildirimler</p>
 
                         {/* Haftalık Özet Raporu */}
-                        <div className="flex items-center justify-between rounded-xl p-4 hover:bg-white/5 transition-colors">
+                        <div className="flex items-center justify-between rounded-xl p-4 hover:bg-muted/50 transition-colors">
                             <div className="flex-1">
                                 <p className="text-sm font-medium">Haftalık Özet Raporu</p>
                                 <p className="text-xs text-muted-foreground">Her hafta performans özeti e-posta ile gönderilir.</p>
@@ -451,7 +428,7 @@ export default function SettingsPage() {
                         </div>
 
                         {/* Zarar Eden Ürün Tespiti */}
-                        <div className="flex items-center justify-between rounded-xl p-4 hover:bg-white/5 transition-colors">
+                        <div className="flex items-center justify-between rounded-xl p-4 hover:bg-muted/50 transition-colors">
                             <div className="flex-1">
                                 <p className="text-sm font-medium">Zarar Eden Ürün Tespiti</p>
                                 <p className="text-xs text-muted-foreground">Zarar eden ürün tespit edildiğinde uyarı gönderir.</p>
@@ -466,7 +443,7 @@ export default function SettingsPage() {
                         </div>
 
                         {/* Hedef Marj Uyarısı */}
-                        <div className="flex items-center justify-between rounded-xl p-4 hover:bg-white/5 transition-colors">
+                        <div className="flex items-center justify-between rounded-xl p-4 hover:bg-muted/50 transition-colors">
                             <div className="flex-1">
                                 <p className="text-sm font-medium">Hedef Marj Uyarısı</p>
                                 <p className="text-xs text-muted-foreground">Marj, belirlediğiniz hedefin altına düşerse uyarır.</p>
@@ -481,7 +458,7 @@ export default function SettingsPage() {
                         </div>
 
                         {/* Pro Bitiş Hatırlatıcısı */}
-                        <div className="flex items-center justify-between rounded-xl p-4 hover:bg-white/5 transition-colors">
+                        <div className="flex items-center justify-between rounded-xl p-4 hover:bg-muted/50 transition-colors">
                             <div className="flex-1">
                                 <p className="text-sm font-medium">Pro Bitiş Hatırlatıcısı</p>
                                 <p className="text-xs text-muted-foreground">Pro planınız bitmeden 7 ve 1 gün önce hatırlatma gönderir.</p>
@@ -499,7 +476,7 @@ export default function SettingsPage() {
                     <div className="divider border-t border-border" />
 
                     {/* Sistem Testi */}
-                    <div className="rounded-xl border border-border p-4 flex items-center justify-between hover:bg-white/5 transition-colors">
+                    <div className="rounded-xl border border-border p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                         <div>
                             <p className="text-sm font-medium flex items-center gap-1.5">Sistem Testi <CheckCircle2 className="h-4 w-4 text-emerald-500" /></p>
                             <p className="text-xs text-muted-foreground">Test e-postası gönder (Brevo SMTP)</p>
@@ -535,10 +512,10 @@ export default function SettingsPage() {
                 </section>
 
                 {/* ─── 3. Analysis Defaults ─── */}
-                <section className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6 space-y-5">
+                <section className="rounded-2xl border border-border/40 bg-card p-6 space-y-5">
                     <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
-                            <Store className="h-5 w-5 text-emerald-400" />
+                            <Store className="h-5 w-5 text-emerald-700 dark:text-emerald-400" />
                         </div>
                         <div>
                             <h2 className="font-semibold">Analiz Varsayılanları</h2>
@@ -630,7 +607,7 @@ export default function SettingsPage() {
                 </section>
 
                 {/* ─── 4. Security ─── */}
-                <section className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6 space-y-5">
+                <section className="rounded-2xl border border-border/40 bg-card p-6 space-y-5">
                     <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10">
                             <Shield className="h-5 w-5 text-blue-400" />
@@ -642,7 +619,7 @@ export default function SettingsPage() {
                     </div>
 
                     {/* Profile info */}
-                    <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-4 space-y-3">
+                    <div className="rounded-xl border border-border/40 bg-card p-4 space-y-3">
                         <div className="flex items-center gap-3">
                             <Mail className="h-4 w-4 text-muted-foreground" />
                             <div>
@@ -656,7 +633,7 @@ export default function SettingsPage() {
                                 <p className="text-[11px] text-muted-foreground">Bağlı Sağlayıcılar</p>
                                 <div className="flex gap-1.5 mt-0.5">
                                     {(providers.length > 0 ? providers : ['email']).map((p) => (
-                                        <span key={p} className="inline-flex items-center gap-1 rounded-full border bg-[rgba(255,255,255,0.06)] px-2 py-0.5 text-[10px] font-medium capitalize">
+                                        <span key={p} className="inline-flex items-center gap-1 rounded-full border bg-muted/20 px-2 py-0.5 text-[10px] font-medium capitalize">
                                             <CheckCircle2 className="h-3 w-3 text-emerald-500" />
                                             {p === 'email' ? 'E-posta' : p}
                                         </span>
@@ -668,7 +645,7 @@ export default function SettingsPage() {
 
                     {/* Password change */}
                     {(providers.includes('email') || providers.length === 0) && (
-                        <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-4 space-y-3">
+                        <div className="rounded-xl border border-border/40 bg-card p-4 space-y-3">
                             <p className="text-sm font-medium">Şifre Değiştir</p>
                             <div className="space-y-2">
                                 <Input
@@ -726,10 +703,10 @@ export default function SettingsPage() {
                 </section>
 
                 {/* ─── 5. Güvenlik (2FA) — Yakında ─── */}
-                <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6 space-y-4 opacity-60">
+                <div className="rounded-xl border border-border/40 bg-card p-6 space-y-4 opacity-60">
                     <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
-                            <Shield className="h-5 w-5 text-emerald-400" />
+                            <Shield className="h-5 w-5 text-emerald-700 dark:text-emerald-400" />
                         </div>
                         <div>
                             <h3 className="font-semibold">İki Faktörlü Doğrulama (2FA)</h3>
@@ -746,7 +723,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* ─── 6. Data Management ─── */}
-                <section className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6 space-y-5">
+                <section className="rounded-2xl border border-border/40 bg-card p-6 space-y-5">
                     <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10">
                             <Database className="h-5 w-5 text-orange-400" />
@@ -760,7 +737,7 @@ export default function SettingsPage() {
                     </div>
 
                     {/* Export */}
-                    <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-4 space-y-3">
+                    <div className="rounded-xl border border-border/40 bg-card p-4 space-y-3">
                         <p className="text-sm font-medium">Verileri Dışa Aktar</p>
                         <p className="text-xs text-muted-foreground">Tüm analizlerinizi CSV veya JSON formatında indirin.</p>
                         <div className="flex gap-2">

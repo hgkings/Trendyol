@@ -55,10 +55,10 @@ export function MinPriceCards({ input, currentPrice }: MinPriceCardsProps) {
       marginPct: 15,
       price: price15,
       emoji: '🟡',
-      colorClass: 'text-amber-400',
+      colorClass: 'text-amber-700 dark:text-amber-400',
       borderClass: 'border-amber-500/20',
       bgClass: 'bg-amber-500/10',
-      textClass: 'text-amber-400',
+      textClass: 'text-amber-700 dark:text-amber-400',
       tooltipText:
         `Net kâr ÷ Satış Fiyatı = %15 olacak şekilde hesaplanmıştır. ` +
         `Tüm maliyet kalemleri ve ${mpLabel}'a özgü kesintiler dahildir.`,
@@ -69,10 +69,10 @@ export function MinPriceCards({ input, currentPrice }: MinPriceCardsProps) {
       marginPct: 30,
       price: price30,
       emoji: '🟢',
-      colorClass: 'text-emerald-400',
+      colorClass: 'text-emerald-700 dark:text-emerald-400',
       borderClass: 'border-emerald-500/20',
       bgClass: 'bg-emerald-500/10',
-      textClass: 'text-emerald-400',
+      textClass: 'text-emerald-700 dark:text-emerald-400',
       tooltipText:
         `Net kâr ÷ Satış Fiyatı = %30 olacak şekilde hesaplanmıştır. ` +
         `Tüm maliyet kalemleri ve ${mpLabel}'a özgü kesintiler dahildir.`,
@@ -96,12 +96,12 @@ export function MinPriceCards({ input, currentPrice }: MinPriceCardsProps) {
       return { icon: '🔴', msg: `Mevcut fiyatınız zarar ettiriyor! En az ${formatCurrency(breakeven)}'a satmalısınız.`, cls: 'border-red-500/20 bg-red-500/10 text-red-400' };
     }
     if (currentPrice < price15) {
-      return { icon: '🟡', msg: `Kârınız çok düşük. %15 kâr için ${formatCurrency(price15)} olmalı.`, cls: 'border-amber-500/20 bg-amber-500/10 text-amber-400' };
+      return { icon: '🟡', msg: `Kârınız çok düşük. %15 kâr için ${formatCurrency(price15)} olmalı.`, cls: 'border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400' };
     }
     if (currentPrice < price30) {
-      return { icon: '🟢', msg: `Makul kâr aralığındasınız. %30 için ${formatCurrency(price30)}'a yükseltebilirsiniz.`, cls: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400' };
+      return { icon: '🟢', msg: `Makul kâr aralığındasınız. %30 için ${formatCurrency(price30)}'a yükseltebilirsiniz.`, cls: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' };
     }
-    return { icon: '✅', msg: 'Hedef kâr marjını karşılıyorsunuz! Tebrikler.', cls: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400' };
+    return { icon: '✅', msg: 'Hedef kâr marjını karşılıyorsunuz! Tebrikler.', cls: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' };
   })();
 
   return (

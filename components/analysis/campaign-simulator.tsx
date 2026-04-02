@@ -75,7 +75,7 @@ function ResultRow({
 }) {
   const colorClass =
     highlight === 'green'
-      ? 'text-emerald-400 font-semibold'
+      ? 'text-emerald-700 dark:text-emerald-400 font-semibold'
       : highlight === 'red'
       ? 'text-red-400 font-semibold'
       : 'font-medium';
@@ -197,7 +197,7 @@ export function CampaignSimulator({ input, originalResult }: Props) {
 
   // ── JSX ───────────────────────────────────────────────────────────────────
   return (
-    <div className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6 space-y-6">
+    <div className="rounded-2xl border border-border/40 bg-card p-6 space-y-6">
 
       {/* Başlık */}
       <div>
@@ -485,7 +485,7 @@ export function CampaignSimulator({ input, originalResult }: Props) {
           <span
             className={
               simResult.unit_net_profit >= 0
-                ? 'text-emerald-400 font-bold'
+                ? 'text-emerald-700 dark:text-emerald-400 font-bold'
                 : 'text-red-400 font-bold'
             }
           >
@@ -498,7 +498,7 @@ export function CampaignSimulator({ input, originalResult }: Props) {
               <span
                 className={
                   monthlyImpact >= 0
-                    ? 'text-emerald-400 font-bold'
+                    ? 'text-emerald-700 dark:text-emerald-400 font-bold'
                     : 'text-red-400 font-bold'
                 }
               >
@@ -543,7 +543,7 @@ export function CampaignSimulator({ input, originalResult }: Props) {
                 <span
                   className={
                     s.netProfit >= 0
-                      ? 'text-emerald-400 font-medium'
+                      ? 'text-emerald-700 dark:text-emerald-400 font-medium'
                       : 'text-red-400 font-medium'
                   }
                 >

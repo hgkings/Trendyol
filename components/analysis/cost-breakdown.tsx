@@ -59,7 +59,7 @@ export function CostBreakdown({ input, result }: CostBreakdownProps) {
   const maxVal = Math.max(...items.map((i) => i.value), 1);
 
   return (
-    <div className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6">
+    <div className="rounded-2xl border border-border/40 bg-card p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-foreground">Maliyet dağılımı (birim)</h3>
         {isProMode && <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded">NET ESASLI</span>}
@@ -72,7 +72,7 @@ export function CostBreakdown({ input, result }: CostBreakdownProps) {
               <span className="text-muted-foreground">{item.label}</span>
               <span className="font-medium text-foreground">{formatCurrency(item.value)}</span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.06)]">
+            <div className="h-2 overflow-hidden rounded-full bg-muted/20 border border-border/40">
               <div
                 className="h-full rounded-full bg-primary/70 transition-all duration-700 ease-out"
                 style={{ width: `${(item.value / maxVal) * 100}%` }}
@@ -100,10 +100,10 @@ export function CostBreakdown({ input, result }: CostBreakdownProps) {
             </span>
           </div>
           <div className="text-right">
-            <p className={`text-xl font-bold ${result.unit_net_profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <p className={`text-xl font-bold ${result.unit_net_profit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
               {formatCurrency(result.unit_net_profit)}
             </p>
-            <p className={`text-xs font-medium ${result.margin_pct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <p className={`text-xs font-medium ${result.margin_pct >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
               {formatPercent(result.margin_pct)} marj
             </p>
           </div>

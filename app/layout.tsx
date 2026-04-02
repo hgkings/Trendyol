@@ -52,7 +52,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="tr" suppressHydrationWarning className="dark">
+    <html lang="tr" suppressHydrationWarning>
       <body className={`${inter.variable} ${GeistSans.variable} font-sans`}>
         {/* Aurora animated background — all pages */}
         <div className="aurora-bg">
@@ -60,7 +60,7 @@ export default function RootLayout({
           <div className="aurora-orb orb-2" />
           <div className="aurora-orb orb-3" />
         </div>
-        <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <AuthProvider>
             <AlertProvider>
               {children}

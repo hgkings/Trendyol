@@ -40,13 +40,13 @@ export function TrustTech() {
     <section className="py-16 px-4">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-12">
-          <p className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: '#FBBF24' }}>
+          <p className="text-sm font-semibold uppercase tracking-wider mb-3 text-amber-800 dark:text-amber-300">
             Güvenlik
           </p>
           <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4" style={{ letterSpacing: '-0.5px' }}>
             Verileriniz Bizimle Güvende
           </h2>
-          <p className="text-[rgba(255,255,255,0.5)] text-base max-w-2xl mx-auto">
+          <p className="text-muted-foreground text-base max-w-2xl mx-auto">
             Banka düzeyinde şifreleme ve katmanlı güvenlik mimarisi ile verilerinizi koruyoruz
           </p>
         </div>
@@ -55,15 +55,15 @@ export function TrustTech() {
           {cards.map((card) => (
             <div
               key={card.title}
-              className="group rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6 hover:border-emerald-500/20 hover:shadow-md transition-all duration-300"
+              className="group rounded-2xl border border-border/40 bg-card p-6 hover:border-emerald-500/20 hover:shadow-md transition-all duration-300"
             >
               <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-emerald-500/15 bg-emerald-500/8 mb-4">
-                <card.icon className="h-5 w-5 text-emerald-400" />
+                <card.icon className="h-5 w-5 text-emerald-700 dark:text-emerald-400" />
               </div>
               <h3 className="font-semibold text-foreground mb-2 text-sm md:text-base">
                 {card.title}
               </h3>
-              <p className="text-xs md:text-sm text-[rgba(255,255,255,0.5)] leading-relaxed">
+              <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
                 {card.desc}
               </p>
             </div>

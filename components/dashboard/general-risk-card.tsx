@@ -75,18 +75,18 @@ export function GeneralRiskCard() {
         safe: {
             border: 'border-emerald-500/30',
             bg: 'bg-emerald-500/10',
-            text: 'text-emerald-400',
+            text: 'text-emerald-700 dark:text-emerald-400',
             icon: ShieldCheck,
             label: 'Düşük Risk',
-            btn: 'text-emerald-400 hover:text-emerald-300'
+            btn: 'text-emerald-700 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300'
         },
         moderate: {
             border: 'border-amber-500/30',
             bg: 'bg-amber-500/10',
-            text: 'text-amber-400',
+            text: 'text-amber-700 dark:text-amber-400',
             icon: AlertTriangle,
             label: 'Orta Risk',
-            btn: 'text-amber-400 hover:text-amber-300'
+            btn: 'text-amber-700 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300'
         },
         high: {
             border: 'border-red-500/30',

@@ -44,7 +44,7 @@ export function ProLockedSection({
     }[blurAmount];
 
     return (
-        <div className="relative overflow-hidden rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)]" style={{ minHeight }}>
+        <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-card" style={{ minHeight }}>
             <div className={`absolute inset-0 p-6 opacity-50 pointer-events-none select-none ${blurClass}`}>
                 {fallback || children}
             </div>

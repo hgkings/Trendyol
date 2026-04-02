@@ -29,7 +29,7 @@ export function SafePriceCard({ input, breakevenPrice }: SafePriceCardProps) {
             <CardHeader className="pb-2">
                 <div className="flex items-center gap-2">
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10">
-                        <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                        <ShieldCheck className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
                     </div>
                     <div>
                         <CardTitle className="text-base font-bold">Güvenli Fiyat Aralığı</CardTitle>
@@ -59,8 +59,8 @@ export function SafePriceCard({ input, breakevenPrice }: SafePriceCardProps) {
 
                 <div className="rounded-xl bg-emerald-500/10 p-4 border border-emerald-500/20">
                     <div className="flex justify-between items-center mb-1">
-                        <span className="text-xs font-medium text-emerald-400">Min. Güvenli Fiyat</span>
-                        <span className="text-lg font-bold text-emerald-400">
+                        <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Min. Güvenli Fiyat</span>
+                        <span className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
                             {breakevenPrice === Infinity ? 'Hesaplanamaz' : formatCurrency(safePrice)}
                         </span>
                     </div>

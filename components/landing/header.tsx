@@ -13,6 +13,7 @@ import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Menu, X } from 'lucide-react';
 import { KarnetLogo } from '@/components/shared/KarnetLogo';
+import { ThemeToggle } from '@/components/layout/theme-toggle';
 
 export function Header() {
   const { user } = useAuth();
@@ -38,7 +39,7 @@ export function Header() {
       className={cn(
         'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
         isScrolled
-          ? 'bg-[rgba(12,10,9,0.85)] backdrop-blur-xl border-b border-[rgba(255,255,255,0.06)] shadow-sm'
+          ? 'bg-background/85 backdrop-blur-xl border-b border-border/40 shadow-sm'
           : 'bg-transparent'
       )}
     >
@@ -54,7 +55,7 @@ export function Header() {
             <Link
               key={link.label}
               href={link.href}
-              className="px-3.5 py-2 text-sm font-medium text-[rgba(255,255,255,0.5)] hover:text-white rounded-xl hover:bg-white/5 transition-all duration-150 animated-underline"
+              className="px-3.5 py-2 text-sm font-medium text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted/50 transition-all duration-150 animated-underline"
             >
               {link.label}
             </Link>
@@ -64,6 +65,8 @@ export function Header() {
         {/* Right Actions */}
         <div className="hidden md:flex items-center gap-2">
           {user ? (
+            <>
+            <ThemeToggle />
             <Link href="/dashboard">
               <Button
                 size="sm"
@@ -73,10 +76,12 @@ export function Header() {
                 Panele Git
               </Button>
             </Link>
+            </>
           ) : (
             <>
+              <ThemeToggle />
               <Link href="/auth">
-                <Button variant="ghost" size="sm" className="h-9 px-4 rounded-xl font-medium text-[rgba(255,255,255,0.5)] hover:text-white">
+                <Button variant="ghost" size="sm" className="h-9 px-4 rounded-xl font-medium text-muted-foreground hover:text-foreground">
                   Giriş Yap
                 </Button>
               </Link>
@@ -101,7 +106,7 @@ export function Header() {
                 {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] bg-[#0C0A09] border-[rgba(255,255,255,0.06)]">
+            <SheetContent side="right" className="w-[300px] bg-background border-border/40">
               <SheetHeader className="text-left pb-2">
                 <KarnetLogo size={36} />
               </SheetHeader>
@@ -111,12 +116,12 @@ export function Header() {
                     key={link.label}
                     href={link.href}
                     onClick={() => setOpen(false)}
-                    className="rounded-xl px-3 py-2.5 text-[15px] font-medium text-[rgba(255,255,255,0.5)] hover:text-white hover:bg-white/5 transition-colors"
+                    className="rounded-xl px-3 py-2.5 text-[15px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                   >
                     {link.label}
                   </Link>
                 ))}
-                <div className="my-3 border-t border-[rgba(255,255,255,0.06)]" />
+                <div className="my-3 border-t border-border/40" />
                 {user ? (
                   <Link href="/dashboard" onClick={() => setOpen(false)}>
                     <Button className="w-full rounded-xl btn-shine text-white" style={{ background: 'linear-gradient(135deg, #D97706, #92400E)' }}>
@@ -126,7 +131,7 @@ export function Header() {
                 ) : (
                   <div className="flex flex-col gap-2">
                     <Link href="/auth" onClick={() => setOpen(false)}>
-                      <Button variant="outline" className="w-full rounded-xl border-[rgba(255,255,255,0.06)]">Giriş Yap</Button>
+                      <Button variant="outline" className="w-full rounded-xl border-border/40">Giriş Yap</Button>
                     </Link>
                     <Link href="/auth" onClick={() => setOpen(false)}>
                       <Button className="w-full rounded-xl btn-shine text-white" style={{ background: 'linear-gradient(135deg, #D97706, #92400E)' }}>

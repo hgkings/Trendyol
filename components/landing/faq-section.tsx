@@ -37,7 +37,7 @@ const faqs = [
 
 export function FAQSection() {
   return (
-    <section id="faq" className="py-24 border-y border-[rgba(255,255,255,0.06)]">
+    <section id="faq" className="py-24 border-y border-border/40">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
 
         <motion.div
@@ -47,13 +47,13 @@ export function FAQSection() {
           transition={{ duration: 0.5 }}
           className="text-center mb-14"
         >
-          <span className="inline-block mb-3 rounded-lg px-3 py-1 text-xs font-semibold uppercase tracking-wider" style={{ background: 'rgba(217,119,6,0.12)', color: '#FBBF24' }}>
+          <span className="inline-block mb-3 rounded-lg px-3 py-1 text-xs font-semibold uppercase tracking-wider bg-amber-500/12 text-amber-800 dark:text-amber-300">
             SSS
           </span>
           <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl mb-4" style={{ letterSpacing: '-0.5px' }}>
             Sıkça Sorulan Sorular
           </h2>
-          <p className="text-base text-[rgba(255,255,255,0.5)]">
+          <p className="text-base text-muted-foreground">
             Merak ettiklerinizi hızlıca yanıtlıyoruz.
           </p>
         </motion.div>
@@ -69,12 +69,12 @@ export function FAQSection() {
             >
               <AccordionItem
                 value={`faq-${i}`}
-                className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-transparent px-5 data-[state=open]:border-amber-500/15 data-[state=open]:bg-amber-500/5 transition-all"
+                className="rounded-xl border border-border/40 bg-transparent px-5 data-[state=open]:border-amber-500/15 data-[state=open]:bg-amber-500/5 transition-all"
               >
-                <AccordionTrigger className="py-4 text-[15px] font-semibold text-foreground/80 hover:no-underline hover:text-amber-400 text-left gap-4 [&[data-state=open]>svg]:text-amber-400">
+                <AccordionTrigger className="py-4 text-[15px] font-semibold text-foreground/80 hover:no-underline hover:text-amber-700 dark:hover:text-amber-400 text-left gap-4 [&[data-state=open]>svg]:text-amber-700 dark:[&[data-state=open]>svg]:text-amber-400">
                   {faq.q}
                 </AccordionTrigger>
-                <AccordionContent className="pb-4 text-sm text-[rgba(255,255,255,0.5)] leading-relaxed">
+                <AccordionContent className="pb-4 text-sm text-muted-foreground leading-relaxed">
                   {faq.a}
                 </AccordionContent>
               </AccordionItem>

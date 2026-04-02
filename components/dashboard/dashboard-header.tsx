@@ -66,8 +66,8 @@ export function DashboardHeader({ analyses }: DashboardHeaderProps) {
     const dateStr = useMemo(() => new Date().toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' }), []);
 
     const riskConfig = {
-        safe: { icon: ShieldCheck, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
-        moderate: { icon: AlertTriangle, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+        safe: { icon: ShieldCheck, color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+        moderate: { icon: AlertTriangle, color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
         high: { icon: AlertOctagon, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20' },
     };
     const rc = riskConfig[riskLevel];
@@ -84,12 +84,12 @@ export function DashboardHeader({ analyses }: DashboardHeaderProps) {
                     <Calendar className="h-3 w-3" />
                     <span>{dateStr}</span>
                 </div>
-                <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
+                <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
                     {greeting}{name ? `, ${name}` : ''}
                 </h1>
                 {analyses.length > 0 && (
                     <p className="text-sm text-muted-foreground">
-                        {profitableCount > 0 && <span className="text-emerald-400">{profitableCount} ürün kârlı</span>}
+                        {profitableCount > 0 && <span className="text-emerald-700 dark:text-emerald-400">{profitableCount} ürün kârlı</span>}
                         {profitableCount > 0 && riskyCount > 0 && ', '}
                         {riskyCount > 0 && <span className="text-red-400">{riskyCount} ürün riskli</span>}
                         {profitableCount === 0 && riskyCount === 0 && 'Ürün portföyünüzün özeti'}

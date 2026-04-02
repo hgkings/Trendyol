@@ -97,8 +97,8 @@ export function SmartInsights({ analyses }: SmartInsightsProps) {
     if (insights.length === 0) return null;
 
     const colorMap = {
-        success: { bg: 'from-emerald-500/8', border: 'border-emerald-500/15', icon: 'bg-emerald-500/10 text-emerald-400' },
-        warning: { bg: 'from-amber-500/8', border: 'border-amber-500/15', icon: 'bg-amber-500/10 text-amber-400' },
+        success: { bg: 'from-emerald-500/8', border: 'border-emerald-500/15', icon: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' },
+        warning: { bg: 'from-amber-500/8', border: 'border-amber-500/15', icon: 'bg-amber-500/10 text-amber-700 dark:text-amber-400' },
         danger: { bg: 'from-red-500/8', border: 'border-red-500/15', icon: 'bg-red-500/10 text-red-400' },
         info: { bg: 'from-blue-500/8', border: 'border-blue-500/15', icon: 'bg-blue-500/10 text-blue-400' },
     };

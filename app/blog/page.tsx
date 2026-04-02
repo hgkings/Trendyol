@@ -21,7 +21,7 @@ export default function BlogPage() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             E-Ticaret Rehberleri
           </h1>
-          <p className="mt-4 text-base text-[rgba(255,255,255,0.5)] max-w-xl mx-auto">
+          <p className="mt-4 text-base text-muted-foreground max-w-xl mx-auto">
             Trendyol satıcıları için kârlılık, maliyet yönetimi ve büyüme
             stratejileri üzerine pratik yazılar.
           </p>
@@ -33,17 +33,17 @@ export default function BlogPage() {
             <Link
               key={post.slug}
               href={`/blog/${post.slug}`}
-              className="group block rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6 hover:bg-[rgba(255,255,255,0.06)] hover:border-amber-500/20 transition-all duration-200"
+              className="group block rounded-2xl border border-border/40 bg-card p-6 hover:bg-muted/20 hover:border-amber-500/20 transition-all duration-200"
             >
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="flex-1 min-w-0">
-                  <h2 className="text-lg font-semibold text-foreground group-hover:text-amber-400 transition-colors leading-snug">
+                  <h2 className="text-lg font-semibold text-foreground group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors leading-snug">
                     {post.title}
                   </h2>
-                  <p className="mt-2 text-sm text-[rgba(255,255,255,0.45)] leading-relaxed line-clamp-2">
+                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed line-clamp-2">
                     {post.description}
                   </p>
-                  <div className="mt-4 flex items-center gap-4 text-xs text-[rgba(255,255,255,0.3)]">
+                  <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground/60">
                     <span className="flex items-center gap-1.5">
                       <Calendar className="h-3.5 w-3.5" />
                       {formatDate(post.date)}
@@ -54,7 +54,7 @@ export default function BlogPage() {
                     </span>
                   </div>
                 </div>
-                <ArrowRight className="hidden sm:block h-5 w-5 text-[rgba(255,255,255,0.2)] group-hover:text-amber-400 group-hover:translate-x-1 transition-all shrink-0 mt-1" />
+                <ArrowRight className="hidden sm:block h-5 w-5 text-muted-foreground/60 group-hover:text-amber-700 dark:group-hover:text-amber-400 group-hover:translate-x-1 transition-all shrink-0 mt-1" />
               </div>
             </Link>
           ))}

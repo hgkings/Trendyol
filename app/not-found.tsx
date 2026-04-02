@@ -19,7 +19,7 @@ export default function NotFound() {
           </Link>
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-2 rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-[rgba(255,255,255,0.2)] transition-all"
+            className="inline-flex items-center gap-2 rounded-xl border border-border/60 px-5 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-border transition-all"
           >
             Dashboard
           </Link>

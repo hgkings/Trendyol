@@ -44,24 +44,24 @@ export function ProfitTrendChart({ analyses }: ProfitTrendChartProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
-            className="rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.02] to-transparent overflow-hidden"
+            className="rounded-xl border border-border/40 bg-card overflow-hidden"
         >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
                 <div className="flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-emerald-400" />
+                    <Activity className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
                     <div>
                         <span className="text-sm font-semibold">Kar Trendi</span>
                         <p className="text-[10px] text-muted-foreground">Son {days === 365 ? '1 yil' : `${days} gun`}</p>
                     </div>
                 </div>
-                <div className="flex gap-1 bg-white/[0.03] p-1 rounded-lg">
+                <div className="flex gap-1 bg-muted/10 p-1 rounded-lg">
                     {[30, 90, 365].map((d) => (
                         <Button
                             key={d}
                             size="sm"
                             variant="ghost"
                             className={`h-7 px-3 text-xs rounded-md transition-all ${days === d
-                                ? 'bg-emerald-500/15 text-emerald-400 shadow-sm'
+                                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 shadow-sm'
                                 : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             onClick={() => setDays(d)}
@@ -101,9 +101,9 @@ export function ProfitTrendChart({ analyses }: ProfitTrendChartProps) {
                                     if (active && payload?.length) {
                                         const val = payload[0].value as number;
                                         return (
-                                            <div className="rounded-xl border border-white/10 bg-[#1a1a2e]/95 backdrop-blur-xl px-4 py-3 shadow-2xl">
-                                                <p className="text-xs text-white/50 mb-1">{payload[0].payload.formattedDate}</p>
-                                                <p className={`text-sm font-bold ${val >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                            <div className="rounded-xl border border-border/50 bg-card px-4 py-3 shadow-md">
+                                                <p className="text-xs text-muted-foreground mb-1">{payload[0].payload.formattedDate}</p>
+                                                <p className={`text-sm font-bold ${val >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
                                                     {formatCurrency(val)}
                                                 </p>
                                             </div>
@@ -126,7 +126,7 @@ export function ProfitTrendChart({ analyses }: ProfitTrendChartProps) {
                     </ResponsiveContainer>
                 ) : (
                     <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
-                        <div className="h-10 w-10 rounded-full bg-white/[0.04] flex items-center justify-center">
+                        <div className="h-10 w-10 rounded-full bg-muted/20 flex items-center justify-center">
                             <Activity className="h-5 w-5 text-muted-foreground/40" />
                         </div>
                         <p>Bu zaman aralığında veri bulunamadı.</p>

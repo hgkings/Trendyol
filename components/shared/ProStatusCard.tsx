@@ -44,7 +44,7 @@ export function ProStatusCard() {
     // ─── FREE PLAN ───
     if (!isPro && !isStarter) {
         return (
-            <div className="w-full rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-4">
+            <div className="w-full rounded-2xl border border-border bg-card p-4">
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                         <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-muted-foreground">
@@ -93,18 +93,18 @@ export function ProStatusCard() {
     // ─── STARTER PLAN ───
     if (isStarter) {
         return (
-            <div className="relative w-full rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4 shadow-sm transition-all hover:shadow-md">
+            <div className="relative w-full rounded-2xl border border-blue-600/30 dark:border-blue-500/20 bg-blue-50 dark:bg-blue-500/10 p-4 shadow-sm transition-all hover:shadow-md">
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-2.5">
-                        <div className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-500/20 ring-2 ring-blue-500/20 shadow-inner">
-                            <Zap className="w-4.5 h-4.5 text-blue-400 fill-blue-400" />
+                        <div className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-500/20 ring-2 ring-blue-200 dark:ring-blue-500/20 shadow-inner">
+                            <Zap className="w-4.5 h-4.5 text-blue-600 dark:text-blue-400 fill-blue-600 dark:fill-blue-400" />
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-sm font-extrabold uppercase tracking-wider text-blue-300 leading-none">
+                            <span className="text-sm font-extrabold uppercase tracking-wider text-blue-700 dark:text-blue-300 leading-none">
                                 Kârnet Başlangıç
                             </span>
                             <div className="flex items-center gap-1 mt-1.5">
-                                <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded border border-blue-700 bg-blue-900/50 text-blue-400">
+                                <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded border border-blue-300 dark:border-blue-700 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400">
                                     Aktif
                                 </span>
                             </div>
@@ -113,7 +113,7 @@ export function ProStatusCard() {
 
                     <Popover>
                         <PopoverTrigger asChild>
-                            <button className="text-blue-400/50 hover:text-blue-300 transition-colors focus:outline-none">
+                            <button className="text-blue-500/60 dark:text-blue-400/50 hover:text-blue-600 dark:hover:text-blue-300 transition-colors focus:outline-none">
                                 <Info className="w-4 h-4" />
                             </button>
                         </PopoverTrigger>
@@ -129,33 +129,33 @@ export function ProStatusCard() {
                     </Popover>
                 </div>
 
-                <div className="space-y-2.5 mb-4 bg-black/20 rounded-xl p-3 border border-blue-800/30">
+                <div className="space-y-2.5 mb-4 bg-white/60 dark:bg-background/50 rounded-xl p-3 border border-blue-200/60 dark:border-blue-800/30">
                     <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-1.5 text-blue-300/70">
+                        <div className="flex items-center gap-1.5 text-blue-600/70 dark:text-blue-300/70">
                             <Calendar className="w-3.5 h-3.5" />
                             <span>Bitiş:</span>
                         </div>
-                        <span className="font-medium text-blue-100">{expireLabel}</span>
+                        <span className="font-medium text-blue-800 dark:text-blue-100">{expireLabel}</span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-1.5 text-blue-300/70">
+                        <div className="flex items-center gap-1.5 text-blue-600/70 dark:text-blue-300/70">
                             <Clock className="w-3.5 h-3.5" />
                             <span>Kalan:</span>
                         </div>
-                        <span className="font-medium text-blue-100">
+                        <span className="font-medium text-blue-800 dark:text-blue-100">
                             {daysRemaining !== null ? `${daysRemaining} gün` : '—'}
                         </span>
                     </div>
                     <div className="flex flex-col text-xs">
                         <div className="flex items-center justify-between mb-0.5">
-                            <div className="flex items-center gap-1.5 text-blue-300/70">
+                            <div className="flex items-center gap-1.5 text-blue-600/70 dark:text-blue-300/70">
                                 <CreditCard className="w-3.5 h-3.5" />
                                 <span>Yenileme:</span>
                             </div>
-                            <span className="font-medium text-blue-100">{renewalLabel}</span>
+                            <span className="font-medium text-blue-800 dark:text-blue-100">{renewalLabel}</span>
                         </div>
                         {renewalLabel === 'Manuel' && (
-                            <p className="text-[9px] text-blue-400/50 italic text-right">
+                            <p className="text-[9px] text-blue-500/60 dark:text-blue-400/50 italic text-right">
                                 Süre bitince tekrar satın almanız gerekir.
                             </p>
                         )}
@@ -163,7 +163,7 @@ export function ProStatusCard() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Button asChild size="sm" variant="outline" className="flex-1 bg-black/20 border-blue-700/50 hover:bg-blue-900/40 text-blue-200 shadow-sm transition-all h-8 text-xs">
+                    <Button asChild size="sm" variant="outline" className="flex-1 bg-white/60 dark:bg-background/50 border-blue-300 dark:border-blue-700/50 hover:bg-blue-50 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-200 shadow-sm transition-all h-8 text-xs">
                         <Link href="/pricing">
                             Planı Yönet
                         </Link>
@@ -175,18 +175,18 @@ export function ProStatusCard() {
 
     // ─── PRO PLAN ───
     return (
-        <div className="relative w-full rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 shadow-sm transition-all hover:shadow-md">
+        <div className="relative w-full rounded-2xl border border-emerald-600/30 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 p-4 shadow-sm transition-all hover:shadow-md">
             <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-2.5">
-                    <div className="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-500/20 ring-2 ring-emerald-500/20 shadow-inner">
-                        <Crown className="w-4.5 h-4.5 text-emerald-400 fill-emerald-400" />
+                    <div className="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-500/20 ring-2 ring-emerald-200 dark:ring-emerald-500/20 shadow-inner">
+                        <Crown className="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400 fill-emerald-600 dark:fill-emerald-400" />
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-sm font-extrabold uppercase tracking-wider text-emerald-300 leading-none">
+                        <span className="text-sm font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-300 leading-none">
                             Kârnet Pro
                         </span>
                         <div className="flex items-center gap-1 mt-1.5">
-                            <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded border border-emerald-700 bg-emerald-900/50 text-emerald-400">
+                            <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded border border-emerald-300 dark:border-emerald-700 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400">
                                 Aktif
                             </span>
                         </div>
@@ -195,7 +195,7 @@ export function ProStatusCard() {
 
                 <Popover>
                     <PopoverTrigger asChild>
-                        <button className="text-emerald-400/50 hover:text-emerald-300 transition-colors focus:outline-none">
+                        <button className="text-emerald-500/60 dark:text-emerald-400/50 hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors focus:outline-none">
                             <Info className="w-4 h-4" />
                         </button>
                     </PopoverTrigger>
@@ -211,33 +211,33 @@ export function ProStatusCard() {
                 </Popover>
             </div>
 
-            <div className="space-y-2.5 mb-4 bg-black/20 rounded-xl p-3 border border-emerald-800/30">
+            <div className="space-y-2.5 mb-4 bg-white/60 dark:bg-background/50 rounded-xl p-3 border border-emerald-200/60 dark:border-emerald-800/30">
                 <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1.5 text-emerald-300/70">
+                    <div className="flex items-center gap-1.5 text-emerald-600/70 dark:text-emerald-300/70">
                         <Calendar className="w-3.5 h-3.5" />
                         <span>Bitiş:</span>
                     </div>
-                    <span className="font-medium text-emerald-100">{expireLabel}</span>
+                    <span className="font-medium text-emerald-800 dark:text-emerald-100">{expireLabel}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1.5 text-emerald-300/70">
+                    <div className="flex items-center gap-1.5 text-emerald-600/70 dark:text-emerald-300/70">
                         <Clock className="w-3.5 h-3.5" />
                         <span>Kalan:</span>
                     </div>
-                    <span className="font-medium text-emerald-100">
+                    <span className="font-medium text-emerald-800 dark:text-emerald-100">
                         {daysRemaining !== null ? `${daysRemaining} gün` : '—'}
                     </span>
                 </div>
                 <div className="flex flex-col text-xs">
                     <div className="flex items-center justify-between mb-0.5">
-                        <div className="flex items-center gap-1.5 text-emerald-300/70">
+                        <div className="flex items-center gap-1.5 text-emerald-600/70 dark:text-emerald-300/70">
                             <CreditCard className="w-3.5 h-3.5" />
                             <span>Yenileme:</span>
                         </div>
-                        <span className="font-medium text-emerald-100">{renewalLabel}</span>
+                        <span className="font-medium text-emerald-800 dark:text-emerald-100">{renewalLabel}</span>
                     </div>
                     {renewalLabel === 'Manuel' && (
-                        <p className="text-[9px] text-emerald-400/50 italic text-right">
+                        <p className="text-[9px] text-emerald-500/60 dark:text-emerald-400/50 italic text-right">
                             Süre bitince tekrar satın almanız gerekir.
                         </p>
                     )}
@@ -245,7 +245,7 @@ export function ProStatusCard() {
             </div>
 
             <div className="flex items-center gap-2">
-                <Button asChild size="sm" variant="outline" className="flex-1 bg-black/20 border-emerald-700/50 hover:bg-emerald-900/40 text-emerald-200 shadow-sm transition-all h-8 text-xs">
+                <Button asChild size="sm" variant="outline" className="flex-1 bg-white/60 dark:bg-background/50 border-emerald-300 dark:border-emerald-700/50 hover:bg-emerald-50 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-200 shadow-sm transition-all h-8 text-xs">
                     <Link href="/pricing">
                         Planı Yönet
                     </Link>

@@ -11,7 +11,7 @@ interface ParetoChartProps {
 }
 
 const MEDAL_CONFIG = [
-    { icon: Crown, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+    { icon: Crown, color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-500/10' },
     { icon: Medal, color: 'text-gray-300', bg: 'bg-gray-500/10' },
     { icon: Award, color: 'text-orange-400', bg: 'bg-orange-500/10' },
 ];
@@ -42,11 +42,11 @@ export function ParetoChart({ analyses }: ParetoChartProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.02] to-transparent overflow-hidden"
+            className="rounded-xl border border-border/40 bg-card overflow-hidden"
         >
-            <div className="px-5 py-4 border-b border-white/[0.06]">
+            <div className="px-5 py-4 border-b border-border/40">
                 <div className="flex items-center gap-2">
-                    <Crown className="h-4 w-4 text-amber-400" />
+                    <Crown className="h-4 w-4 text-amber-700 dark:text-amber-400" />
                     <div>
                         <span className="text-sm font-semibold">Karin Omurgasi (80/20)</span>
                         <p className="text-[10px] text-muted-foreground">
@@ -64,7 +64,7 @@ export function ParetoChart({ analyses }: ParetoChartProps) {
 
                     return (
                         <Link key={item.id} href={`/analysis/${item.id}`}>
-                            <div className="group relative flex items-center justify-between p-2.5 rounded-lg hover:bg-white/[0.03] transition-colors">
+                            <div className="group relative flex items-center justify-between p-2.5 rounded-lg hover:bg-muted/10 transition-colors">
                                 {/* Background share bar */}
                                 <div
                                     className="absolute inset-0 rounded-lg bg-emerald-500/[0.04]"
@@ -76,12 +76,12 @@ export function ParetoChart({ analyses }: ParetoChartProps) {
                                             <MedalIcon className={`h-3.5 w-3.5 ${medal.color}`} />
                                         </div>
                                     ) : (
-                                        <span className="w-6 h-6 flex items-center justify-center rounded-md bg-white/[0.04] text-[10px] font-bold text-muted-foreground">
+                                        <span className="w-6 h-6 flex items-center justify-center rounded-md bg-muted/20 text-[10px] font-bold text-muted-foreground">
                                             {idx + 1}
                                         </span>
                                     )}
                                     <div className="min-w-0 flex-1">
-                                        <span className="text-sm font-medium truncate block group-hover:text-emerald-400 transition-colors">
+                                        <span className="text-sm font-medium truncate block group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
                                             {item.input.product_name}
                                         </span>
                                         <span className="text-[10px] text-muted-foreground">
@@ -90,7 +90,7 @@ export function ParetoChart({ analyses }: ParetoChartProps) {
                                     </div>
                                 </div>
                                 <div className="relative text-right shrink-0 ml-2">
-                                    <span className="text-sm font-bold text-emerald-400 tabular-nums">
+                                    <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
                                         {formatCurrency(item.result.monthly_net_profit)}
                                     </span>
                                     <span className="block text-[10px] text-muted-foreground">

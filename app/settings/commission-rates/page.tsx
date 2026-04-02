@@ -191,17 +191,17 @@ export default function CommissionRatesPage() {
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-5 space-y-3">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-600" />
-            <span className="text-sm font-semibold text-amber-400">
+            <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">
               Varsayılan oranlar genel tahmindir
             </span>
           </div>
-          <p className="text-xs text-amber-400">
+          <p className="text-xs text-amber-700 dark:text-amber-400">
             Gerçek komisyon oranlarınız için satıcı panellerinizi kontrol edin:
           </p>
           <ul className="space-y-1.5">
             {MARKETPLACE_HELP_LINKS.map((link) => (
               <li key={link.name} className="text-xs">
-                <span className="font-semibold text-amber-400">{link.name}:</span>{' '}
+                <span className="font-semibold text-amber-700 dark:text-amber-400">{link.name}:</span>{' '}
                 <a
                   href={link.url}
                   target="_blank"
@@ -219,7 +219,7 @@ export default function CommissionRatesPage() {
         </div>
 
         {/* Expected Format */}
-        <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-5 space-y-4">
+        <div className="rounded-xl border border-border/40 bg-card p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-sm">Beklenen Format (CSV / Sheets)</h2>
             <Button variant="outline" size="sm" onClick={handleTemplateDownload}>
@@ -249,7 +249,7 @@ export default function CommissionRatesPage() {
         </div>
 
         {/* Google Sheets Import */}
-        <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-5 space-y-4">
+        <div className="rounded-xl border border-border/40 bg-card p-5 space-y-4">
           <div className="flex items-center gap-2">
             <Link2 className="h-4 w-4 text-primary" />
             <h2 className="font-semibold text-sm">Google Sheets ile İçe Aktar</h2>
@@ -271,7 +271,7 @@ export default function CommissionRatesPage() {
         </div>
 
         {/* CSV Upload */}
-        <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-5 space-y-4">
+        <div className="rounded-xl border border-border/40 bg-card p-5 space-y-4">
           <div className="flex items-center gap-2">
             <Upload className="h-4 w-4 text-primary" />
             <h2 className="font-semibold text-sm">CSV Dosyası Yükle</h2>
@@ -308,7 +308,7 @@ export default function CommissionRatesPage() {
 
         {/* Preview */}
         {preview && preview.length > 0 && (
-          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-5 space-y-4">
+          <div className="rounded-xl border border-border/40 bg-card p-5 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />

@@ -24,25 +24,25 @@ export function CollapsibleCard({
 
     return (
         <div className={cn(
-            "rounded-2xl border bg-[rgba(255,255,255,0.03)] border-[rgba(255,255,255,0.06)] transition-all duration-200",
+            "rounded-2xl border bg-card border-border/40 transition-all duration-200",
             isOpen && "border-amber-600/40",
             className
         )}>
             <div
-                className="flex items-center justify-between p-4 cursor-pointer hover:bg-[rgba(255,255,255,0.04)] active:bg-[rgba(255,255,255,0.06)] transition-colors rounded-t-2xl"
+                className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/15 active:bg-muted/20 transition-colors rounded-t-2xl"
                 onClick={() => setIsOpen(!isOpen)}
             >
                 <div className="space-y-1">
                     <h3 className="text-sm font-semibold leading-none tracking-tight text-stone-50">{title}</h3>
                     {description && (
-                        <p className="text-xs text-[rgba(255,255,255,0.5)]">{description}</p>
+                        <p className="text-xs text-muted-foreground">{description}</p>
                     )}
                 </div>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                     {isOpen ? (
-                        <ChevronUp className="h-4 w-4 text-[rgba(255,255,255,0.5)]" />
+                        <ChevronUp className="h-4 w-4 text-muted-foreground" />
                     ) : (
-                        <ChevronDown className="h-4 w-4 text-[rgba(255,255,255,0.5)]" />
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
                     )}
                 </Button>
             </div>

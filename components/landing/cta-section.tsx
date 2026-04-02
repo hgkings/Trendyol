@@ -38,14 +38,13 @@ export function CTASection() {
 
           {/* Corner chart icon decoration */}
           <div className="absolute bottom-4 right-6 opacity-[0.05] pointer-events-none select-none">
-            <BarChart2 className="h-40 w-40 text-amber-400" />
+            <BarChart2 className="h-40 w-40 text-amber-700 dark:text-amber-400" />
           </div>
 
           <div className="relative z-10">
             {/* Badge */}
             <div
-              className="inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-semibold mb-6 backdrop-blur-sm"
-              style={{ background: 'rgba(217,119,6,0.12)', color: '#FBBF24' }}
+              className="inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-semibold mb-6 backdrop-blur-sm bg-amber-500/12 text-amber-800 dark:text-amber-300"
             >
               Hemen Başla
             </div>
@@ -60,7 +59,7 @@ export function CTASection() {
                 kârını
               </span>{' '}öğren
             </h2>
-            <p className="mx-auto max-w-xl text-lg text-[rgba(255,255,255,0.5)] mb-10">
+            <p className="mx-auto max-w-xl text-lg text-muted-foreground mb-10">
               Ücretsiz plan ile hemen başla. Kurulum yok, kart bilgisi yok.
             </p>
 
@@ -80,7 +79,7 @@ export function CTASection() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="h-12 px-8 text-base font-medium rounded-xl border-[rgba(255,255,255,0.06)] hover:bg-white/5 transition-all duration-200 gap-2"
+                  className="h-12 px-8 text-base font-medium rounded-xl border-border/40 hover:bg-muted/50 transition-all duration-200 gap-2"
                 >
                   <Play className="h-4 w-4" />
                   Demo İzle
@@ -89,7 +88,7 @@ export function CTASection() {
             </div>
 
             {/* Trust icons */}
-            <div className="flex flex-wrap items-center justify-center gap-6 mt-8 text-sm text-[rgba(255,255,255,0.5)]">
+            <div className="flex flex-wrap items-center justify-center gap-6 mt-8 text-sm text-muted-foreground">
               <span>🔒 Güvenli ödeme</span>
               <span>📊 Anlık analiz</span>
               <span>🔐 Veriler şifreli</span>

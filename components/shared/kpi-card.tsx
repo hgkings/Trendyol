@@ -28,10 +28,10 @@ export function KPICard({ title, value, subtitle, icon: Icon, trend, className }
           {subtitle && (
             <p className={cn(
               'text-xs font-medium',
-              trend === 'up' && 'text-emerald-400',
+              trend === 'up' && 'text-emerald-700 dark:text-emerald-400',
               trend === 'down' && 'text-red-400',
-              trend === 'neutral' && 'text-[rgba(255,255,255,0.4)]',
-              !trend && 'text-[rgba(255,255,255,0.4)]'
+              trend === 'neutral' && 'text-muted-foreground',
+              !trend && 'text-muted-foreground'
             )}>
               {subtitle}
             </p>

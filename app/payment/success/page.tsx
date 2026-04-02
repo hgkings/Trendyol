@@ -76,7 +76,7 @@ function PaymentSuccessContent() {
                                 <CheckCircle2 className="h-10 w-10 text-emerald-500" />
                             </div>
                         </div>
-                        <h1 className="text-2xl font-bold text-emerald-400">Pro Plan Aktif! 🎉</h1>
+                        <h1 className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">Pro Plan Aktif! 🎉</h1>
                         <p className="text-muted-foreground">
                             Tebrikler! Pro planınız başarıyla aktif edildi.
                         </p>
@@ -97,7 +97,7 @@ function PaymentSuccessContent() {
                                 <Loader2 className="h-10 w-10 text-amber-500 animate-spin" />
                             </div>
                         </div>
-                        <h1 className="text-2xl font-bold text-amber-400">Ödeme Bekleniyor ⏳</h1>
+                        <h1 className="text-2xl font-bold text-amber-700 dark:text-amber-400">Ödeme Bekleniyor ⏳</h1>
                         <p className="text-muted-foreground">
                             Ödeme işleminiz henüz bize ulaşmadı. Eğer ödemeyi tamamladıysanız biraz daha bekleyip tekrar kontrol edebilirsiniz.
                         </p>

@@ -138,7 +138,7 @@ export function CSVImportSection({ onImport }: CSVImportSectionProps) {
     };
 
     return (
-        <div className="rounded-2xl border border-amber-500/20 bg-[rgba(255,255,255,0.03)] p-6 animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="rounded-2xl border border-amber-500/20 bg-card p-6 animate-in fade-in slide-in-from-top-4 duration-500">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                     <Upload className="h-5 w-5 text-primary" />
@@ -149,7 +149,7 @@ export function CSVImportSection({ onImport }: CSVImportSectionProps) {
             <div className="grid gap-6 lg:grid-cols-2">
                 <div className="space-y-4">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex bg-[rgba(255,255,255,0.04)] rounded-lg p-1 w-fit">
+                        <div className="flex bg-muted/15 rounded-lg p-1 w-fit">
                             <button
                                 onClick={() => { setMode('upload'); reset(); }}
                                 className={cn(
@@ -249,11 +249,11 @@ export function CSVImportSection({ onImport }: CSVImportSectionProps) {
                             <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3">
                                 <div className="flex items-center gap-2 mb-2">
                                     <AlertCircle className="h-3.5 w-3.5 text-amber-600" />
-                                    <p className="text-xs font-bold text-amber-400">{errors.length} hatayla karşılaşıldı</p>
+                                    <p className="text-xs font-bold text-amber-700 dark:text-amber-400">{errors.length} hatayla karşılaşıldı</p>
                                 </div>
                                 <div className="space-y-1">
                                     {errors.map((err, i) => (
-                                        <p key={i} className="text-[10px] text-amber-400 border-l-2 border-amber-500/30 pl-2">{err}</p>
+                                        <p key={i} className="text-[10px] text-amber-700 dark:text-amber-400 border-l-2 border-amber-500/30 pl-2">{err}</p>
                                     ))}
                                 </div>
                             </div>
@@ -277,7 +277,7 @@ export function CSVImportSection({ onImport }: CSVImportSectionProps) {
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2">
                                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                                    <p className="text-xs font-bold text-emerald-400">{data.length} geçerli ürün hazır</p>
+                                    <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">{data.length} geçerli ürün hazır</p>
                                 </div>
                                 <div className="rounded-xl border border-border overflow-hidden">
                                     <table className="w-full text-[10px] text-left">

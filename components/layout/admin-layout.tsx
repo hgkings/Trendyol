@@ -46,7 +46,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     return (
         <div className="flex h-screen bg-background">
             {/* Sidebar */}
-            <aside className="w-56 shrink-0 flex flex-col bg-[rgba(255,255,255,0.02)] border-r border-[rgba(255,255,255,0.06)]">
+            <aside className="w-56 shrink-0 flex flex-col bg-muted/5 border-r border-border/40">
                 <div className="flex items-center gap-2 px-4 py-5 border-b">
                     <KarnetLogo size={32} />
                     <span className="font-bold text-sm">Admin Panel</span>

@@ -21,7 +21,7 @@ export function RecommendationsPanel({ analyses }: RecommendationsPanelProps) {
                 issues.push({ type: 'risk', label: 'Yuksek Risk', icon: AlertTriangle, color: 'text-red-400 bg-red-500/10' });
             }
             if (analysis.result.margin_pct < 10) {
-                issues.push({ type: 'margin', label: 'Dusuk Marj', icon: TrendingDown, color: 'text-amber-400 bg-amber-500/10' });
+                issues.push({ type: 'margin', label: 'Dusuk Marj', icon: TrendingDown, color: 'text-amber-700 dark:text-amber-400 bg-amber-500/10' });
             }
             if (analysis.result.monthly_net_profit < 0) {
                 issues.push({ type: 'profit', label: 'Zarar Ediyor', icon: Wallet, color: 'text-red-400 bg-red-500/10' });
@@ -57,7 +57,7 @@ export function RecommendationsPanel({ analyses }: RecommendationsPanelProps) {
             <div className="px-5 py-4 border-b border-amber-500/10">
                 <div className="flex items-center gap-2">
                     <div className="p-1.5 rounded-lg bg-amber-500/10">
-                        <AlertTriangle className="h-4 w-4 text-amber-400" />
+                        <AlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-400" />
                     </div>
                     <div>
                         <span className="text-sm font-semibold">Kritik Ürün Önerileri</span>
@@ -73,7 +73,7 @@ export function RecommendationsPanel({ analyses }: RecommendationsPanelProps) {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.15 + i * 0.05 }}
-                        className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-white/[0.04] bg-white/[0.02] p-3 hover:bg-white/[0.04] transition-colors"
+                        className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-border/30 bg-muted/10 p-3 hover:bg-muted/20 transition-colors"
                     >
                         <div className="space-y-1 min-w-0 flex-1">
                             <div className="flex items-center gap-2">

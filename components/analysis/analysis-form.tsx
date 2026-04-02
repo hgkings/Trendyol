@@ -392,7 +392,7 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
             <div className="space-y-0.5">
               <div className="flex items-center gap-2.5">
                 <Label htmlFor="pro-mode" className="font-bold text-base cursor-pointer">PRO Muhasebe Modu</Label>
-                {!isProUserFlag && <Badge variant="secondary" className="bg-amber-500/10 text-amber-400 border-amber-500/20 text-[10px] px-2 py-0.5"><Lock className="h-3 w-3 mr-1" /> Premium</Badge>}
+                {!isProUserFlag && <Badge variant="secondary" className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 text-[10px] px-2 py-0.5"><Lock className="h-3 w-3 mr-1" /> Premium</Badge>}
               </div>
               <p className="text-xs text-muted-foreground">Gerçek E-Ticaret Muhasebesi (KDV Ayrıştırma)</p>
             </div>
@@ -426,7 +426,7 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {/* Primary VAT Toggles */}
-              <div className="space-y-4 rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-5 shadow-sm">
+              <div className="space-y-4 rounded-xl border border-border/40 bg-card p-5 shadow-sm">
                 <h4 className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider flex items-center gap-1.5">
                   <Info className="h-3.5 w-3.5" /> Gelir/Gider Temeli
                 </h4>
@@ -442,7 +442,7 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
                 </div>
               </div>
 
-              <div className="space-y-4 rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-5 shadow-sm">
+              <div className="space-y-4 rounded-xl border border-border/40 bg-card p-5 shadow-sm">
                 <h4 className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">KDV Oranları</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -456,7 +456,7 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
                 </div>
               </div>
 
-              <div className="space-y-4 rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-5 shadow-sm">
+              <div className="space-y-4 rounded-xl border border-border/40 bg-card p-5 shadow-sm">
                 <h4 className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">Pazaryeri & İade</h4>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-3">
@@ -482,7 +482,7 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
                     { id: 'ad', label: 'Reklam', inc: 'ad_includes_vat', pct: 'ad_vat_pct' },
                     { id: 'other', label: 'Diğer', inc: 'other_cost_includes_vat', pct: 'other_cost_vat_pct' },
                   ].map((item) => (
-                    <div key={item.id} className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-4 space-y-3">
+                    <div key={item.id} className="rounded-xl border border-border/40 bg-card p-4 space-y-3">
                       <div className="flex items-center justify-between border-b pb-2.5">
                         <span className="text-sm font-semibold">{item.label}</span>
                         <Switch
@@ -509,10 +509,10 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
                 <div className="mt-6 rounded-xl border bg-amber-500/10 p-5">
                   <div className="flex items-center gap-2 mb-2.5">
                     <Info className="h-4 w-4 text-amber-600" />
-                    <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Ek İade Maliyeti</span>
+                    <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Ek İade Maliyeti</span>
                   </div>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                    <p className="text-xs text-amber-400/80 flex-1 leading-relaxed">
+                    <p className="text-xs text-amber-700 dark:text-amber-400/80 flex-1 leading-relaxed">
                       Müşteri iade ettiğinde cebinizden çıkan ekstra kargo veya operasyon bedeli (birim başına).
                     </p>
                     <div className="relative w-28 shrink-0">
@@ -541,7 +541,7 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
                 type="button"
                 className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition-all duration-200 ${input.marketplace === mp.key
                   ? 'border-primary bg-primary/10 text-primary shadow-sm'
-                  : 'border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] hover:bg-white/5 hover:border-[rgba(255,255,255,0.10)]'
+                  : 'border-border/40 bg-muted/10 hover:bg-muted/50 hover:border-border/60'
                   }`}
                 onClick={() => handleMarketplaceChange(mp.key)}
               >
@@ -582,15 +582,15 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
             </select>
             <p className="text-xs text-muted-foreground">
               Kategori seçimi komisyon oranını otomatik doldurur; dilediğinizde manuel değiştirebilirsiniz.
-              {customRateMap.size > 0 && <span className="text-emerald-400"> ✓ işaretliler kişisel oranlarınızı kullanıyor.</span>}
+              {customRateMap.size > 0 && <span className="text-emerald-700 dark:text-emerald-400"> ✓ işaretliler kişisel oranlarınızı kullanıyor.</span>}
             </p>
 
             {/* Commission rate disclaimer */}
             <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-xs space-y-1.5">
-              <p className="font-semibold text-amber-400">
+              <p className="font-semibold text-amber-700 dark:text-amber-400">
                 ⚠️ Bu oranlar genel tahmindir. Gerçek komisyon oranınız için:
               </p>
-              <ul className="space-y-1 text-amber-400">
+              <ul className="space-y-1 text-amber-700 dark:text-amber-400">
                 <li>
                   <span className="font-medium">Trendyol →</span>{' '}
                   <a href="https://akademi.trendyol.com/satici-bilgi-merkezi/detay/trendyol-komisyonlari" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
@@ -870,7 +870,7 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
                     type="button"
                     size="sm"
                     variant="ghost"
-                    className="h-8 text-xs hover:bg-primary hover:text-white rounded-lg"
+                    className="h-8 text-xs hover:bg-primary hover:text-primary-foreground rounded-lg"
                     onClick={() => {
                       handleFieldChange('sale_price', suggestedPrice.toFixed(2));
                       setSuggestedPrice(undefined);
@@ -889,7 +889,7 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
         {warnings.length > 0 && (
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 animate-in fade-in slide-in-from-top-2">
             <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="h-5 w-5 text-amber-400" />
+              <AlertTriangle className="h-5 w-5 text-amber-700 dark:text-amber-400" />
               <h4 className="font-semibold text-amber-800 text-sm">Dikkat Edilmesi Gerekenler</h4>
             </div>
             <ul className="list-disc list-inside space-y-1">

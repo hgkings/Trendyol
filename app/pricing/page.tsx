@@ -217,13 +217,13 @@ function PricingContent() {
               : 'bg-amber-500/10 border-amber-500/20',
           )}>
             {pollState === 'active' ? (
-              <><CheckCircle2 className="h-6 w-6 text-emerald-400 shrink-0" />
-                <div><p className="font-semibold text-emerald-400">Plan Aktif ✅</p>
+              <><CheckCircle2 className="h-6 w-6 text-emerald-700 dark:text-emerald-400 shrink-0" />
+                <div><p className="font-semibold text-emerald-700 dark:text-emerald-400">Plan Aktif ✅</p>
                   <p className="text-sm text-emerald-500">Planınız başarıyla aktif edildi!</p></div></>
             ) : pollState === 'pending' ? (
-              <><Loader2 className="h-6 w-6 text-amber-400 shrink-0" />
+              <><Loader2 className="h-6 w-6 text-amber-700 dark:text-amber-400 shrink-0" />
                 <div className="flex-1">
-                  <p className="font-semibold text-amber-400">Ödeme Alındı ⏳</p>
+                  <p className="font-semibold text-amber-700 dark:text-amber-400">Ödeme Alındı ⏳</p>
                   <p className="text-sm text-amber-500">30 saniye içinde otomatik aktif olur.</p>
                 </div>
                 <Button size="sm" variant="outline" className="shrink-0" onClick={async () => {
@@ -235,8 +235,8 @@ function PricingContent() {
                   <RefreshCw className="h-4 w-4 mr-1" />Yenile
                 </Button></>
             ) : (
-              <><Loader2 className="h-6 w-6 text-amber-400 animate-spin shrink-0" />
-                <div><p className="font-semibold text-amber-400">Ödeme Başarılı ✅</p>
+              <><Loader2 className="h-6 w-6 text-amber-700 dark:text-amber-400 animate-spin shrink-0" />
+                <div><p className="font-semibold text-amber-700 dark:text-amber-400">Ödeme Başarılı ✅</p>
                   <p className="text-sm text-amber-500">Planınız kontrol ediliyor… ({pollCount}/6)</p></div></>
             )}
           </div>
@@ -336,25 +336,25 @@ function PricingContent() {
         {/* ─ Comparison Table ───────────────────────────────────────────────── */}
         <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl font-bold text-center mb-8">Özellik Karşılaştırması</h2>
-          <div className="rounded-2xl border border-[rgba(255,255,255,0.06)] overflow-hidden">
+          <div className="rounded-2xl border border-border/40 overflow-hidden">
             {/* Header */}
-            <div className="grid grid-cols-4 bg-[rgba(255,255,255,0.03)] border-b border-[rgba(255,255,255,0.06)]">
-              <div className="p-4 text-sm font-semibold text-[rgba(255,255,255,0.5)]">Özellik</div>
-              <div className="p-4 text-sm font-semibold text-center border-l border-[rgba(255,255,255,0.06)]">Ücretsiz</div>
-              <div className="p-4 text-sm font-semibold text-center border-l border-[rgba(255,255,255,0.06)] text-amber-400">Başlangıç</div>
-              <div className="p-4 text-sm font-semibold text-center border-l border-[rgba(255,255,255,0.06)] text-amber-400">Pro</div>
+            <div className="grid grid-cols-4 bg-muted/10 border-b border-border/40">
+              <div className="p-4 text-sm font-semibold text-muted-foreground">Özellik</div>
+              <div className="p-4 text-sm font-semibold text-center border-l border-border/40">Ücretsiz</div>
+              <div className="p-4 text-sm font-semibold text-center border-l border-border/40 text-amber-700 dark:text-amber-400">Başlangıç</div>
+              <div className="p-4 text-sm font-semibold text-center border-l border-border/40 text-amber-700 dark:text-amber-400">Pro</div>
             </div>
             {/* Rows */}
             {COMPARISON_ROWS.map((row, i) => (
-              <div key={row.label} className={cn('grid grid-cols-4 border-b border-[rgba(255,255,255,0.04)] last:border-b-0', i % 2 === 0 ? 'bg-transparent' : 'bg-[rgba(255,255,255,0.02)]')}>
-                <div className="p-3.5 text-sm text-[rgba(255,255,255,0.7)]">{row.label}</div>
-                <div className="p-3.5 text-center border-l border-[rgba(255,255,255,0.06)] flex items-center justify-center">
+              <div key={row.label} className={cn('grid grid-cols-4 border-b border-border/30 last:border-b-0', i % 2 === 0 ? 'bg-transparent' : 'bg-muted/10')}>
+                <div className="p-3.5 text-sm text-foreground/80">{row.label}</div>
+                <div className="p-3.5 text-center border-l border-border/40 flex items-center justify-center">
                   <CellValue val={row.free} />
                 </div>
-                <div className="p-3.5 text-center border-l border-[rgba(255,255,255,0.06)] flex items-center justify-center">
+                <div className="p-3.5 text-center border-l border-border/40 flex items-center justify-center">
                   <CellValue val={row.starter} />
                 </div>
-                <div className="p-3.5 text-center border-l border-[rgba(255,255,255,0.06)] flex items-center justify-center">
+                <div className="p-3.5 text-center border-l border-border/40 flex items-center justify-center">
                   <CellValue val={row.pro} />
                 </div>
               </div>
@@ -385,7 +385,7 @@ function PricingContent() {
         {/* ─ FAQ ────────────────────────────────────────────────────────────── */}
         <div className="max-w-2xl mx-auto">
           <h2 className="text-2xl font-bold text-center mb-8">Sıkça Sorulan Sorular</h2>
-          <div className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6 divide-y divide-[rgba(255,255,255,0.06)]">
+          <div className="rounded-2xl border border-border/40 bg-card p-6 divide-y divide-border/40">
             {FAQ_ITEMS.map((item) => (
               <FaqItem key={item.q} q={item.q} a={item.a} />
             ))}

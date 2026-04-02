@@ -51,7 +51,7 @@ function CountUp({ target, suffix }: { target: number; suffix: string }) {
 
 export function TrustStrip() {
   return (
-    <section className="py-20 border-y border-[rgba(255,255,255,0.06)]">
+    <section className="py-20 border-y border-border/40">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           {stats.map((stat, i) => (
@@ -63,13 +63,13 @@ export function TrustStrip() {
               transition={{ duration: 0.5, delay: i * 0.1 }}
               className="flex flex-col items-center text-center"
             >
-              <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/8 border border-amber-500/12 text-amber-400">
+              <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/8 border border-amber-500/12 text-amber-700 dark:text-amber-400">
                 <stat.icon className="h-5 w-5" />
               </div>
               <p className="text-3xl font-black tracking-tight text-foreground mb-1">
                 <CountUp target={stat.value} suffix={stat.suffix} />
               </p>
-              <p className="text-sm text-[rgba(255,255,255,0.5)]">{stat.label}</p>
+              <p className="text-sm text-muted-foreground">{stat.label}</p>
             </motion.div>
           ))}
         </div>

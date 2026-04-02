@@ -111,7 +111,7 @@ export default function DemoPage() {
                 </div>
 
                 {/* ── Analysis Form ── */}
-                <div className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] overflow-hidden">
+                <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
                     <AnalysisForm initialData={initialData} isDemo={true} />
                 </div>
 

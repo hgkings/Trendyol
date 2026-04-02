@@ -59,7 +59,7 @@ export function UpgradeModal({ open, onClose }: UpgradeModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="mx-4 w-full max-w-lg rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[#1C1917] p-8 shadow-2xl">
+      <div className="mx-4 w-full max-w-lg rounded-2xl border border-border/40 bg-card p-8 shadow-md">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold">Planınızı Yükseltin</h2>
           <button onClick={onClose} className="rounded-lg p-1 hover:bg-muted">
@@ -103,13 +103,13 @@ export function UpgradeModal({ open, onClose }: UpgradeModalProps) {
           {/* Pro */}
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-4">
             <div className="flex items-center gap-2">
-              <Crown className="h-5 w-5 text-amber-400" />
-              <span className="font-bold text-amber-300">Profesyonel</span>
+              <Crown className="h-5 w-5 text-amber-700 dark:text-amber-400" />
+              <span className="font-bold text-amber-700 dark:text-amber-300">Profesyonel</span>
             </div>
             <div className="space-y-2">
               {proFeatures.map((f) => (
                 <div key={f} className="flex items-center gap-2">
-                  <Check className="h-3 w-3 text-amber-400 shrink-0" />
+                  <Check className="h-3 w-3 text-amber-700 dark:text-amber-400 shrink-0" />
                   <span className="text-xs">{f}</span>
                 </div>
               ))}

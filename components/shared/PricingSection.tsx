@@ -60,7 +60,7 @@ function PricingSection({ tiers, className, onBillingChange }: PricingSectionPro
     >
       <div className="w-full max-w-6xl mx-auto">
         <div className="flex flex-col items-center gap-4 mb-12">
-          <div className="inline-flex items-center p-1.5 bg-[rgba(255,255,255,0.04)] rounded-full border border-[rgba(255,255,255,0.06)]">
+          <div className="inline-flex items-center p-1.5 bg-muted/15 rounded-full border border-border/40">
             {["Monthly", "Yearly"].map((period) => (
               <button
                 key={period}
@@ -68,8 +68,8 @@ function PricingSection({ tiers, className, onBillingChange }: PricingSectionPro
                 className={cn(
                   "px-8 py-2.5 text-sm font-medium rounded-full transition-all duration-300",
                   (period === "Yearly") === isYearly
-                    ? "bg-amber-500/20 text-amber-400 shadow-lg"
-                    : "text-[rgba(255,255,255,0.4)] hover:text-foreground",
+                    ? "bg-amber-500/20 text-amber-700 dark:text-amber-400 shadow-lg"
+                    : "text-muted-foreground/70 hover:text-foreground",
                 )}
               >
                 {period}
@@ -88,7 +88,7 @@ function PricingSection({ tiers, className, onBillingChange }: PricingSectionPro
                 "flex flex-col",
                 tier.highlight
                   ? "bg-[rgba(217,119,6,0.08)] border border-amber-500/30 shadow-xl"
-                  : "bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] shadow-md",
+                  : "bg-card border border-border/40 shadow-md",
                 "hover:translate-y-0 hover:shadow-lg",
               )}
             >
@@ -107,13 +107,13 @@ function PricingSection({ tiers, className, onBillingChange }: PricingSectionPro
                     className={cn(
                       "p-3 rounded-xl",
                       tier.highlight
-                        ? "bg-amber-500/10 text-amber-400"
-                        : "bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.5)]",
+                        ? "bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                        : "bg-muted/20 text-muted-foreground",
                     )}
                   >
                     {tier.icon}
                   </div>
-                  <h3 className={cn("text-xl font-semibold", tier.highlight ? "text-amber-400" : "text-foreground")}>
+                  <h3 className={cn("text-xl font-semibold", tier.highlight ? "text-amber-700 dark:text-amber-400" : "text-foreground")}>
                     {tier.name}
                   </h3>
                 </div>
@@ -123,11 +123,11 @@ function PricingSection({ tiers, className, onBillingChange }: PricingSectionPro
                     <span className="text-4xl font-bold text-foreground">
                       ₺{isYearly ? tier.price.yearly : tier.price.monthly}
                     </span>
-                    <span className="text-sm text-[rgba(255,255,255,0.4)]">
+                    <span className="text-sm text-muted-foreground/70">
                       /{isYearly ? "yıl" : "ay"}
                     </span>
                   </div>
-                  <p className="mt-2 text-sm text-[rgba(255,255,255,0.5)]">
+                  <p className="mt-2 text-sm text-muted-foreground">
                     {tier.description}
                   </p>
                 </div>
@@ -139,17 +139,17 @@ function PricingSection({ tiers, className, onBillingChange }: PricingSectionPro
                         className={cn(
                           "mt-1 p-0.5 rounded-full transition-colors duration-200",
                           feature.included
-                            ? "text-emerald-400"
-                            : "text-[rgba(255,255,255,0.2)]",
+                            ? "text-emerald-700 dark:text-emerald-400"
+                            : "text-muted-foreground/40",
                         )}
                       >
                         <Check className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className={cn("text-sm font-medium", feature.included ? "text-foreground" : "text-[rgba(255,255,255,0.4)]")}>
+                        <div className={cn("text-sm font-medium", feature.included ? "text-foreground" : "text-muted-foreground/70")}>
                           {feature.name}
                         </div>
-                        <div className="text-sm text-[rgba(255,255,255,0.4)]">
+                        <div className="text-sm text-muted-foreground/70">
                           {feature.description}
                         </div>
                       </div>
@@ -164,7 +164,7 @@ function PricingSection({ tiers, className, onBillingChange }: PricingSectionPro
                     "w-full relative transition-all duration-300 rounded-xl h-12",
                     tier.highlight
                       ? "text-white"
-                      : "border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] hover:bg-white/10 text-foreground",
+                      : "border border-border/60 bg-muted/15 hover:bg-muted/30 text-foreground",
                   )}
                   style={tier.highlight ? { background: 'linear-gradient(135deg, #D97706, #92400E)' } : undefined}
                   onClick={tier.onAction}

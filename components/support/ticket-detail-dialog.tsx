@@ -128,10 +128,10 @@ export function TicketDetailDialog({ ticket, open, onOpenChange, onReply }: Tick
                   onChange={(e) => setReplyText(e.target.value)}
                   placeholder="Mesajınızı yazın..."
                   maxLength={2000}
-                  className="w-full min-h-[80px] rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] p-3 text-sm placeholder:text-muted-foreground resize-y focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20"
+                  className="w-full min-h-[80px] rounded-lg border border-border/60 bg-muted/10 p-3 text-sm placeholder:text-muted-foreground resize-y focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20"
                 />
                 <div className="flex items-center justify-between">
-                  <span className={`text-xs ${replyText.length > 1800 ? 'text-amber-400' : replyText.length > 1950 ? 'text-red-400' : 'text-muted-foreground'}`}>{replyText.length}/2000</span>
+                  <span className={`text-xs ${replyText.length > 1800 ? 'text-amber-700 dark:text-amber-400' : replyText.length > 1950 ? 'text-red-400' : 'text-muted-foreground'}`}>{replyText.length}/2000</span>
                   <Button
                     size="sm"
                     disabled={replying || !replyText.trim()}

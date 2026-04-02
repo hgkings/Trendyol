@@ -58,8 +58,8 @@ function formatDate(iso: string): string {
 
 function riskBadge(level: string) {
   const map: Record<string, { bg: string; text: string; label: string }> = {
-    safe: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', label: 'Düşük' },
-    moderate: { bg: 'bg-amber-500/10', text: 'text-amber-400', label: 'Orta' },
+    safe: { bg: 'bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-400', label: 'Düşük' },
+    moderate: { bg: 'bg-amber-500/10', text: 'text-amber-700 dark:text-amber-400', label: 'Orta' },
     risky: { bg: 'bg-orange-500/10', text: 'text-orange-400', label: 'Yüksek' },
     dangerous: { bg: 'bg-red-500/10', text: 'text-red-400', label: 'Kritik' },
   };
@@ -205,7 +205,7 @@ export default function AccountPage() {
         </div>
 
         {/* ─── 2. Quick Actions ─── */}
-        <div className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6">
+        <div className="rounded-2xl border border-border/40 bg-card p-6">
           <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Hızlı İşlemler</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[
@@ -216,7 +216,7 @@ export default function AccountPage() {
             ].map((action) => (
               <Link key={action.href} href={action.href}>
                 <div className="flex items-center gap-3 rounded-xl border bg-background p-4 hover:bg-muted/50 hover:shadow-sm transition-all cursor-pointer group">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgba(255,255,255,0.06)] group-hover:bg-[rgba(255,255,255,0.09)] transition-colors">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted/20 group-hover:bg-muted/30 transition-colors">
                     <action.icon className={`h-5 w-5 ${action.color}`} />
                   </div>
                   <span className="text-sm font-medium flex-1">{action.label}</span>
@@ -228,7 +228,7 @@ export default function AccountPage() {
         </div>
 
         {/* ─── 3. Profit Goals ─── */}
-        <div className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6 space-y-6">
+        <div className="rounded-2xl border border-border/40 bg-card p-6 space-y-6">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
               <Target className="h-5 w-5 text-primary" />
@@ -295,7 +295,7 @@ export default function AccountPage() {
                 <div className="space-y-2 pt-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Bu Ay Toplam Net Kâr</span>
-                    <span className={`font-bold tabular-nums ${monthlyNetProfit >= 0 ? 'text-emerald-400' : 'text-red-400'
+                    <span className={`font-bold tabular-nums ${monthlyNetProfit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'
                       }`}>
                       {formatCurrency(monthlyNetProfit)}
                     </span>
@@ -331,10 +331,10 @@ export default function AccountPage() {
         </div>
 
         {/* ─── 4. Business Defaults ─── */}
-        <div className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6 space-y-6">
+        <div className="rounded-2xl border border-border/40 bg-card p-6 space-y-6">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
-              <Store className="h-5 w-5 text-emerald-400" />
+              <Store className="h-5 w-5 text-emerald-700 dark:text-emerald-400" />
             </div>
             <div>
               <h2 className="font-semibold">Varsayılan Değerler</h2>
@@ -404,7 +404,7 @@ export default function AccountPage() {
         </div>
 
         {/* ─── 5. Plan Section ─── */}
-        <div className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6">
+        <div className="rounded-2xl border border-border/40 bg-card p-6">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${isPro ? 'bg-amber-500/10' : 'bg-muted'}`}>
@@ -414,7 +414,7 @@ export default function AccountPage() {
                 <div className="flex items-center gap-2">
                   <h2 className="font-semibold">{isPro ? 'Pro Plan' : 'Ücretsiz Plan'}</h2>
                   <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${isPro
-                    ? 'bg-emerald-500/10 text-emerald-400'
+                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
                     : 'bg-muted text-muted-foreground'
                     }`}>
                     {isPro ? 'Aktif' : 'Temel'}
@@ -430,20 +430,73 @@ export default function AccountPage() {
           </div>
 
           {isPro ? (
-            <div className="mt-5 flex flex-wrap gap-2">
-              {[
-                'Sınırsız analiz',
-                'PRO muhasebe modu',
-                'CSV içe/dışa aktarma',
-                'Hassasiyet analizi',
-                'Nakit akışı tahmini',
-              ].map((f) => (
-                <span key={f} className="inline-flex items-center gap-1 rounded-full border bg-muted/30 px-2.5 py-1 text-xs">
-                  <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                  {f}
-                </span>
-              ))}
-            </div>
+            <>
+              {/* Plan detay bilgileri */}
+              <div className="mt-5 grid grid-cols-3 gap-3">
+                <div className="rounded-xl bg-muted/30 border border-border/40 p-3">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+                    <Clock className="h-3.5 w-3.5" />
+                    <span>Bitiş</span>
+                  </div>
+                  <p className="text-sm font-semibold">
+                    {(() => {
+                      const d = user?.pro_expires_at || user?.pro_until;
+                      if (!d) return '—';
+                      try { return new Date(d).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' }); } catch { return '—'; }
+                    })()}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-muted/30 border border-border/40 p-3">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+                    <Clock className="h-3.5 w-3.5" />
+                    <span>Kalan</span>
+                  </div>
+                  <p className="text-sm font-semibold">
+                    {(() => {
+                      const d = user?.pro_expires_at || user?.pro_until;
+                      if (!d) return '—';
+                      try {
+                        const diff = new Date(d).getTime() - Date.now();
+                        const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+                        return `${days} gün`;
+                      } catch { return '—'; }
+                    })()}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-muted/30 border border-border/40 p-3">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+                    <CreditCard className="h-3.5 w-3.5" />
+                    <span>Yenileme</span>
+                  </div>
+                  <p className="text-sm font-semibold">{user?.pro_renewal ? 'Otomatik' : 'Manuel'}</p>
+                </div>
+              </div>
+
+              {/* Özellikler */}
+              <div className="mt-4 flex flex-wrap gap-2">
+                {[
+                  'Sınırsız analiz',
+                  'PRO muhasebe modu',
+                  'CSV içe/dışa aktarma',
+                  'Hassasiyet analizi',
+                  'Nakit akışı tahmini',
+                ].map((f) => (
+                  <span key={f} className="inline-flex items-center gap-1 rounded-full border bg-muted/30 px-2.5 py-1 text-xs">
+                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                    {f}
+                  </span>
+                ))}
+              </div>
+
+              <div className="mt-4 pt-4 border-t">
+                <Link href="/pricing">
+                  <Button variant="outline" size="sm" className="gap-1.5 rounded-[10px]">
+                    Planı Yönet
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </Button>
+                </Link>
+              </div>
+            </>
           ) : (
             <div className="mt-4 flex gap-2">
               <Button onClick={() => window.location.href = '/pricing'} className="rounded-[10px]">Pro&apos;ya Yükselt</Button>
@@ -452,21 +505,10 @@ export default function AccountPage() {
               </Link>
             </div>
           )}
-
-          {isPro && (
-            <div className="mt-4 pt-4 border-t">
-              <Link href="/pricing">
-                <Button variant="outline" size="sm" className="gap-1.5 rounded-[10px]">
-                  Planı Yönet
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </Button>
-              </Link>
-            </div>
-          )}
         </div>
 
         {/* ─── 6. Security ─── */}
-        <div className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6 space-y-5">
+        <div className="rounded-2xl border border-border/40 bg-card p-6 space-y-5">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10">
               <Shield className="h-5 w-5 text-blue-500" />
@@ -533,7 +575,7 @@ export default function AccountPage() {
         </div>
 
         {/* ─── 7. Recent Activity ─── */}
-        <div className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6">
+        <div className="rounded-2xl border border-border/40 bg-card p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Son Analizler</h2>
             {analyses.length > 5 && (
@@ -561,7 +603,7 @@ export default function AccountPage() {
                       : 'bg-red-500/10'
                       }`}>
                       {a.result.unit_net_profit > 0 ? (
-                        <TrendingUp className="h-4 w-4 text-emerald-400" />
+                        <TrendingUp className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
                       ) : (
                         <TrendingDown className="h-4 w-4 text-red-400" />
                       )}
@@ -575,7 +617,7 @@ export default function AccountPage() {
                     </div>
                     <div className="text-right shrink-0">
                       <p className={`text-sm font-bold tabular-nums ${a.result.unit_net_profit > 0
-                        ? 'text-emerald-400'
+                        ? 'text-emerald-700 dark:text-emerald-400'
                         : 'text-red-400'
                         }`}>
                         {formatCurrency(a.result.unit_net_profit)}

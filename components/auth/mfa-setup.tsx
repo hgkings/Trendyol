@@ -94,10 +94,10 @@ export function MFASetup({ onComplete }: MFASetupProps) {
 
   if (step === 'idle') {
     return (
-      <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-6 space-y-4">
+      <div className="rounded-xl border border-border/40 bg-card p-6 space-y-4">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
-            <ShieldCheck className="h-5 w-5 text-emerald-400" />
+            <ShieldCheck className="h-5 w-5 text-emerald-700 dark:text-emerald-400" />
           </div>
           <div>
             <h3 className="font-semibold">İki Faktörlü Doğrulama (2FA)</h3>
@@ -119,8 +119,8 @@ export function MFASetup({ onComplete }: MFASetupProps) {
   return (
     <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-6 space-y-5">
       <div className="flex items-center gap-3">
-        <ShieldCheck className="h-5 w-5 text-emerald-400" />
-        <h3 className="font-semibold text-emerald-300">2FA Kurulumu</h3>
+        <ShieldCheck className="h-5 w-5 text-emerald-700 dark:text-emerald-400" />
+        <h3 className="font-semibold text-emerald-700 dark:text-emerald-300">2FA Kurulumu</h3>
       </div>
 
       <div className="space-y-4">
@@ -139,11 +139,11 @@ export function MFASetup({ onComplete }: MFASetupProps) {
             QR kodu tarayamıyorsanız bu kodu manuel girin:
           </p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 text-xs bg-black/30 rounded-lg px-3 py-2 font-mono text-emerald-300 break-all">
+            <code className="flex-1 text-xs bg-black/30 rounded-lg px-3 py-2 font-mono text-emerald-700 dark:text-emerald-300 break-all">
               {secret}
             </code>
             <Button variant="ghost" size="sm" onClick={copySecret} className="shrink-0">
-              {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+              {copied ? <Check className="h-4 w-4 text-emerald-700 dark:text-emerald-400" /> : <Copy className="h-4 w-4" />}
             </Button>
           </div>
         </div>

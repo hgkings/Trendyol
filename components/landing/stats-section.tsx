@@ -59,7 +59,7 @@ export function StatsSection() {
       <div className="container mx-auto px-4">
         <div
           ref={ref}
-          className="py-16 rounded-[2rem] mx-4 max-w-6xl md:mx-auto border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)]"
+          className="py-16 rounded-[2rem] mx-4 max-w-6xl md:mx-auto border border-border/40 bg-card"
         >
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 px-6 text-center">
             {stats.map((stat, idx) => {
@@ -67,12 +67,12 @@ export function StatsSection() {
               return (
                 <div key={idx} className="flex flex-col items-center justify-center space-y-2">
                   <div className="p-3 bg-amber-500/8 border border-amber-500/12 rounded-2xl mb-2">
-                    <stat.icon className="h-6 w-6 text-amber-400" />
+                    <stat.icon className="h-6 w-6 text-amber-700 dark:text-amber-400" />
                   </div>
-                  <div className="text-4xl md:text-5xl font-bold text-amber-400 tabular-nums tracking-tight">
+                  <div className="text-4xl md:text-5xl font-bold text-amber-700 dark:text-amber-400 tabular-nums tracking-tight">
                     {stat.prefix}{count}{stat.suffix}
                   </div>
-                  <div className="text-sm font-medium text-[rgba(255,255,255,0.5)] uppercase tracking-wider mt-1">
+                  <div className="text-sm font-medium text-muted-foreground uppercase tracking-wider mt-1">
                     {stat.label}
                   </div>
                 </div>
