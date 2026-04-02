@@ -59,7 +59,7 @@ function getPasswordStrength(pwd: string): { level: 0 | 1 | 2 | 3; label: string
 
 // ── Input ortak sınıflar ──
 const inputClasses =
-  'h-11 w-full rounded-xl bg-muted/20 border border-border/50 px-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 transition-all disabled:opacity-50';
+  'h-11 w-full rounded-xl bg-card border border-border px-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 transition-all disabled:opacity-50';
 
 const autofillStyle = { WebkitBoxShadow: '0 0 0 30px #0c0a09 inset', WebkitTextFillColor: 'white' };
 
@@ -257,7 +257,7 @@ function AuthPageContent() {
                 Gelen kutunuzu kontrol edin ve bağlantıya tıklayın.
               </p>
             </div>
-            <div className="rounded-xl bg-muted/20 border border-border/50 p-4 text-left space-y-2">
+            <div className="rounded-xl bg-card border border-border p-4 text-left space-y-2">
               <p className="text-xs text-muted-foreground/70">E-posta gelmedi mi?</p>
               <ul className="text-xs text-muted-foreground space-y-1">
                 <li>Spam/gereksiz klasörünü kontrol edin</li>
@@ -271,7 +271,7 @@ function AuthPageContent() {
                 setAwaitingEmailVerification(false);
                 switchMode('login');
               }}
-              className="w-full h-11 rounded-xl bg-muted/20 border border-border/50 text-sm font-medium text-foreground/80 hover:bg-muted/60 transition-all"
+              className="w-full h-11 rounded-xl bg-card border border-border text-sm font-medium text-foreground/80 hover:bg-muted/60 transition-all"
             >
               Giriş Sayfasına Dön
             </button>
@@ -283,7 +283,7 @@ function AuthPageContent() {
 
         {/* Tab Switcher */}
         <div className="w-full max-w-[400px] mb-6">
-          <div className="flex bg-muted/20 rounded-xl p-1">
+          <div className="flex bg-muted/40 rounded-xl p-1">
             <button
               type="button"
               onClick={() => switchMode('login')}
@@ -321,7 +321,7 @@ function AuthPageContent() {
             type="button"
             onClick={handleGoogleSignIn}
             disabled={googleLoading || loading}
-            className="w-full flex items-center justify-center gap-3 h-11 rounded-xl bg-muted/20 border border-border/50 text-sm font-medium text-foreground hover:bg-muted/60 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-3 h-11 rounded-xl bg-card border border-border text-sm font-medium text-foreground hover:bg-muted/60 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {googleLoading ? (
               <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
