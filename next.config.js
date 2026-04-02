@@ -19,7 +19,7 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['warn', 'error'] } : false,
   },
   experimental: {
-    optimizePackageImports: ['lucide-react', '@tabler/icons-react', 'recharts', 'framer-motion', 'date-fns'],
+    optimizePackageImports: ['lucide-react', 'recharts', 'framer-motion', 'date-fns'],
   },
   async headers() {
     // CSP: unsafe-eval sadece development'ta (Next.js HMR icin gerekli)
@@ -30,8 +30,13 @@ const nextConfig = {
 
     return [
       {
+        // HTML sayfaları cache'lenmemeli — eski deployment URL'leri 404 verir
         source: '/(.*)',
         headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0, must-revalidate',
+          },
           {
             key: 'Content-Security-Policy',
             value: [
