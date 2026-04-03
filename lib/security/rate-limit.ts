@@ -44,8 +44,9 @@ const apiLimiter = createLimiter('api', 100, '1 m')
 const emailLimiter = createLimiter('email', 3, '1 m')
 
 // SYNC profili — marketplace tum islemler (kullanici basina)
-// 30/saat: connect + test + sync×2 + normalize×2 + getStatus×N + finance + claims
-const syncLimiter = createLimiter('sync', 30, '1 h')
+// 200/saat: connect + sync×2 + normalize×2 + getStatus×N + finance×N + claims + enrich + buybox
+// Marketplace sayfasi her yuklemede 5-8 istek yapar, finans sayfasi ek 3-4 istek
+const syncLimiter = createLimiter('sync', 200, '1 h')
 
 // COMMENT profili — blog yorumlari
 const commentLimiter = createLimiter('comment', 3, '1 m')
@@ -53,8 +54,9 @@ const commentLimiter = createLimiter('comment', 3, '1 m')
 // ADMIN profili — admin islemleri
 const adminLimiter = createLimiter('admin', 50, '1 m')
 
-// ANALYSIS profili — analiz islemleri (race condition korunmasi icin dusuk)
-const analysisLimiter = createLimiter('analysis', 5, '1 m')
+// ANALYSIS profili — analiz islemleri
+// 30/dk: dashboard listeleme + detay + CRUD islemleri
+const analysisLimiter = createLimiter('analysis', 30, '1 m')
 
 // MFA profili — MFA dogrulama denemeleri
 const mfaLimiter = createLimiter('mfa', 10, '5 m')
