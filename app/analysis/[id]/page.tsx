@@ -552,9 +552,8 @@ export default function AnalysisResultPage() {
               </div>
             </div>
 
-            {/* Competitor Analysis Link/Card - Keep it compact or move functionality inside? 
-                The user had it in a card before. Let's keep the Competitor logic here to avoid losing it.
-            */}
+            {/* Rakip Analizi — Pro özellik */}
+            <ProLockedSection feature="competitorTracking" title="Rakip Analizi" description="Rakip fiyat takibi ve otomatik buybox verisi ile kârlılık optimizasyonu">
             <div className="rounded-xl border border-border/40 bg-card p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -611,6 +610,7 @@ export default function AnalysisResultPage() {
                 )}
               </div>
             </div>
+            </ProLockedSection>
 
           </div>
         </div>

@@ -1307,6 +1307,7 @@ export class MarketplaceLogic {
     errors?: string[]
     totalProducts?: number
     checkedProducts?: number
+    updatedCompetitors?: number
   }> {
     const { connectionId } = payload as { connectionId: string }
     const creds = await this.resolveCredentials(connectionId, traceId)
@@ -1363,11 +1364,54 @@ export class MarketplaceLogic {
       }
     }
 
+    // Buybox verisiyle analiz'deki rakip bilgilerini otomatik güncelle
+    let updatedCompetitors = 0
+    const analyses = await this.analysisRepo.findByUserId(userId)
+    const barcodeToAnalysisId = new Map<string, string>()
+    for (const a of analyses) {
+      if (a.barcode) barcodeToAnalysisId.set(a.barcode, a.id)
+    }
+
+    for (const bb of allResults) {
+      if (!bb.hasCompetitor) continue // Tek satıcı — rakip yok
+      const analysisId = barcodeToAnalysisId.get(bb.barcode)
+      if (!analysisId) continue
+
+      const analysis = analyses.find(a => a.id === analysisId)
+      if (!analysis) continue
+
+      const inputs = (analysis.inputs ?? {}) as Record<string, unknown>
+      const currentCompPrice = (inputs.competitor_price as number) ?? 0
+
+      // Buybox fiyatı senin fiyatından farklıysa rakip fiyatı olarak kaydet
+      if (bb.buyboxPrice > 0 && bb.buyboxOrder > 1) {
+        // Sen kazanmıyorsun — buybox fiyatı rakip fiyatı
+        inputs.competitor_price = bb.buyboxPrice
+        inputs.competitor_name = `Buybox #1 (${bb.buyboxOrder}. sıradasın)`
+        await this.analysisRepo.update(analysisId, {
+          inputs,
+          competitor_price: bb.buyboxPrice,
+          competitor_name: `Buybox #1`,
+        })
+        updatedCompetitors++
+      } else if (bb.buyboxPrice > 0 && bb.buyboxOrder === 1 && currentCompPrice === 0) {
+        // Sen kazanıyorsun — rakip bilgisi temizle
+        inputs.competitor_price = 0
+        inputs.competitor_name = undefined
+        await this.analysisRepo.update(analysisId, {
+          inputs,
+          competitor_price: null,
+          competitor_name: null,
+        })
+      }
+    }
+
     return {
       results: allResults,
       ...(errors.length > 0 ? { errors } : {}),
       totalProducts: barcodeToProduct.size,
       checkedProducts: barcodes.length,
+      updatedCompetitors,
     }
   }
 
