@@ -62,8 +62,8 @@ export interface AnalysisUpdate {
     merchant_sku?: string;
     marketplace_source: string;
     auto_synced: true;
-    /** Only set when existing sale_price is 0 or absent */
     inputs?: Record<string, unknown>;
+    outputs?: Record<string, unknown>;
 }
 
 export interface ProductMapEntry {
@@ -256,7 +256,6 @@ export function normalizeProducts(
         };
 
         if (internalId) {
-            // Find existing analysis inputs to decide if sale_price should update
             const existingAnalysis = analyses.find(a => a.id === internalId);
             const existingInputs = (existingAnalysis?.inputs ?? {}) as Record<string, unknown>;
             const analysisUpdate: AnalysisUpdate = {
@@ -266,16 +265,33 @@ export function normalizeProducts(
                 marketplace_source: marketplace,
                 auto_synced: true,
             };
-            // Stok ve görsel güncelle (her sync'te)
+
+            // Stok, görsel ve satış fiyatı her sync'te güncelle
             const qty = typeof raw.quantity === 'number' ? raw.quantity : 0;
             if (qty >= 0) existingInputs.stock_quantity = qty;
             if (typeof raw.image_url === 'string' && raw.image_url) existingInputs.image_url = raw.image_url;
+            if (salePrice > 0) existingInputs.sale_price = salePrice;
+
             analysisUpdate.inputs = { ...existingInputs };
 
-            // Only suggest sale_price update if current one is 0 or absent
-            if (salePrice > 0 && (!existingInputs.sale_price || existingInputs.sale_price === 0)) {
-                analysisUpdate.inputs = { ...existingInputs, sale_price: salePrice };
+            // Outputs'u yeniden hesapla (sıfır kalmasın)
+            const recalcInput: ProductInput = {
+                marketplace: (existingInputs.marketplace ?? marketplace) as ProductInput['marketplace'],
+                product_name: (existingInputs.product_name ?? title) as string,
+                sale_price: Number(existingInputs.sale_price ?? salePrice) || 0,
+                product_cost: Number(existingInputs.product_cost ?? 0),
+                commission_pct: Number(existingInputs.commission_pct ?? marketplaceDefaults(marketplace).commission_pct),
+                shipping_cost: Number(existingInputs.shipping_cost ?? 0),
+                packaging_cost: Number(existingInputs.packaging_cost ?? 0),
+                ad_cost_per_sale: Number(existingInputs.ad_cost_per_sale ?? 0),
+                return_rate_pct: Number(existingInputs.return_rate_pct ?? marketplaceDefaults(marketplace).return_rate_pct),
+                vat_pct: Number(existingInputs.vat_pct ?? 20),
+                other_cost: Number(existingInputs.other_cost ?? 0),
+                monthly_sales_volume: Number(existingInputs.monthly_sales_volume ?? 0),
+                payout_delay_days: Number(existingInputs.payout_delay_days ?? marketplaceDefaults(marketplace).payout_delay_days),
             }
+            analysisUpdate.outputs = calculateProfit(recalcInput) as unknown as Record<string, unknown>
+
             result.analysisUpdate = analysisUpdate;
             matched++;
         } else {

@@ -432,6 +432,7 @@ export class MarketplaceLogic {
             auto_synced: true,
           }
           if (r.analysisUpdate.inputs) updateData.inputs = r.analysisUpdate.inputs
+          if (r.analysisUpdate.outputs) updateData.outputs = r.analysisUpdate.outputs
           await this.analysisRepo.update(r.internalId, updateData)
         } else if (r.newAnalysis) {
           const newRow = await this.analysisRepo.create({
