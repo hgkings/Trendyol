@@ -6,7 +6,7 @@
 
 import { ServiceError } from '@/lib/gateway/types'
 import { encrypt, decrypt } from '@/lib/db/db.helper'
-import { encryptCredentials, decryptCredentials } from '@/lib/marketplace/crypto'
+// crypto.ts kullanılmıyor — db.helper.ts encrypt/decrypt ile uyumlu (aynı MARKETPLACE_SECRET_KEY, base64 format)
 import * as trendyolApi from '@/lib/marketplace/trendyol.api'
 import * as hepsiburadaApi from '@/lib/marketplace/hepsiburada.api'
 import type { MarketplaceRepository } from '@/repositories/marketplace.repository'
@@ -90,32 +90,49 @@ export class MarketplaceLogic {
       })
     }
 
-    // Mevcut baglanti var mi kontrol et (UNIQUE constraint korunmasi)
-    const existing = await this.marketplaceRepo.getConnectionsByUserId(userId)
-    const existingConn = (existing as Array<{ id: string; marketplace: string }>)
-      .find(c => c.marketplace === input.marketplace)
-
-    let connectionId: string
-
-    if (existingConn) {
-      // Mevcut baglanti var — durumu ve bilgileri guncelle
-      connectionId = existingConn.id
-      await this.marketplaceRepo.updateConnectionStatus(connectionId, 'pending_test')
-
-      // Eski secrets'i sil ve yenisini ekle
-      const encryptedBlob = encrypt(JSON.stringify({
+    // Credentials sifrele (hata durumunda anlamlı mesaj ver)
+    let encryptedBlob: string
+    try {
+      encryptedBlob = encrypt(JSON.stringify({
         apiKey: input.apiKey,
         apiSecret: input.apiSecret,
         sellerId: input.sellerId,
       }))
-
-      // Mevcut secret varsa upsert, yoksa insert
-      const existingSecret = await this.marketplaceRepo.getSecrets(connectionId)
-      if (existingSecret) {
-        await this.marketplaceRepo.storeSecrets(connectionId, encryptedBlob)
-      } else {
-        await this.marketplaceRepo.storeSecrets(connectionId, encryptedBlob)
+    } catch (encErr) {
+      const msg = encErr instanceof Error ? encErr.message : ''
+      if (msg.includes('MARKETPLACE_SECRET_KEY')) {
+        throw new ServiceError('Sunucu şifreleme anahtarı ayarlanmamış. Yöneticinize başvurun.', {
+          code: 'ENCRYPTION_KEY_MISSING',
+          statusCode: 500,
+          traceId,
+        })
       }
+      throw new ServiceError('Şifreleme hatası oluştu', {
+        code: 'ENCRYPTION_FAILED',
+        statusCode: 500,
+        traceId,
+      })
+    }
+
+    // Mevcut baglanti var mi kontrol et (UNIQUE constraint korunmasi)
+    const existing = await this.marketplaceRepo.getConnectionsByUserId(userId)
+    const existingConn = existing.find(c => c.marketplace === input.marketplace)
+
+    let connectionId: string
+
+    if (existingConn) {
+      // Mevcut baglanti var — durumu, bilgileri ve secrets'i guncelle
+      connectionId = existingConn.id
+      await this.marketplaceRepo.updateConnectionStatus(connectionId, 'pending_test')
+
+      // store_name ve seller_id güncelle (kullanıcı değiştirmiş olabilir)
+      await this.marketplaceRepo.updateConnectionDetails(connectionId, {
+        store_name: input.storeName,
+        seller_id: input.sellerId,
+      })
+
+      // Secrets upsert (connection_id üzerinde unique constraint var)
+      await this.marketplaceRepo.storeSecrets(connectionId, encryptedBlob)
     } else {
       // Yeni baglanti olustur
       const connection = await this.marketplaceRepo.createConnection({
@@ -126,14 +143,6 @@ export class MarketplaceLogic {
         status: 'pending_test',
       })
       connectionId = connection.id
-
-      // Credentials sifrele ve sakla
-      const encryptedBlob = encrypt(JSON.stringify({
-        apiKey: input.apiKey,
-        apiSecret: input.apiSecret,
-        sellerId: input.sellerId,
-      }))
-
       await this.marketplaceRepo.storeSecrets(connectionId, encryptedBlob)
     }
 
@@ -1303,8 +1312,8 @@ export class MarketplaceLogic {
 
     for (const secret of allSecrets) {
       try {
-        const plaintext = decryptCredentials(secret.encrypted_blob)
-        const newBlob = encryptCredentials(plaintext)
+        const plaintext = decrypt(secret.encrypted_blob)
+        const newBlob = encrypt(plaintext)
         const newVersion = (secret.key_version || 1) + 1
         await this.marketplaceRepo.storeSecrets(secret.connection_id, newBlob, newVersion)
         rotated++

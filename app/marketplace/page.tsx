@@ -193,23 +193,22 @@ export default function MarketplacePage() {
                 ? `/api/marketplace/trendyol/finance?startDate=${startDate}&endDate=${endDate}`
                 : `/api/marketplace/hepsiburada/finance?gun=${gun}`;
             const response = await fetch(financeUrl);
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error || 'Finans verisi alınamadı');
+            const json = await response.json() as Record<string, unknown>;
+            if (!response.ok || !json.success) {
+                throw new Error((json.error as string) || 'Finans verisi alınamadı');
             }
-            const { data } = await response.json();
-            const toplamlar = (data as any[]).reduce(
-                (acc, item) => ({
-                    toplamKomisyon: acc.toplamKomisyon + (item.komisyonTutari || 0),
-                    toplamHakedis: acc.toplamHakedis + (item.saticiHakedis || 0),
-                    toplamAlacak: acc.toplamAlacak + (item.alacak || 0),
-                    toplamBorc: acc.toplamBorc + (item.borc || 0),
-                }),
-                { toplamKomisyon: 0, toplamHakedis: 0, toplamAlacak: 0, toplamBorc: 0 }
-            );
-            setFinansData({ ...toplamlar, kayitSayisi: data.length });
-        } catch (error: any) {
-            setFinansHata(error.message);
+            // API { success, settlements: [...], otherFinancials: [...] } döndürür
+            const settlements = (json.settlements ?? []) as Array<Record<string, number>>;
+            let toplamKomisyon = 0, toplamHakedis = 0, toplamAlacak = 0, toplamBorc = 0;
+            for (const item of settlements) {
+                toplamKomisyon += item.komisyonTutari || 0;
+                toplamHakedis += item.saticiHakedis || 0;
+                toplamAlacak += item.alacak || 0;
+                toplamBorc += item.borc || 0;
+            }
+            setFinansData({ toplamKomisyon, toplamHakedis, toplamAlacak, toplamBorc, kayitSayisi: settlements.length });
+        } catch (error: unknown) {
+            setFinansHata(error instanceof Error ? error.message : 'Finans verisi alınamadı');
         } finally {
             setFinansYukleniyor(false);
         }
@@ -238,6 +237,7 @@ export default function MarketplacePage() {
                 .then((r) => r.ok ? r.json() : null)
                 .then((data) => {
                     if (data && typeof data.toplam === 'number') setAskidakiSiparis(data.toplam);
+                    else if (data && Array.isArray(data.orders)) setAskidakiSiparis(data.orders.length);
                     else if (data && Array.isArray(data.data)) setAskidakiSiparis(data.data.length);
                 })
                 .catch(() => {
@@ -266,9 +266,9 @@ export default function MarketplacePage() {
             } else {
                 res = await fetch(`/api/marketplace/hepsiburada/finance?gun=30`);
             }
-            if (!res.ok) throw new Error('Finans verisi alınamadı');
-            const json = await res.json();
-            const rows: Array<{ komisyonOrani?: number; komisyonTutari?: number; saticiHakedis?: number }> = json.data ?? [];
+            const json = await res.json() as Record<string, unknown>;
+            if (!res.ok || !json.success) throw new Error('Finans verisi alınamadı');
+            const rows: Array<{ komisyonOrani?: number; komisyonTutari?: number; saticiHakedis?: number }> = (json.settlements ?? []) as Array<{ komisyonOrani?: number; komisyonTutari?: number; saticiHakedis?: number }>;
             // Agirlikli ortalama: hakedis tutarina gore (hacim bazli, daha dogru sonuc verir)
             const oranlıRows = rows.filter(r => (r.komisyonOrani ?? 0) > 0);
             if (oranlıRows.length > 0) {
@@ -403,8 +403,9 @@ export default function MarketplacePage() {
                 setLastLog(data.message || data.error);
             }
             fetchStatus();
-        } catch (err: any) {
-            const msg = err?.message?.toLowerCase().includes('timeout')
+        } catch (err: unknown) {
+            const errMsg = err instanceof Error ? err.message : ''
+            const msg = errMsg.toLowerCase().includes('timeout')
                 ? 'Bağlantı zaman aşımına uğradı, tekrar deneyin.'
                 : 'Bağlantı testi sırasında hata oluştu.';
             toast.error(msg);

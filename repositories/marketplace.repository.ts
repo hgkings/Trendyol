@@ -96,6 +96,20 @@ export class MarketplaceRepository {
     return data as MarketplaceConnectionRow
   }
 
+  async updateConnectionDetails(id: string, details: {
+    store_name?: string
+    seller_id?: string
+  }): Promise<void> {
+    const { error } = await this.supabase
+      .from('marketplace_connections')
+      .update(details)
+      .eq('id', id)
+
+    if (error) {
+      throw new Error(`Baglanti detaylari guncellenemedi: ${error.message}`)
+    }
+  }
+
   async updateConnectionStatus(id: string, status: string): Promise<void> {
     const { error } = await this.supabase
       .from('marketplace_connections')

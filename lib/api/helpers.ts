@@ -131,7 +131,7 @@ export async function callGatewayWithSuccess(
   payload: unknown,
   userId: string
 ): Promise<Response> {
-  await ensureGateway2()
+  await ensureGateway()
   const { gateway } = await import('@/lib/gateway/gateway.adapter')
   const result = await gateway.handle(serviceName, method, payload, userId)
 
@@ -145,13 +145,6 @@ export async function callGatewayWithSuccess(
   // Data'yı success ile birlikte döndür
   const data = (result.data && typeof result.data === 'object') ? result.data : {}
   return Response.json({ success: true, ...(data as Record<string, unknown>) })
-}
-
-async function ensureGateway2() {
-  if (_gatewayReady) return
-  const { initializeServices } = await import('@/services/registry')
-  initializeServices()
-  _gatewayReady = true
 }
 
 // Gateway singleton — ilk cagride import edilir, sonra cache'lenir

@@ -43,8 +43,9 @@ const apiLimiter = createLimiter('api', 100, '1 m')
 // EMAIL profili — email gonderimi
 const emailLimiter = createLimiter('email', 3, '1 m')
 
-// SYNC profili — marketplace sync (kullanici basina)
-const syncLimiter = createLimiter('sync', 5, '1 h')
+// SYNC profili — marketplace tum islemler (kullanici basina)
+// 30/saat: connect + test + sync×2 + normalize×2 + getStatus×N + finance + claims
+const syncLimiter = createLimiter('sync', 30, '1 h')
 
 // COMMENT profili — blog yorumlari
 const commentLimiter = createLimiter('comment', 3, '1 m')
