@@ -12,7 +12,8 @@ import {
     FileText,
     Upload,
     CreditCard,
-    MessageSquare
+    MessageSquare,
+    Wallet,
 } from 'lucide-react';
 import type { PlanFeature } from '@/config/plans';
 
@@ -23,6 +24,7 @@ export interface NavItem {
     requiredFeature?: PlanFeature;
     highlight?: boolean;
     action?: string;
+    group?: string;
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -32,6 +34,10 @@ export const NAV_ITEMS: NavItem[] = [
     { label: 'Başabaş', href: '/break-even', icon: Target, requiredFeature: 'breakEven' },
     { label: 'Nakit Planı', href: '/cash-plan', icon: Landmark, requiredFeature: 'cashflow' },
     { label: 'Pazaryeri', href: '/marketplace', icon: Store, requiredFeature: 'apiIntegration' },
+];
+
+export const FINANS_NAV_ITEMS: NavItem[] = [
+    { label: 'Hakediş', href: '/finance', icon: Wallet, requiredFeature: 'apiIntegration' },
 ];
 
 export const BOTTOM_NAV_ITEMS: NavItem[] = [

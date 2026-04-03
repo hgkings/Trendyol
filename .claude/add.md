@@ -240,6 +240,14 @@ Auth proxy kodu local'de hazir ve test edildi ama production'a DEPLOY EDILMEDI.
 | 04-03 | Opus 4.6 | TRENDYOL-18: Cron normalize TODO kaldirildi — gercek normalizeProducts + normalizeOrderMetrics entegre edildi | app/api/marketplace/cron/route.ts | — |
 | 04-03 | Opus 4.6 | TRENDYOL-19: Webhook handler TODO kaldirildi — trendyol_webhook_events tablosuna kayit eklendi | services/marketplace.logic.ts | — |
 | 04-03 | Opus 4.6 | TRENDYOL-20: 6 Hepsiburada route connectionId eksigi duzeltildi | 6x app/api/marketplace/hepsiburada/*/route.ts | — |
+| 04-03 | Opus 4.6 | FINANS-1: Sidebar'a Finans grubu eklendi — Hakedis menu ogeleri | config/navigation.ts, components/layout/sidebar.tsx | — |
+| 04-03 | Opus 4.6 | FINANS-2: Hakedis & Finans sayfasi olusturuldu — 3 sekmeli (Hakedis Ozeti, Islem Detaylari, Iade Analizi) | app/finance/page.tsx (YENI) | — |
+| 04-03 | Opus 4.6 | FINANS-3: Hakedis Ozeti — brut satis, komisyon, iade, kargo, diger kesintiler, net hakedis hesaplama | app/finance/page.tsx | — |
+| 04-03 | Opus 4.6 | FINANS-4: Kesinti dagilimi pie chart + hakedis detay tablosu | app/finance/page.tsx | — |
+| 04-03 | Opus 4.6 | FINANS-5: Islem Detaylari — settlement tablosu (tarih, tip, siparis no, barkod, komisyon %, alacak, borc, hakedis) | app/finance/page.tsx | — |
+| 04-03 | Opus 4.6 | FINANS-6: Iade Analizi — toplam iade, iade tutari, iade orani, sebep dagilimi (progress bar), en cok iade edilen 5 urun | app/finance/page.tsx | — |
+| 04-03 | Opus 4.6 | FINANS-7: Marketplace secimi (Trendyol/HB) + donem filtresi (7/15/30/60/90 gun) + yenile butonu | app/finance/page.tsx | — |
+| 04-03 | Opus 4.6 | FINANS-8: Pro plan kilidi, magaza baglantisi yoksa yonlendirme, skeleton yukleme | app/finance/page.tsx | — |
 
 **tsc --noEmit: 0 hata**
 **Korumali dosyalara DOKUNULMADI**

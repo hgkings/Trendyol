@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/auth-context';
 import {
   Crown, FileText, Upload, ArrowRight, Shield, Store,
 } from 'lucide-react';
-import { NAV_ITEMS, BOTTOM_NAV_ITEMS } from '@/config/navigation';
+import { NAV_ITEMS, FINANS_NAV_ITEMS, BOTTOM_NAV_ITEMS } from '@/config/navigation';
 import { isProUser, hasFeature } from '@/utils/access';
 
 
@@ -30,6 +30,57 @@ export function Sidebar() {
           </p>
           <div className="flex flex-col gap-0.5">
             {NAV_ITEMS.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+              const isLocked = !!item.requiredFeature && !hasFeature(user, item.requiredFeature);
+
+              if (isLocked) {
+                return (
+                  <div key={item.href} className="group relative">
+                    <div className="absolute right-2.5 top-2.5 z-10 pointer-events-none">
+                      <div className="bg-amber-900/40 text-amber-700 dark:text-amber-400 p-0.5 rounded-full">
+                        <Crown className="h-2.5 w-2.5" />
+                      </div>
+                    </div>
+                    <Link
+                      href="/pricing"
+                      className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-sm font-medium text-muted-foreground/60 hover:bg-white/5 transition-all duration-150"
+                    >
+                      <item.icon className="h-4 w-4 shrink-0 opacity-50" />
+                      <span className="opacity-60">{item.label}</span>
+                    </Link>
+                  </div>
+                );
+              }
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    'group flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-sm font-medium transition-all duration-150',
+                    isActive
+                      ? 'bg-amber-500/10 border border-amber-500/15 text-amber-700 dark:text-amber-400 font-semibold'
+                      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground border border-transparent'
+                  )}
+                >
+                  <item.icon className={cn(
+                    'h-4 w-4 shrink-0 transition-colors duration-150',
+                    isActive ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground group-hover:text-foreground'
+                  )} />
+                  <span className="truncate">{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Finans */}
+        <div>
+          <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+            Finans
+          </p>
+          <div className="flex flex-col gap-0.5">
+            {FINANS_NAV_ITEMS.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
               const isLocked = !!item.requiredFeature && !hasFeature(user, item.requiredFeature);
 
