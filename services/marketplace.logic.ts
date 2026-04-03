@@ -952,6 +952,276 @@ export class MarketplaceLogic {
     return { metricsUpdated: result.metricsUpdated, unmatchedOrders: result.unmatchedOrders }
   }
 
+  // ----------------------------------------------------------------
+  // Gerçek Veri Zenginleştirme (Enrich)
+  // Sipariş + iade verilerinden gerçek komisyon, iade oranı ve satış
+  // adedini çıkararak analiz inputlarını günceller.
+  // ----------------------------------------------------------------
+
+  async enrichAnalysesWithRealData(
+    traceId: string,
+    payload: unknown,
+    userId: string
+  ): Promise<{
+    enriched: number
+    skipped: number
+    details: Array<{ productName: string; field: string; oldValue: number; newValue: number }>
+  }> {
+    const { connectionId, marketplace: mp, days } = payload as {
+      connectionId: string; marketplace: 'trendyol' | 'hepsiburada'; days?: number
+    }
+
+    const dayCount = days ?? 90
+
+    // 1. Siparişleri çek
+    let orders: Record<string, unknown>[] = []
+    if (mp === 'trendyol') {
+      const creds = await this.resolveCredentials(connectionId, traceId)
+      const end = Date.now()
+      const start = end - dayCount * 24 * 60 * 60 * 1000
+      orders = await trendyolApi.fetchAllOrders(creds, start, end)
+    } else {
+      const creds = await this.resolveHbCredentials(connectionId, traceId)
+      const end = new Date()
+      const start = new Date(end.getTime() - dayCount * 24 * 60 * 60 * 1000)
+      orders = await hepsiburadaApi.fetchAllOrders(creds, start, end) as Record<string, unknown>[]
+    }
+
+    // 2. İadeleri çek
+    let claims: Record<string, unknown>[] = []
+    if (mp === 'trendyol') {
+      const creds = await this.resolveCredentials(connectionId, traceId)
+      const end = new Date()
+      const start = new Date(end.getTime() - dayCount * 24 * 60 * 60 * 1000)
+      const fetched = await trendyolApi.fetchAllClaims(creds, start, end)
+      claims = fetched as unknown as Record<string, unknown>[]
+    }
+
+    // 3. Eşleşme haritasını çek (external → internal)
+    const mapRows = await this.productRepo.getMapByUserId(userId, mp)
+    const extToInt = new Map<string, string>()
+    for (const m of mapRows) {
+      if (m.internal_product_id) {
+        extToInt.set(m.external_product_id, m.internal_product_id)
+      }
+    }
+
+    // 4. Ürün bazlı metrikler hesapla
+    const productMetrics = new Map<string, {
+      totalCommission: number
+      totalAmount: number
+      soldQty: number
+      returnedQty: number
+      months: Set<string>
+    }>()
+
+    for (const order of orders) {
+      const lines = (order.lines ?? order.orderItems ?? []) as Record<string, unknown>[]
+      const orderDate = order.orderDate ? new Date(order.orderDate as number) : new Date()
+      const monthKey = `${orderDate.getFullYear()}-${String(orderDate.getMonth() + 1).padStart(2, '0')}`
+      const status = String(order.status ?? order.shipmentPackageStatus ?? '')
+
+      const isReturn = ['Cancelled', 'Returned', 'ReturnAccepted', 'ReturnedAndRefunded', 'UnDelivered', 'UnSupplied'].includes(status)
+
+      for (const line of lines) {
+        const extId = String(line.productId ?? line.id ?? line.barcode ?? '')
+        const barcode = String(line.barcode ?? line.merchantSku ?? '')
+        const internalId = extToInt.get(extId) ?? extToInt.get(barcode)
+        if (!internalId) continue
+
+        const commission = (line.commission as number) ?? 0
+        const amount = (line.amount as number) ?? (line.price as number) ?? 0
+        const qty = (line.quantity as number) ?? 1
+
+        const existing = productMetrics.get(internalId) ?? {
+          totalCommission: 0, totalAmount: 0, soldQty: 0, returnedQty: 0, months: new Set<string>()
+        }
+
+        if (isReturn) {
+          existing.returnedQty += qty
+        } else {
+          existing.totalCommission += commission
+          existing.totalAmount += amount * qty
+          existing.soldQty += qty
+          existing.months.add(monthKey)
+        }
+
+        productMetrics.set(internalId, existing)
+      }
+    }
+
+    // 5. İade sayılarını ürün bazlı hesapla (claims'den)
+    const productReturnCounts = new Map<string, number>()
+    for (const claim of claims) {
+      const claimLines = ((claim as Record<string, unknown>).lines ?? []) as Record<string, unknown>[]
+      for (const line of claimLines) {
+        const barcode = String(line.barcode ?? '')
+        // Barcode → internal ID eşleştirmesi dene
+        for (const [ext, intId] of extToInt) {
+          if (ext === barcode || barcode.length > 0) {
+            const prev = productReturnCounts.get(intId) ?? 0
+            productReturnCounts.set(intId, prev + ((line.quantity as number) ?? 1))
+            break
+          }
+        }
+      }
+    }
+
+    // 6. Mevcut analizleri çek ve güncelle
+    const analyses = await this.analysisRepo.findByUserId(userId)
+    let enriched = 0
+    let skipped = 0
+    const details: Array<{ productName: string; field: string; oldValue: number; newValue: number }> = []
+
+    for (const analysis of analyses) {
+      const metrics = productMetrics.get(analysis.id)
+      if (!metrics || metrics.soldQty === 0) {
+        skipped++
+        continue
+      }
+
+      const inputs = (analysis.inputs ?? {}) as Record<string, unknown>
+      const updates: Record<string, unknown> = {}
+      let changed = false
+
+      // Gerçek komisyon oranı
+      if (metrics.totalAmount > 0) {
+        const realCommission = (metrics.totalCommission / metrics.totalAmount) * 100
+        const currentCommission = (inputs.commission_pct as number) ?? 0
+        if (Math.abs(realCommission - currentCommission) > 0.5) {
+          const rounded = Math.round(realCommission * 10) / 10
+          details.push({
+            productName: analysis.product_name ?? 'Bilinmeyen',
+            field: 'Komisyon',
+            oldValue: currentCommission,
+            newValue: rounded,
+          })
+          inputs.commission_pct = rounded
+          changed = true
+        }
+      }
+
+      // Gerçek iade oranı
+      const totalOrders = metrics.soldQty + metrics.returnedQty
+      if (totalOrders > 0) {
+        const returnCount = productReturnCounts.get(analysis.id) ?? metrics.returnedQty
+        const realReturnRate = (returnCount / totalOrders) * 100
+        const currentReturnRate = (inputs.return_rate_pct as number) ?? 0
+        if (Math.abs(realReturnRate - currentReturnRate) > 1) {
+          const rounded = Math.round(realReturnRate * 10) / 10
+          details.push({
+            productName: analysis.product_name ?? 'Bilinmeyen',
+            field: 'İade Oranı',
+            oldValue: currentReturnRate,
+            newValue: rounded,
+          })
+          inputs.return_rate_pct = rounded
+          changed = true
+        }
+      }
+
+      // Gerçek aylık satış adedi
+      const monthCount = Math.max(metrics.months.size, 1)
+      const avgMonthlySales = Math.round(metrics.soldQty / monthCount)
+      const currentMonthlySales = (inputs.monthly_sales_volume as number) ?? 0
+      if (avgMonthlySales > 0 && Math.abs(avgMonthlySales - currentMonthlySales) > 2) {
+        details.push({
+          productName: analysis.product_name ?? 'Bilinmeyen',
+          field: 'Aylık Satış',
+          oldValue: currentMonthlySales,
+          newValue: avgMonthlySales,
+        })
+        inputs.monthly_sales_volume = avgMonthlySales
+        changed = true
+      }
+
+      if (changed) {
+        updates.inputs = inputs
+        updates.auto_synced = true
+        updates.marketplace_source = mp
+        await this.analysisRepo.update(analysis.id, updates)
+        enriched++
+      } else {
+        skipped++
+      }
+    }
+
+    return { enriched, skipped, details }
+  }
+
+  /**
+   * Buybox bilgisi sorgular — ürün eşleşme haritasındaki barkodlarla.
+   */
+  async checkBuybox(
+    traceId: string,
+    payload: unknown,
+    userId: string
+  ): Promise<{
+    results: Array<{
+      barcode: string
+      productName: string
+      currentPrice: number
+      buyboxPrice: number
+      buyboxOrder: number
+      hasCompetitor: boolean
+    }>
+  }> {
+    const { connectionId } = payload as { connectionId: string }
+    const creds = await this.resolveCredentials(connectionId, traceId)
+
+    // Kullanıcının eşleşmiş ürünlerini çek
+    const mapRows = await this.productRepo.getMapByUserId(userId, 'trendyol')
+    const barcodes = mapRows
+      .filter(m => m.barcode && m.internal_product_id)
+      .map(m => m.barcode as string)
+      .slice(0, 50) // max 50 ürün
+
+    if (barcodes.length === 0) {
+      return { results: [] }
+    }
+
+    // Buybox API 10'arlık batch'lerle çağrılır
+    const allResults: Array<{
+      barcode: string; productName: string; currentPrice: number;
+      buyboxPrice: number; buyboxOrder: number; hasCompetitor: boolean
+    }> = []
+
+    // Ürün bilgilerini çek (fiyat için)
+    const analyses = await this.analysisRepo.findByUserId(userId)
+    const barcodeToAnalysis = new Map<string, { name: string; price: number }>()
+    for (const a of analyses) {
+      if (a.barcode) {
+        const inputs = (a.inputs ?? {}) as Record<string, unknown>
+        barcodeToAnalysis.set(a.barcode, {
+          name: a.product_name ?? 'Bilinmeyen',
+          price: (inputs.sale_price as number) ?? 0,
+        })
+      }
+    }
+
+    for (let i = 0; i < barcodes.length; i += 10) {
+      const batch = barcodes.slice(i, i + 10)
+      try {
+        const buyboxData = await trendyolApi.checkBuybox(creds, batch)
+        for (const bb of buyboxData) {
+          const analysis = barcodeToAnalysis.get(bb.barcode)
+          allResults.push({
+            barcode: bb.barcode,
+            productName: analysis?.name ?? bb.barcode,
+            currentPrice: analysis?.price ?? 0,
+            buyboxPrice: bb.buyboxPrice,
+            buyboxOrder: bb.buyboxOrder,
+            hasCompetitor: bb.hasMultipleSeller,
+          })
+        }
+      } catch (_err) {
+        // Batch hatası diğerlerini durdurmamalı
+      }
+    }
+
+    return { results: allResults }
+  }
+
   async rotateKeys(
     traceId: string,
     _payload: unknown,

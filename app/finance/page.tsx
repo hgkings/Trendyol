@@ -225,10 +225,25 @@ export default function FinancePage() {
   const [connected, setConnected] = useState(false)
 
   // Sekme
-  const [activeTab, setActiveTab] = useState<'ozet' | 'islemler' | 'iadeler'>('ozet')
+  const [activeTab, setActiveTab] = useState<'ozet' | 'islemler' | 'iadeler' | 'guncelle' | 'buybox'>('ozet')
 
   // Upgrade modal
   const [showUpgrade, setShowUpgrade] = useState(false)
+
+  // Enrich (otomatik güncelleme)
+  const [enriching, setEnriching] = useState(false)
+  const [enrichResult, setEnrichResult] = useState<{
+    enriched: number; skipped: number;
+    details: Array<{ productName: string; field: string; oldValue: number; newValue: number }>
+  } | null>(null)
+
+  // Buybox
+  const [buyboxLoading, setBuyboxLoading] = useState(false)
+  const [buyboxResults, setBuyboxResults] = useState<Array<{
+    barcode: string; productName: string; currentPrice: number;
+    buyboxPrice: number; buyboxOrder: number; hasCompetitor: boolean
+  }>>([])
+  const [buyboxFetched, setBuyboxFetched] = useState(false)
 
   // ─── Veri çekme ──────────────────────────────────────────────
 
@@ -277,6 +292,64 @@ export default function FinancePage() {
   useEffect(() => {
     if (isPro) fetchFinanceData()
   }, [fetchFinanceData, isPro])
+
+  // ─── Enrich handler ─────────────────────────────────────────
+
+  const handleEnrich = useCallback(async () => {
+    setEnriching(true)
+    setEnrichResult(null)
+    try {
+      const res = await fetch(`/api/marketplace/${marketplace}/enrich`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ days: Number(period) > 30 ? Number(period) : 90 }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error((err as Record<string, string>).error || 'Güncelleme başarısız')
+      }
+      const data = await res.json()
+      setEnrichResult(data)
+      if (data.enriched > 0) {
+        toast.success(`${data.enriched} ürün gerçek verilerle güncellendi!`)
+      } else {
+        toast.info('Güncellenecek yeni veri bulunamadı.')
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Güncelleme sırasında hata oluştu'
+      toast.error(msg)
+    } finally {
+      setEnriching(false)
+    }
+  }, [marketplace, period])
+
+  // ─── Buybox handler ─────────────────────────────────────────
+
+  const handleBuybox = useCallback(async () => {
+    if (marketplace !== 'trendyol') {
+      toast.error('Buybox sorgusu şu an sadece Trendyol için destekleniyor.')
+      return
+    }
+    setBuyboxLoading(true)
+    try {
+      const res = await fetch('/api/marketplace/trendyol/buybox')
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error((err as Record<string, string>).error || 'Buybox sorgusu başarısız')
+      }
+      const data = await res.json()
+      setBuyboxResults(data.results || [])
+      setBuyboxFetched(true)
+      if ((data.results || []).length === 0) {
+        toast.info('Eşleşmiş ürün bulunamadı veya Buybox verisi yok.')
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Buybox sorgusu sırasında hata oluştu'
+      toast.error(msg)
+    } finally {
+      setBuyboxLoading(false)
+    }
+  }, [marketplace])
 
   // ─── Hesaplamalar ────────────────────────────────────────────
 
@@ -449,11 +522,13 @@ export default function FinancePage() {
         </div>
 
         {/* Sekmeler */}
-        <div className="flex gap-1 p-1 rounded-xl bg-muted/30 border border-border/30 w-fit">
+        <div className="flex gap-1 p-1 rounded-xl bg-muted/30 border border-border/30 w-fit overflow-x-auto">
           {([
             { key: 'ozet', label: 'Hakediş Özeti', icon: Wallet },
             { key: 'islemler', label: 'İşlem Detayları', icon: Receipt },
             { key: 'iadeler', label: 'İade Analizi', icon: RotateCcw },
+            { key: 'guncelle', label: 'Gerçek Veri', icon: RefreshCw },
+            { key: 'buybox', label: 'Buybox', icon: BarChart3 },
           ] as const).map(tab => (
             <button
               key={tab.key}
@@ -945,6 +1020,300 @@ export default function FinancePage() {
                 </CardContent>
               </Card>
             </div>
+          </motion.div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════ */}
+        {/*  SEKME 4: GERÇEK VERİ GÜNCELLEMESİ                      */}
+        {/* ══════════════════════════════════════════════════════════ */}
+
+        {activeTab === 'guncelle' && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-6"
+          >
+            {/* Açıklama */}
+            <Card className="border-border/40 border-l-4 border-l-amber-500">
+              <CardContent className="p-5">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-amber-500/10 shrink-0 mt-0.5">
+                    <RefreshCw className="h-4 w-4 text-amber-700 dark:text-amber-400" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-sm">Analizlerinizi Gerçek Verilerle Güncelleyin</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Bu işlem {marketplace === 'trendyol' ? 'Trendyol' : 'Hepsiburada'} sipariş ve iade verilerinizi analiz ederek
+                      mevcut ürün analizlerinizdeki <strong>komisyon oranını</strong>, <strong>iade oranını</strong> ve <strong>aylık satış adedini</strong> gerçek
+                      verilerle günceller. Sadece ürün maliyetiniz elle girilen olarak kalır.
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <Badge variant="outline" className="text-[10px] bg-amber-500/5 border-amber-500/20 text-amber-700 dark:text-amber-400">
+                        <Percent className="h-2.5 w-2.5 mr-1" />
+                        Gerçek Komisyon
+                      </Badge>
+                      <Badge variant="outline" className="text-[10px] bg-red-500/5 border-red-500/20 text-red-700 dark:text-red-400">
+                        <RotateCcw className="h-2.5 w-2.5 mr-1" />
+                        Gerçek İade Oranı
+                      </Badge>
+                      <Badge variant="outline" className="text-[10px] bg-blue-500/5 border-blue-500/20 text-blue-700 dark:text-blue-400">
+                        <Package className="h-2.5 w-2.5 mr-1" />
+                        Gerçek Aylık Satış
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Güncelle Butonu */}
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={handleEnrich}
+                disabled={enriching}
+                className="bg-amber-600 hover:bg-amber-700 text-white"
+              >
+                {enriching ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                {enriching ? 'Güncelleniyor...' : 'Gerçek Verilerle Güncelle'}
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                Son {Number(period) > 30 ? period : '90'} günlük veri analiz edilecek
+              </span>
+            </div>
+
+            {/* Sonuçlar */}
+            {enrichResult && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-4"
+              >
+                {/* Özet Kartları */}
+                <div className="grid grid-cols-2 gap-4">
+                  <Card className="border-border/40">
+                    <CardContent className="p-4 flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-emerald-500/10">
+                        <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-muted-foreground">Güncellenen</p>
+                        <p className="text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
+                          {enrichResult.enriched} ürün
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-border/40">
+                    <CardContent className="p-4 flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-muted/50">
+                        <Package className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-muted-foreground">Değişiklik Yok</p>
+                        <p className="text-lg font-bold tabular-nums">{enrichResult.skipped} ürün</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Detay Tablosu */}
+                {enrichResult.details.length > 0 && (
+                  <Card className="border-border/40">
+                    <CardContent className="p-0">
+                      <div className="p-4 border-b border-border/30">
+                        <h3 className="font-semibold text-sm">Güncelleme Detayları</h3>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-border/30 bg-muted/20">
+                              <th className="text-left p-3 font-medium text-muted-foreground text-xs">Ürün</th>
+                              <th className="text-left p-3 font-medium text-muted-foreground text-xs">Alan</th>
+                              <th className="text-right p-3 font-medium text-muted-foreground text-xs">Eski Değer</th>
+                              <th className="text-right p-3 font-medium text-muted-foreground text-xs">Yeni Değer</th>
+                              <th className="text-right p-3 font-medium text-muted-foreground text-xs">Fark</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {enrichResult.details.map((d, i) => {
+                              const diff = d.newValue - d.oldValue
+                              return (
+                                <tr key={i} className="border-b border-border/20 hover:bg-muted/10">
+                                  <td className="p-3 text-xs font-medium truncate max-w-[200px]">{d.productName}</td>
+                                  <td className="p-3">
+                                    <Badge variant="outline" className="text-[10px]">{d.field}</Badge>
+                                  </td>
+                                  <td className="p-3 text-right text-xs tabular-nums text-muted-foreground">
+                                    {d.field === 'Aylık Satış' ? formatNumber(d.oldValue) : formatPercent(d.oldValue)}
+                                  </td>
+                                  <td className="p-3 text-right text-xs tabular-nums font-medium">
+                                    {d.field === 'Aylık Satış' ? formatNumber(d.newValue) : formatPercent(d.newValue)}
+                                  </td>
+                                  <td className={`p-3 text-right text-xs tabular-nums font-medium ${
+                                    diff > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'
+                                  }`}>
+                                    {diff > 0 ? '+' : ''}{d.field === 'Aylık Satış' ? formatNumber(diff) : formatPercent(diff)}
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </motion.div>
+            )}
+          </motion.div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════ */}
+        {/*  SEKME 5: BUYBOX REKABETİ                                */}
+        {/* ══════════════════════════════════════════════════════════ */}
+
+        {activeTab === 'buybox' && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-6"
+          >
+            {marketplace !== 'trendyol' ? (
+              <Card className="border-border/40">
+                <CardContent className="flex flex-col items-center justify-center py-12 gap-3">
+                  <AlertTriangle className="h-8 w-8 text-amber-500" />
+                  <p className="text-sm text-muted-foreground">Buybox sorgusu şu an sadece Trendyol için destekleniyor.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                {/* Açıklama + Buton */}
+                <Card className="border-border/40 border-l-4 border-l-blue-500">
+                  <CardContent className="p-5">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-blue-500/10 shrink-0 mt-0.5">
+                        <BarChart3 className="h-4 w-4 text-blue-700 dark:text-blue-400" />
+                      </div>
+                      <div className="space-y-2 flex-1">
+                        <h3 className="font-semibold text-sm">Buybox Rekabet Analizi</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          Eşleşmiş ürünlerinizin Trendyol Buybox durumunu sorgulayın.
+                          Buybox&apos;ı kazanan satıcı ürün sayfasında öne çıkar ve satışlarını artırır.
+                        </p>
+                        <Button
+                          onClick={handleBuybox}
+                          disabled={buyboxLoading}
+                          variant="outline"
+                          size="sm"
+                          className="mt-2"
+                        >
+                          {buyboxLoading ? (
+                            <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+                          ) : (
+                            <BarChart3 className="h-3.5 w-3.5 mr-2" />
+                          )}
+                          {buyboxLoading ? 'Sorgulanıyor...' : 'Buybox Sorgula'}
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Sonuçlar */}
+                {buyboxFetched && (
+                  <Card className="border-border/40">
+                    <CardContent className="p-0">
+                      {buyboxResults.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-12 gap-3">
+                          <Package className="h-8 w-8 text-muted-foreground/40" />
+                          <p className="text-sm text-muted-foreground">
+                            Eşleşmiş ürün bulunamadı. Önce Pazaryeri sayfasından ürünlerinizi eşleştirin.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-border/30 bg-muted/20">
+                                <th className="text-left p-3 font-medium text-muted-foreground text-xs">Ürün</th>
+                                <th className="text-left p-3 font-medium text-muted-foreground text-xs">Barkod</th>
+                                <th className="text-right p-3 font-medium text-muted-foreground text-xs">Senin Fiyatın</th>
+                                <th className="text-right p-3 font-medium text-muted-foreground text-xs">Buybox Fiyatı</th>
+                                <th className="text-center p-3 font-medium text-muted-foreground text-xs">Sıralama</th>
+                                <th className="text-center p-3 font-medium text-muted-foreground text-xs">Rakip</th>
+                                <th className="text-center p-3 font-medium text-muted-foreground text-xs">Durum</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {buyboxResults.map((bb, i) => {
+                                const isWinning = bb.buyboxOrder === 1
+                                const priceDiff = bb.currentPrice > 0 && bb.buyboxPrice > 0
+                                  ? bb.currentPrice - bb.buyboxPrice
+                                  : 0
+                                return (
+                                  <tr key={i} className="border-b border-border/20 hover:bg-muted/10">
+                                    <td className="p-3 text-xs font-medium truncate max-w-[200px]">{bb.productName}</td>
+                                    <td className="p-3 text-xs tabular-nums font-mono text-muted-foreground">{bb.barcode}</td>
+                                    <td className="p-3 text-right text-xs tabular-nums font-medium">
+                                      {bb.currentPrice > 0 ? formatCurrency(bb.currentPrice) : '—'}
+                                    </td>
+                                    <td className="p-3 text-right text-xs tabular-nums font-medium">
+                                      {bb.buyboxPrice > 0 ? formatCurrency(bb.buyboxPrice) : '—'}
+                                    </td>
+                                    <td className="p-3 text-center">
+                                      <Badge variant={isWinning ? 'default' : 'outline'} className={`text-[10px] ${
+                                        isWinning
+                                          ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
+                                          : ''
+                                      }`}>
+                                        {bb.buyboxOrder}. sıra
+                                      </Badge>
+                                    </td>
+                                    <td className="p-3 text-center text-xs">
+                                      {bb.hasCompetitor ? (
+                                        <Badge variant="outline" className="text-[10px] bg-amber-500/5 border-amber-500/20 text-amber-700 dark:text-amber-400">
+                                          Rakip var
+                                        </Badge>
+                                      ) : (
+                                        <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                                          Tek satıcı
+                                        </Badge>
+                                      )}
+                                    </td>
+                                    <td className="p-3 text-center">
+                                      {isWinning ? (
+                                        <Badge className="text-[10px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                          Kazanıyor
+                                        </Badge>
+                                      ) : priceDiff > 0 ? (
+                                        <span className="text-[10px] text-red-600 dark:text-red-400 font-medium">
+                                          +{formatCurrency(priceDiff)} pahalı
+                                        </span>
+                                      ) : (
+                                        <Badge variant="outline" className="text-[10px]">
+                                          {bb.buyboxOrder}. sıra
+                                        </Badge>
+                                      )}
+                                    </td>
+                                  </tr>
+                                )
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            )}
           </motion.div>
         )}
       </div>

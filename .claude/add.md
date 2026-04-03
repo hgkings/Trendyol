@@ -93,13 +93,13 @@ BU SIRALAMA DEGISMEZ. GOREV ALMADAN ONCE BU 3 ADIM TAMAMLANMALI.
 | T-R4 | Tedarik edilemez (iptal) route + logic | Kolay | ORTA | API client hazir: markUnsupplied(). 6 sebep kodu tanimli. |
 | T-R5 | Kategori agaci + marka cache sistemi | Orta | ORTA | API client hazir: getCategories(), getBrands(). Haftalik cache tavsiye. |
 | T-R6 | Soru & Cevap (Q&A) route + logic + UI | Orta | ORTA | API client hazir: getQuestions(), answerQuestion(). |
-| T-R7 | Buybox kontrolu route + logic + UI | Kolay | DUSUK | API client hazir: checkBuybox(). Max 10 barkod/istek. |
+| T-R7 | ~~Buybox kontrolu route + logic + UI~~ | ~~Kolay~~ | ~~DUSUK~~ | ✅ YAPILDI — checkBuybox() + /buybox route + Finans sekmesi |
 | T-R8 | Fatura link gonderme route + logic | Kolay | DUSUK | API client hazir: sendInvoiceLink(). |
 | T-R9 | Urun olusturma/guncelleme/silme (outbound sync) | Zor | DUSUK | API client hazir: createProducts(), updateProducts(), deleteProducts(). |
 | T-R10 | Kargo etiketi route + logic | Kolay | DUSUK | API client hazir: createLabel(), getLabel(). Sadece TEX+Aras. |
 | T-R11 | Webhook CRUD UI (listeleme, silme, aktif/pasif) | Orta | DUSUK | API client hazir: listWebhooks(), deleteWebhook(), activate/deactivate. |
 | T-R12 | TRENDYOL_WEBHOOK_USERNAME/PASSWORD env dokumantasyonu | Kolay | ORTA | Yeni env degiskenleri — .env.example ve setup guide'a eklenmeli. |
-| T-R13 | Komisyon oranlarini siparis satirlarindan cekme | Orta | YUKSEK | extractCommissionFromOrders() hazir — sabit %18 yerine gercek oran. |
+| T-R13 | ~~Komisyon oranlarini siparis satirlarindan cekme~~ | ~~Orta~~ | ~~YUKSEK~~ | ✅ YAPILDI — enrichAnalysesWithRealData() gercek komisyon+iade+satis ile gunceller |
 
 ---
 
@@ -248,6 +248,12 @@ Auth proxy kodu local'de hazir ve test edildi ama production'a DEPLOY EDILMEDI.
 | 04-03 | Opus 4.6 | FINANS-6: Iade Analizi — toplam iade, iade tutari, iade orani, sebep dagilimi (progress bar), en cok iade edilen 5 urun | app/finance/page.tsx | — |
 | 04-03 | Opus 4.6 | FINANS-7: Marketplace secimi (Trendyol/HB) + donem filtresi (7/15/30/60/90 gun) + yenile butonu | app/finance/page.tsx | — |
 | 04-03 | Opus 4.6 | FINANS-8: Pro plan kilidi, magaza baglantisi yoksa yonlendirme, skeleton yukleme | app/finance/page.tsx | — |
+| 04-03 | Opus 4.6 | ENRICH-1: enrichAnalysesWithRealData() metodu — siparis+iade'den gercek komisyon, iade orani, aylik satis hesaplama | services/marketplace.logic.ts | — |
+| 04-03 | Opus 4.6 | ENRICH-2: /api/marketplace/trendyol/enrich + /hepsiburada/enrich route'lari | app/api/marketplace/*/enrich/route.ts (YENI) | — |
+| 04-03 | Opus 4.6 | ENRICH-3: Finans sayfasina "Gercek Veri" sekmesi — aciklama, guncelle butonu, detay tablosu (eski→yeni deger) | app/finance/page.tsx | — |
+| 04-03 | Opus 4.6 | BUYBOX-1: checkBuybox() metodu — urun eslestirme haritasindan barkodlar ile 10'lu batch sorgu | services/marketplace.logic.ts | — |
+| 04-03 | Opus 4.6 | BUYBOX-2: /api/marketplace/trendyol/buybox route | app/api/marketplace/trendyol/buybox/route.ts (YENI) | — |
+| 04-03 | Opus 4.6 | BUYBOX-3: Finans sayfasina "Buybox" sekmesi — fiyat karsilastirma, siralama, rakip durumu tablosu | app/finance/page.tsx | — |
 
 **tsc --noEmit: 0 hata**
 **Korumali dosyalara DOKUNULMADI**
