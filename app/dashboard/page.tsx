@@ -10,7 +10,7 @@ import { ProfitTrendChart } from '@/components/dashboard/profit-trend-chart';
 import { ParetoChart } from '@/components/dashboard/pareto-chart';
 import { PazaryeriIstatistikKarti } from '@/components/shared/PazaryeriIstatistikKarti';
 import { formatCurrency, formatPercent } from '@/components/shared/format';
-import { TrendingUp, Percent, AlertTriangle, Star, BarChart3, Loader2 } from 'lucide-react';
+import { TrendingUp, Percent, AlertTriangle, Package, BarChart3, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { RecommendationsPanel } from '@/components/dashboard/recommendations-panel';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
@@ -137,12 +137,12 @@ export default function DashboardPage() {
                             delay={0.09}
                         />
                         <EnhancedKPICard
-                            title="En Karli Urun"
-                            value={mostProfitable ? mostProfitable.input.product_name : '-'}
-                            subtitle={mostProfitable ? formatCurrency(mostProfitable.result.monthly_net_profit) : 'Henuz veri yok'}
-                            icon={Star}
-                            color="purple"
-                            href={mostProfitable ? `/analysis/${mostProfitable.id}` : undefined}
+                            title="Toplam Urun"
+                            value={analyses.length.toString()}
+                            subtitle={analyses.length > 0 ? 'Aktif urun analizi' : 'Henuz urun eklenmedi'}
+                            icon={Package}
+                            color="violet"
+                            href="/products"
                             delay={0.11}
                         />
                     </div>
