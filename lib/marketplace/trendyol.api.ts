@@ -1434,10 +1434,8 @@ async function fetchSettlementsChunk(
         params.set('endDate', endDate)
         params.set('size', '500')
         params.set('page', String(page))
-        params.set('supplierId', creds.sellerId) // Resmi doküman zorunlu kılıyor
-        for (const tt of transactionTypes) {
-            params.append('transactionType', tt)
-        }
+        // transactionType tekli gönderilmeli — her tip için ayrı istek
+        params.set('transactionType', transactionTypes[0] ?? 'Sale')
 
         const url = `${FINANCE_BASE_URL}/${creds.sellerId}/settlements?${params.toString()}`
         const res = await fetchWithRetry(url, headers)
@@ -1481,26 +1479,33 @@ export async function getSellerSettlements(
 ): Promise<SellerSettlement[]> {
     const headers = buildHeaders(creds)
     const results: SellerSettlement[] = []
-    const types = transactionTypes ?? ['Sale', 'Return', 'CommissionPositive', 'CommissionNegative']
+    const types = transactionTypes ?? ['Sale', 'Return']
 
     const baslangic = new Date(startDate)
     const bitis = new Date(endDate)
-    let mevcutBaslangic = new Date(baslangic)
 
-    while (mevcutBaslangic <= bitis) {
+    // Her transactionType için ayrı istek (Trendyol tek tip bekliyor)
+    for (const tt of types) {
+      let mevcutBaslangic = new Date(baslangic)
+
+      while (mevcutBaslangic <= bitis) {
         const mevcutBitis = new Date(mevcutBaslangic)
         mevcutBitis.setDate(mevcutBitis.getDate() + 14)
         if (mevcutBitis > bitis) mevcutBitis.setTime(bitis.getTime())
 
-        // Trendyol Finance API epoch millisaniye bekliyor (YYYY-MM-DD DEĞİL)
         const start = String(mevcutBaslangic.getTime())
         const end = String(mevcutBitis.getTime())
 
-        const chunk = await fetchSettlementsChunk(creds, headers, start, end, types)
-        results.push(...chunk)
+        try {
+          const chunk = await fetchSettlementsChunk(creds, headers, start, end, [tt])
+          results.push(...chunk)
+        } catch {
+          // Bir tip hata verirse diğerlerine devam et
+        }
 
         mevcutBaslangic = new Date(mevcutBitis)
         mevcutBaslangic.setDate(mevcutBaslangic.getDate() + 1)
+      }
     }
 
     return results
@@ -1542,7 +1547,6 @@ export async function getOtherFinancials(
         params.set('startDate', start)
         params.set('endDate', end)
         params.set('size', '500')
-        params.set('supplierId', creds.sellerId)
         for (const tt of types) {
             params.append('transactionType', tt)
         }
