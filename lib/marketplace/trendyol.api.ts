@@ -1491,8 +1491,9 @@ export async function getSellerSettlements(
         mevcutBitis.setDate(mevcutBitis.getDate() + 14)
         if (mevcutBitis > bitis) mevcutBitis.setTime(bitis.getTime())
 
-        const start = mevcutBaslangic.toISOString().split('T')[0] ?? ''
-        const end = mevcutBitis.toISOString().split('T')[0] ?? ''
+        // Trendyol Finance API epoch millisaniye bekliyor (YYYY-MM-DD DEĞİL)
+        const start = String(mevcutBaslangic.getTime())
+        const end = String(mevcutBitis.getTime())
 
         const chunk = await fetchSettlementsChunk(creds, headers, start, end, types)
         results.push(...chunk)
@@ -1532,12 +1533,13 @@ export async function getOtherFinancials(
         mevcutBitis.setDate(mevcutBitis.getDate() + 14)
         if (mevcutBitis > bitis) mevcutBitis.setTime(bitis.getTime())
 
-        const start = mevcutBaslangic.toISOString().split('T')[0]
-        const end = mevcutBitis.toISOString().split('T')[0]
+        // Trendyol Finance API epoch millisaniye bekliyor
+        const start = String(mevcutBaslangic.getTime())
+        const end = String(mevcutBitis.getTime())
 
         const params = new URLSearchParams()
-        params.set('startDate', start ?? '')
-        params.set('endDate', end ?? '')
+        params.set('startDate', start)
+        params.set('endDate', end)
         params.set('size', '1000')
         for (const tt of types) {
             params.append('transactionType', tt)
