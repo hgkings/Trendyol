@@ -92,6 +92,11 @@ export function requireCronSecret(request: Request): true | Response {
  * Her kullanıcının her marketplace'de max 1 bağlantısı vardır (UNIQUE constraint).
  * connectionId route'larda gereklidir ancak UI tarafından gönderilmez.
  */
+/**
+ * Kullanıcının belirli marketplace için bağlantı ID'sini bulur.
+ * Her kullanıcının her marketplace'de max 1 bağlantısı vardır (UNIQUE constraint).
+ * 'disconnected' hariç tüm durumları kabul eder (error, pending_test, connected).
+ */
 export async function resolveConnectionId(
   userId: string,
   marketplace: 'trendyol' | 'hepsiburada'
@@ -99,10 +104,10 @@ export async function resolveConnectionId(
   const adminClient = createAdminClient()
   const { data, error } = await adminClient
     .from('marketplace_connections')
-    .select('id')
+    .select('id, status')
     .eq('user_id', userId)
     .eq('marketplace', marketplace)
-    .eq('status', 'connected')
+    .neq('status', 'disconnected')
     .single()
 
   if (error || !data) {

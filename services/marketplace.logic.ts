@@ -90,25 +90,54 @@ export class MarketplaceLogic {
       })
     }
 
-    // Baglanti olustur
-    const connection = await this.marketplaceRepo.createConnection({
-      user_id: userId,
-      marketplace: input.marketplace,
-      store_name: input.storeName,
-      seller_id: input.sellerId,
-      status: 'pending_test',
-    })
+    // Mevcut baglanti var mi kontrol et (UNIQUE constraint korunmasi)
+    const existing = await this.marketplaceRepo.getConnectionsByUserId(userId)
+    const existingConn = (existing as Array<{ id: string; marketplace: string }>)
+      .find(c => c.marketplace === input.marketplace)
 
-    // Credentials sifrele ve sakla
-    const encryptedBlob = encrypt(JSON.stringify({
-      apiKey: input.apiKey,
-      apiSecret: input.apiSecret,
-      sellerId: input.sellerId,
-    }))
+    let connectionId: string
 
-    await this.marketplaceRepo.storeSecrets(connection.id, encryptedBlob)
+    if (existingConn) {
+      // Mevcut baglanti var — durumu ve bilgileri guncelle
+      connectionId = existingConn.id
+      await this.marketplaceRepo.updateConnectionStatus(connectionId, 'pending_test')
 
-    return { connectionId: connection.id, status: 'pending_test' }
+      // Eski secrets'i sil ve yenisini ekle
+      const encryptedBlob = encrypt(JSON.stringify({
+        apiKey: input.apiKey,
+        apiSecret: input.apiSecret,
+        sellerId: input.sellerId,
+      }))
+
+      // Mevcut secret varsa upsert, yoksa insert
+      const existingSecret = await this.marketplaceRepo.getSecrets(connectionId)
+      if (existingSecret) {
+        await this.marketplaceRepo.storeSecrets(connectionId, encryptedBlob)
+      } else {
+        await this.marketplaceRepo.storeSecrets(connectionId, encryptedBlob)
+      }
+    } else {
+      // Yeni baglanti olustur
+      const connection = await this.marketplaceRepo.createConnection({
+        user_id: userId,
+        marketplace: input.marketplace,
+        store_name: input.storeName,
+        seller_id: input.sellerId,
+        status: 'pending_test',
+      })
+      connectionId = connection.id
+
+      // Credentials sifrele ve sakla
+      const encryptedBlob = encrypt(JSON.stringify({
+        apiKey: input.apiKey,
+        apiSecret: input.apiSecret,
+        sellerId: input.sellerId,
+      }))
+
+      await this.marketplaceRepo.storeSecrets(connectionId, encryptedBlob)
+    }
+
+    return { connectionId, status: 'pending_test' as ConnectionStatus }
   }
 
   /**
@@ -132,7 +161,7 @@ export class MarketplaceLogic {
   async testConnection(
     traceId: string,
     payload: unknown,
-    _userId: string
+    userId: string
   ): Promise<{ success: boolean; storeName: string | null }> {
     const { connectionId } = payload as {
       marketplace: MarketplaceType
@@ -143,6 +172,16 @@ export class MarketplaceLogic {
       throw new ServiceError('Bağlantı ID\'si zorunludur', {
         code: 'MISSING_CONNECTION_ID',
         statusCode: 400,
+        traceId,
+      })
+    }
+
+    // Ownership kontrolu
+    const connection = await this.marketplaceRepo.getConnectionByIdAndUserId(connectionId, userId)
+    if (!connection) {
+      throw new ServiceError('Bağlantı bulunamadı', {
+        code: 'CONNECTION_NOT_FOUND',
+        statusCode: 404,
         traceId,
       })
     }
@@ -161,16 +200,6 @@ export class MarketplaceLogic {
       apiKey: string
       apiSecret: string
       sellerId: string
-    }
-
-    // Marketplace tipini bul
-    const connection = await this.marketplaceRepo.getConnectionById(connectionId)
-    if (!connection) {
-      throw new ServiceError('Bağlantı bulunamadı', {
-        code: 'CONNECTION_NOT_FOUND',
-        statusCode: 404,
-        traceId,
-      })
     }
 
     let result: { success: boolean; message: string; storeName?: string }
@@ -348,7 +377,7 @@ export class MarketplaceLogic {
 
     const syncLog = await this.marketplaceRepo.createSyncLog({
       connection_id: connectionId,
-      sync_type: 'trendyol_products',
+      sync_type: 'products',
       status: 'running',
     })
 
@@ -375,7 +404,7 @@ export class MarketplaceLogic {
 
     const syncLog = await this.marketplaceRepo.createSyncLog({
       connection_id: connectionId,
-      sync_type: 'trendyol_orders',
+      sync_type: 'orders',
       status: 'running',
     })
 
@@ -703,7 +732,7 @@ export class MarketplaceLogic {
 
     const syncLog = await this.marketplaceRepo.createSyncLog({
       connection_id: connectionId,
-      sync_type: 'hepsiburada_products',
+      sync_type: 'products',
       status: 'running',
     })
 
@@ -729,7 +758,7 @@ export class MarketplaceLogic {
 
     const syncLog = await this.marketplaceRepo.createSyncLog({
       connection_id: connectionId,
-      sync_type: 'hepsiburada_orders',
+      sync_type: 'orders',
       status: 'running',
     })
 
