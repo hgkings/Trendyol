@@ -1425,35 +1425,47 @@ async function fetchSettlementsChunk(
     endDate: string,
     transactionTypes: string[] = ['Sale', 'Return', 'CommissionPositive', 'CommissionNegative']
 ): Promise<SellerSettlement[]> {
-    const params = new URLSearchParams()
-    params.set('startDate', startDate)
-    params.set('endDate', endDate)
-    params.set('size', '1000')
-    for (const tt of transactionTypes) {
-        params.append('transactionType', tt)
+    const allItems: SellerSettlement[] = []
+    const MAX_PAGES = 20
+
+    for (let page = 0; page < MAX_PAGES; page++) {
+        const params = new URLSearchParams()
+        params.set('startDate', startDate)
+        params.set('endDate', endDate)
+        params.set('size', '1000')
+        params.set('page', String(page))
+        for (const tt of transactionTypes) {
+            params.append('transactionType', tt)
+        }
+
+        const url = `${FINANCE_BASE_URL}/${creds.sellerId}/settlements?${params.toString()}`
+        const res = await fetchWithRetry(url, headers)
+
+        if (!res.ok) handleTrendyolError(res.status, url)
+
+        const data = await res.json() as { content?: Record<string, unknown>[]; totalPages?: number }
+        const items = (data.content || []).map((item: Record<string, unknown>): SellerSettlement => ({
+            siparisId: (item.orderNumber as string) ?? '',
+            paketId: (item.shipmentPackageId as number) ?? 0,
+            barkod: (item.barcode as string) ?? '',
+            islemTipi: (item.transactionType as string) ?? '',
+            komisyonOrani: (item.commissionRate as number) ?? 0,
+            komisyonTutari: (item.commissionAmount as number) ?? 0,
+            saticiHakedis: (item.sellerRevenue as number) ?? 0,
+            alacak: (item.credit as number) ?? 0,
+            borc: (item.debt as number) ?? 0,
+            odemeTarihi: trendyolTariheDonustur(item.paymentDate as number | null | undefined, 'createdDate'),
+            islemTarihi: trendyolTariheDonustur(item.transactionDate as number | null | undefined, 'createdDate'),
+            odemeNo: (item.paymentOrderId as number) ?? 0,
+            faturaNuarasi: (item.receiptId as string) ?? '',
+        }))
+
+        allItems.push(...items)
+
+        if (!data.totalPages || page + 1 >= data.totalPages || items.length === 0) break
     }
 
-    const url = `${FINANCE_BASE_URL}/${creds.sellerId}/settlements?${params.toString()}`
-    const res = await fetchWithRetry(url, headers)
-
-    if (!res.ok) handleTrendyolError(res.status, url)
-
-    const data = await res.json() as { content?: Record<string, unknown>[] }
-    return (data.content || []).map((item: Record<string, unknown>): SellerSettlement => ({
-        siparisId: (item.orderNumber as string) ?? '',
-        paketId: (item.shipmentPackageId as number) ?? 0,
-        barkod: (item.barcode as string) ?? '',
-        islemTipi: (item.transactionType as string) ?? '',
-        komisyonOrani: (item.commissionRate as number) ?? 0,
-        komisyonTutari: (item.commissionAmount as number) ?? 0,
-        saticiHakedis: (item.sellerRevenue as number) ?? 0,
-        alacak: (item.credit as number) ?? 0,
-        borc: (item.debt as number) ?? 0,
-        odemeTarihi: trendyolTariheDonustur(item.paymentDate as number | null | undefined, 'createdDate'),
-        islemTarihi: trendyolTariheDonustur(item.transactionDate as number | null | undefined, 'createdDate'),
-        odemeNo: (item.paymentOrderId as number) ?? 0,
-        faturaNuarasi: (item.receiptId as string) ?? '',
-    }))
+    return allItems
 }
 
 /**
@@ -1531,18 +1543,24 @@ export async function getOtherFinancials(
             params.append('transactionType', tt)
         }
 
-        const url = `${FINANCE_BASE_URL}/${creds.sellerId}/otherfinancials?${params.toString()}`
-        const res = await fetchWithRetry(url, headers)
+        // Sayfalama ile çek
+        for (let page = 0; page < 20; page++) {
+            params.set('page', String(page))
+            const url = `${FINANCE_BASE_URL}/${creds.sellerId}/otherfinancials?${params.toString()}`
+            const res = await fetchWithRetry(url, headers)
 
-        if (res.ok) {
-            const data = await res.json() as { content?: Record<string, unknown>[] }
+            if (!res.ok) break // Hata durumunda pencereyi atla
+
+            const data = await res.json() as { content?: Record<string, unknown>[]; totalPages?: number }
             const chunk = (data.content || []).map((item: Record<string, unknown>): OtherFinancial => ({
                 islemTipi: (item.transactionType as string) ?? '',
                 tutar: (item.amount as number) ?? 0,
                 aciklama: (item.description as string) ?? '',
-                tarih: item.transactionDate ? new Date(item.transactionDate as string).toISOString() : null,
+                tarih: item.transactionDate ? new Date(item.transactionDate as number).toISOString() : null,
             }))
             results.push(...chunk)
+
+            if (!data.totalPages || page + 1 >= data.totalPages || chunk.length === 0) break
         }
 
         mevcutBaslangic = new Date(mevcutBitis)

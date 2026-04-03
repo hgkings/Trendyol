@@ -12,9 +12,9 @@ import { UpgradeModal } from '@/components/shared/upgrade-modal'
 import { isProUser } from '@/utils/access'
 import { motion } from 'framer-motion'
 import {
-  Loader2, Wallet, TrendingUp, TrendingDown, ArrowDownLeft,
+  Loader2, Wallet, TrendingUp, TrendingDown,
   ArrowUpRight, Receipt, RefreshCw, Calendar, AlertTriangle,
-  Package, BarChart3, ChevronDown, Store, Percent,
+  Package, BarChart3, Store, Percent,
   ShieldAlert, CreditCard, Truck, RotateCcw
 } from 'lucide-react'
 import {
@@ -92,18 +92,24 @@ function hesaplaOzet(settlements: Settlement[], others: OtherFinancial[]): Finan
   for (const s of settlements) {
     toplamAlacak += s.alacak
     toplamBorc += s.borc
-    komisyonKesintisi += Math.abs(s.komisyonTutari)
 
     const tip = s.islemTipi || 'Diger'
     islemTipleri[tip] = (islemTipleri[tip] || 0) + 1
 
-    if (tip === 'Sale' || tip.includes('Sale')) {
+    if (tip === 'Sale') {
       brutSatis += s.alacak
       satisAdet++
-    }
-    if (tip === 'Return' || tip.includes('Return')) {
+      // Komisyon sadece satışlardan hesaplanır (iade komisyon iadesi hariç)
+      komisyonKesintisi += Math.abs(s.komisyonTutari)
+    } else if (tip === 'Return') {
       iadeKesintisi += Math.abs(s.borc)
+      // İade komisyon iadesi — komisyondan düş (çift sayma engeli)
+      if (s.komisyonTutari < 0) {
+        komisyonKesintisi -= Math.abs(s.komisyonTutari)
+      }
     }
+    // CommissionPositive/CommissionNegative → toplamAlacak/toplamBorc'a zaten dahil
+    // Ayrıca kategorize etmeye gerek yok — netHakedis'te otomatik hesaplanıyor
   }
 
   let digerKesintiler = 0

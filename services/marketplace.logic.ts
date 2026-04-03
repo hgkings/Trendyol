@@ -1195,7 +1195,7 @@ export class MarketplaceLogic {
         const barcode = String(line.barcode ?? '')
         // Barcode → internal ID eşleştirmesi dene
         for (const [ext, intId] of extToInt) {
-          if (ext === barcode || barcode.length > 0) {
+          if (barcode && ext === barcode) {
             const prev = productReturnCounts.get(intId) ?? 0
             productReturnCounts.set(intId, prev + ((line.quantity as number) ?? 1))
             break
