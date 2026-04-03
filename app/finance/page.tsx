@@ -96,14 +96,16 @@ function hesaplaOzet(settlements: Settlement[], others: OtherFinancial[]): Finan
     const tip = s.islemTipi || 'Diger'
     islemTipleri[tip] = (islemTipleri[tip] || 0) + 1
 
-    if (tip === 'Sale') {
+    const tipLower = tip.toLowerCase()
+    const isSale = tip === 'Sale' || tipLower === 'satış' || tipLower.includes('sale')
+    const isReturn = tip === 'Return' || tipLower === 'iade' || tipLower.includes('return')
+
+    if (isSale) {
       brutSatis += s.alacak
       satisAdet++
-      // Komisyon sadece satışlardan hesaplanır (iade komisyon iadesi hariç)
       komisyonKesintisi += Math.abs(s.komisyonTutari)
-    } else if (tip === 'Return') {
+    } else if (isReturn) {
       iadeKesintisi += Math.abs(s.borc)
-      // İade komisyon iadesi — komisyondan düş (çift sayma engeli)
       if (s.komisyonTutari < 0) {
         komisyonKesintisi -= Math.abs(s.komisyonTutari)
       }
@@ -273,10 +275,16 @@ export default function FinancePage() {
 
       // 2. Finans verilerini çek
       const financeRes = await fetch(`/api/marketplace/${marketplace}/finance?gun=${period}`)
-      if (financeRes.ok) {
-        const finData = await financeRes.json()
+      const finData = await financeRes.json()
+      if (financeRes.ok && finData.success !== false) {
         setSettlements(finData.settlements || [])
         setOtherFinancials(finData.otherFinancials || [])
+        if (finData.warning) {
+          toast.error(`Hakediş: ${finData.warning}`)
+        }
+      } else {
+        const errMsg = finData.error || finData.warning || `Finans verisi alınamadı (HTTP ${financeRes.status})`
+        toast.error(errMsg)
       }
 
       // 3. İade verilerini çek
@@ -284,6 +292,8 @@ export default function FinancePage() {
       if (claimsRes.ok) {
         const claimsData = await claimsRes.json()
         setClaims(claimsData.claims || claimsData.iadeListesi || [])
+      } else {
+        toast.error('İade verileri alınamadı')
       }
 
       if (isRefresh) toast.success('Finans verileri yenilendi')

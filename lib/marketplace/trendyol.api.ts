@@ -1432,8 +1432,9 @@ async function fetchSettlementsChunk(
         const params = new URLSearchParams()
         params.set('startDate', startDate)
         params.set('endDate', endDate)
-        params.set('size', '1000')
+        params.set('size', '500')
         params.set('page', String(page))
+        params.set('supplierId', creds.sellerId) // Resmi doküman zorunlu kılıyor
         for (const tt of transactionTypes) {
             params.append('transactionType', tt)
         }
@@ -1540,7 +1541,8 @@ export async function getOtherFinancials(
         const params = new URLSearchParams()
         params.set('startDate', start)
         params.set('endDate', end)
-        params.set('size', '1000')
+        params.set('size', '500')
+        params.set('supplierId', creds.sellerId)
         for (const tt of types) {
             params.append('transactionType', tt)
         }
