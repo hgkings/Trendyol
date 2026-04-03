@@ -87,6 +87,34 @@ export function requireCronSecret(request: Request): true | Response {
   return true
 }
 
+/**
+ * Kullanıcının belirli marketplace için aktif bağlantı ID'sini bulur.
+ * Her kullanıcının her marketplace'de max 1 bağlantısı vardır (UNIQUE constraint).
+ * connectionId route'larda gereklidir ancak UI tarafından gönderilmez.
+ */
+export async function resolveConnectionId(
+  userId: string,
+  marketplace: 'trendyol' | 'hepsiburada'
+): Promise<string | Response> {
+  const adminClient = createAdminClient()
+  const { data, error } = await adminClient
+    .from('marketplace_connections')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('marketplace', marketplace)
+    .eq('status', 'connected')
+    .single()
+
+  if (error || !data) {
+    return Response.json(
+      { error: `${marketplace === 'trendyol' ? 'Trendyol' : 'Hepsiburada'} bağlantısı bulunamadı. Önce mağaza bağlantısını kurun.` },
+      { status: 404 }
+    )
+  }
+
+  return data.id as string
+}
+
 // Gateway singleton — ilk cagride import edilir, sonra cache'lenir
 let _gatewayReady = false
 async function ensureGateway() {

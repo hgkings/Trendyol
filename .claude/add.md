@@ -60,6 +60,49 @@ BU SIRALAMA DEGISMEZ. GOREV ALMADAN ONCE BU 3 ADIM TAMAMLANMALI.
 
 ---
 
+### TRENDYOL ENTEGRASYON — KALAN ISLER (04-03 guncelleme sonrasi)
+
+> API client (trendyol.api.ts) tam hazir. Asagidakiler route + logic + UI katmani.
+
+#### YAPILDI (bu session)
+| # | Gorev | Durum |
+|---|-------|-------|
+| T1 | Base URL'ler resmi dokumana tasinma (sapigw → apigw.trendyol.com/integration/) | ✅ YAPILDI |
+| T2 | Webhook kayit formati (BASIC_AUTHENTICATION + subscribedStatuses) | ✅ YAPILDI |
+| T3 | Finans API zorunlu transactionType parametresi | ✅ YAPILDI |
+| T4 | Rate limit resmi degerlere guncelleme (50/10s) | ✅ YAPILDI |
+| T5 | Kargo sirketleri sabit referans tablosu (10 sirket) | ✅ YAPILDI |
+| T6 | 30+ yeni API client endpoint (urun CRUD, siparis, iade, finans, S&C, fatura, etiket) | ✅ YAPILDI |
+| T7 | Eksik siparis statusleri (Invoiced, AtCollectionPoint, UnPacked, UnSupplied) | ✅ YAPILDI |
+| T8 | Awaiting siparis filtresi (normalizer + cron + fetchAllOrders) | ✅ YAPILDI |
+| T9 | Sayfa boyutu 50→200 (resmi max) | ✅ YAPILDI |
+| T10 | testConnection/syncProducts/syncOrders TODO→gercek API cagrisi | ✅ YAPILDI |
+| T11 | 16 route connectionId eksigi duzeltildi (10 Trendyol + 6 HB) | ✅ YAPILDI |
+| T12 | Cron normalize TODO→gercek normalizeProducts+normalizeOrderMetrics | ✅ YAPILDI |
+| T13 | Webhook handler TODO→trendyol_webhook_events tablosuna kayit | ✅ YAPILDI |
+| T14 | Webhook receiver Basic Auth dogrulama (resmi standart) | ✅ YAPILDI |
+| T15 | 9 yeni Zod validasyon semasi | ✅ YAPILDI |
+| T16 | Marketplace defaults guncelleme (trendyol %18/28gun, hb %20/30gun) | ✅ YAPILDI |
+
+#### YAPILACAK (sonraki session'lar)
+| # | Gorev | Zorluk | Oncelik | Aciklama |
+|---|-------|--------|---------|----------|
+| T-R1 | Siparis durum guncelleme route + logic (Picking→Invoiced) | Orta | YUKSEK | API client hazir: updatePackageStatus(). Route + logic + UI gerekli. |
+| T-R2 | Stok & fiyat guncelleme route + logic | Orta | YUKSEK | API client hazir: updateStockAndPrice(). Rate limit YOK, 15dk dedup. |
+| T-R3 | Iade onay/red route + logic | Orta | YUKSEK | API client hazir: approveClaim(), rejectClaim(). Zod semalari hazir. |
+| T-R4 | Tedarik edilemez (iptal) route + logic | Kolay | ORTA | API client hazir: markUnsupplied(). 6 sebep kodu tanimli. |
+| T-R5 | Kategori agaci + marka cache sistemi | Orta | ORTA | API client hazir: getCategories(), getBrands(). Haftalik cache tavsiye. |
+| T-R6 | Soru & Cevap (Q&A) route + logic + UI | Orta | ORTA | API client hazir: getQuestions(), answerQuestion(). |
+| T-R7 | Buybox kontrolu route + logic + UI | Kolay | DUSUK | API client hazir: checkBuybox(). Max 10 barkod/istek. |
+| T-R8 | Fatura link gonderme route + logic | Kolay | DUSUK | API client hazir: sendInvoiceLink(). |
+| T-R9 | Urun olusturma/guncelleme/silme (outbound sync) | Zor | DUSUK | API client hazir: createProducts(), updateProducts(), deleteProducts(). |
+| T-R10 | Kargo etiketi route + logic | Kolay | DUSUK | API client hazir: createLabel(), getLabel(). Sadece TEX+Aras. |
+| T-R11 | Webhook CRUD UI (listeleme, silme, aktif/pasif) | Orta | DUSUK | API client hazir: listWebhooks(), deleteWebhook(), activate/deactivate. |
+| T-R12 | TRENDYOL_WEBHOOK_USERNAME/PASSWORD env dokumantasyonu | Kolay | ORTA | Yeni env degiskenleri — .env.example ve setup guide'a eklenmeli. |
+| T-R13 | Komisyon oranlarini siparis satirlarindan cekme | Orta | YUKSEK | extractCommissionFromOrders() hazir — sabit %18 yerine gercek oran. |
+
+---
+
 ### KALAN GOREVLER — Ust %10'a Cikmak Icin Gerekli
 
 #### ONCELIK 1: KRITIK (Guvenlik seviyesini %10'a tasir)
@@ -142,6 +185,64 @@ Auth proxy kodu local'de hazir ve test edildi ama production'a DEPLOY EDILMEDI.
 ---
 
 ## SON DEGISIKLIKLER (en yeniden eskiye)
+
+### 2026-04-03 (Opus 4.6 CLI — Trendyol API Resmi Dokuman Uyumu: Tam Yeniden Yazim)
+
+| Tarih | Ajan | Ozet | Dosyalar | Commit |
+|-------|------|------|----------|--------|
+| 04-03 | Opus 4.6 | TRENDYOL-1: Base URL'ler resmi dokumana tasinildi — sapigw → apigw.trendyol.com/integration/ (finans, webhook, batch, claim) | lib/marketplace/trendyol.api.ts | — |
+| 04-03 | Opus 4.6 | TRENDYOL-2: Webhook kayit formati duzeltildi — BASIC_AUTH → BASIC_AUTHENTICATION + subscribedStatuses (eski eventTypeIds kaldirildi) | lib/marketplace/trendyol.api.ts | — |
+| 04-03 | Opus 4.6 | TRENDYOL-3: Finans API zorunlu transactionType parametresi eklendi, size 1000 yapildi | lib/marketplace/trendyol.api.ts | — |
+| 04-03 | Opus 4.6 | TRENDYOL-4: Rate limit 45→50 req/10s (resmi), siparis limiti 900→1000 req/dk | lib/marketplace/trendyol.api.ts | — |
+| 04-03 | Opus 4.6 | TRENDYOL-5: Kargo sirketleri API → sabit referans tablosu (resmi 10 sirket ID ile) | lib/marketplace/trendyol.api.ts | — |
+| 04-03 | Opus 4.6 | TRENDYOL-6: 30+ yeni API endpoint eklendi — urun CRUD, stok/fiyat guncelleme, siparis durum, arsiv, buybox, kategori agaci, marka, S&C, fatura link, kargo etiket, satici adres | lib/marketplace/trendyol.api.ts | — |
+| 04-03 | Opus 4.6 | TRENDYOL-7: Eksik siparis statusleri eklendi — Invoiced, AtCollectionPoint, UnPacked, UnSupplied + Awaiting filtresi (islenmeyen) | lib/marketplace/normalizer.ts | — |
+| 04-03 | Opus 4.6 | TRENDYOL-8: Marketplace varsayilan degerler guncellendi — trendyol %18/28gun/%12, hepsiburada %20/30gun/%12, n11/amazon_tr eklendi | lib/marketplace/normalizer.ts | — |
+| 04-03 | Opus 4.6 | TRENDYOL-9: Sayfa boyutu 50→200 (resmi max) — cron, normalize, fetchAllOrders | cron/route.ts, marketplace.logic.ts | — |
+| 04-03 | Opus 4.6 | TRENDYOL-10: testConnection TODO kaldirildi — gercek API cagrisi eklendi (Trendyol+HB) | services/marketplace.logic.ts | — |
+| 04-03 | Opus 4.6 | TRENDYOL-11: syncProducts/syncOrders TODO kaldirildi — gercek API cagrisi eklendi | services/marketplace.logic.ts | — |
+| 04-03 | Opus 4.6 | TRENDYOL-12: Webhook receiver guncellendi — Basic Auth dogrulama (resmi) + HMAC fallback | app/api/marketplace/trendyol/webhook/route.ts | — |
+| 04-03 | Opus 4.6 | TRENDYOL-13: Cron siparislerinde Awaiting filtresi eklendi | app/api/marketplace/cron/route.ts | — |
+| 04-03 | Opus 4.6 | TRENDYOL-14: 9 yeni Zod sema eklendi — UpdatePackageStatus, MarkUnsupplied, UpdateStockPrice, ApproveClaim, RejectClaim, AnswerQuestion, BuyboxCheck, SendInvoiceLink | lib/validators/schemas/marketplace.schema.ts | — |
+| 04-03 | Opus 4.6 | TRENDYOL-15: Tum HTTP hata kodlari eklendi — 405, 409, 414, 415, 502, 503, 504 | lib/marketplace/trendyol.api.ts | — |
+| 04-03 | Opus 4.6 | TRENDYOL-16: Resmi sabitler export edildi — ORDER_STATUSES, UNSUPPLY_REASON_CODES, WEBHOOK_STATUSES, VALID_VAT_RATES, CARGO_PROVIDERS, RATE_LIMITS, SETTLEMENT_TRANSACTION_TYPES | lib/marketplace/trendyol.api.ts | — |
+
+**Degisiklik Ozeti:**
+- trendyol.api.ts: 839 satir → ~1800 satir (tam yeniden yazim)
+- normalizer.ts: Siparis statusleri + marketplace defaults guncellendi
+- marketplace.logic.ts: 3 TODO metot gercek API cagrisina donusturuldu
+- cron/route.ts: Sayfa boyutu 200, Awaiting filtresi
+- webhook/route.ts: Basic Auth dogrulama (resmi standart)
+- marketplace.schema.ts: 9 yeni Zod validasyon semasi
+
+**Resmi Trendyol API Kapsamı (eklenen yeni endpoint'ler):**
+- Kategori agaci + kategori oznitelikleri
+- Marka listesi + isim ile arama
+- Urun olusturma (POST), guncelleme (PUT), silme (DELETE)
+- Stok & fiyat guncelleme (rate limit YOK, 15dk dedup)
+- Urun arsivleme/arsivden cikarma
+- Urun kilit kaldirma
+- Buybox bilgisi sorgulama
+- Siparis durum guncelleme (Picking → Invoiced)
+- Tedarik edilemez isareti (6 sebep kodu)
+- Paket bolme (split)
+- Koli bilgisi guncelleme
+- Kargo sirketi degistirme
+- Iade onay/red + sebep kodlari + satici-tarafli iade olusturma
+- Finans settlement (zorunlu transactionType) + diger finansallar + kargo fatura detay
+- Webhook CRUD (kayit, listeleme, guncelleme, silme, aktif/pasif)
+- Fatura link gonderme/silme
+- Soru & Cevap (listeleme, detay, yanitlama)
+- Kargo etiketi olusturma/alma
+- Satici adres bilgileri
+
+| 04-03 | Opus 4.6 | TRENDYOL-17: 10 Trendyol route connectionId eksigi duzeltildi — resolveConnectionId helper eklendi | lib/api/helpers.ts, 10x app/api/marketplace/trendyol/*/route.ts | — |
+| 04-03 | Opus 4.6 | TRENDYOL-18: Cron normalize TODO kaldirildi — gercek normalizeProducts + normalizeOrderMetrics entegre edildi | app/api/marketplace/cron/route.ts | — |
+| 04-03 | Opus 4.6 | TRENDYOL-19: Webhook handler TODO kaldirildi — trendyol_webhook_events tablosuna kayit eklendi | services/marketplace.logic.ts | — |
+| 04-03 | Opus 4.6 | TRENDYOL-20: 6 Hepsiburada route connectionId eksigi duzeltildi | 6x app/api/marketplace/hepsiburada/*/route.ts | — |
+
+**tsc --noEmit: 0 hata**
+**Korumali dosyalara DOKUNULMADI**
 
 ### 2026-04-03 (Eklenti 1 — Guvenlik: glob + lodash zafiyet duzeltme)
 

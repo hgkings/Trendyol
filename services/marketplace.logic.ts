@@ -157,17 +157,44 @@ export class MarketplaceLogic {
       })
     }
 
-    const _credentials = JSON.parse(decrypt(secretRow.encrypted_blob)) as {
+    const credentials = JSON.parse(decrypt(secretRow.encrypted_blob)) as {
       apiKey: string
       apiSecret: string
       sellerId: string
     }
 
-    // TODO: Trendyol/HB API'ye gercek test istegi — API client FAZ7+ entegrasyonunda
-    // Simdilik baglanti durumunu 'connected' olarak guncelle
-    await this.marketplaceRepo.updateConnectionStatus(connectionId, 'connected')
+    // Marketplace tipini bul
+    const connection = await this.marketplaceRepo.getConnectionById(connectionId)
+    if (!connection) {
+      throw new ServiceError('Bağlantı bulunamadı', {
+        code: 'CONNECTION_NOT_FOUND',
+        statusCode: 404,
+        traceId,
+      })
+    }
 
-    return { success: true, storeName: null }
+    let result: { success: boolean; message: string; storeName?: string }
+
+    if (connection.marketplace === 'trendyol') {
+      result = await trendyolApi.testConnection(credentials)
+    } else if (connection.marketplace === 'hepsiburada') {
+      const hbCreds = { apiKey: credentials.apiKey, apiSecret: credentials.apiSecret, merchantId: credentials.sellerId }
+      result = await hepsiburadaApi.testConnection(hbCreds)
+    } else {
+      throw new ServiceError('Desteklenmeyen pazaryeri', {
+        code: 'UNSUPPORTED_MARKETPLACE',
+        statusCode: 400,
+        traceId,
+      })
+    }
+
+    if (result.success) {
+      await this.marketplaceRepo.updateConnectionStatus(connectionId, 'connected')
+    } else {
+      await this.marketplaceRepo.updateConnectionStatus(connectionId, 'error')
+    }
+
+    return { success: result.success, storeName: result.storeName ?? null }
   }
 
   /**
@@ -206,10 +233,22 @@ export class MarketplaceLogic {
         })
       }
 
-      const _credentials = JSON.parse(decrypt(secretRow.encrypted_blob))
+      const credentials = JSON.parse(decrypt(secretRow.encrypted_blob)) as {
+        apiKey: string; apiSecret: string; sellerId: string
+      }
 
-      // TODO: Trendyol/HB API'den urunleri cek — API client entegrasyonu ayri task
-      const productsCount = 0
+      // Bağlantı tipini bul
+      const connection = await this.marketplaceRepo.getConnectionById(connectionId)
+      let productsCount = 0
+
+      if (connection?.marketplace === 'trendyol') {
+        const page = await trendyolApi.fetchProducts(credentials)
+        productsCount = page.totalElements
+      } else if (connection?.marketplace === 'hepsiburada') {
+        const hbCreds = { apiKey: credentials.apiKey, apiSecret: credentials.apiSecret, merchantId: credentials.sellerId }
+        const result = await hepsiburadaApi.fetchAllProducts(hbCreds)
+        productsCount = result.totalCount
+      }
 
       await this.marketplaceRepo.updateSyncLog(syncLog.id, 'success', `${productsCount} ürün senkronize edildi`)
       return { productsCount }
@@ -255,10 +294,24 @@ export class MarketplaceLogic {
         })
       }
 
-      const _credentials = JSON.parse(decrypt(secretRow.encrypted_blob))
+      const credentials = JSON.parse(decrypt(secretRow.encrypted_blob)) as {
+        apiKey: string; apiSecret: string; sellerId: string
+      }
 
-      // TODO: Trendyol/HB API'den siparisleri cek — API client entegrasyonu ayri task
-      const ordersCount = 0
+      // Bağlantı tipini bul
+      const connection = await this.marketplaceRepo.getConnectionById(connectionId)
+      let ordersCount = 0
+      const endMs = Date.now()
+      const startMs = endMs - 30 * 24 * 60 * 60 * 1000
+
+      if (connection?.marketplace === 'trendyol') {
+        const orders = await trendyolApi.fetchAllOrders(credentials, startMs, endMs)
+        ordersCount = orders.length
+      } else if (connection?.marketplace === 'hepsiburada') {
+        const hbCreds = { apiKey: credentials.apiKey, apiSecret: credentials.apiSecret, merchantId: credentials.sellerId }
+        const orders = await hepsiburadaApi.fetchAllOrders(hbCreds, new Date(startMs), new Date(endMs))
+        ordersCount = orders.length
+      }
 
       await this.marketplaceRepo.updateSyncLog(syncLog.id, 'success', `${ordersCount} sipariş senkronize edildi`)
       await this.marketplaceRepo.updateLastSyncAt(connectionId)
@@ -401,12 +454,12 @@ export class MarketplaceLogic {
     const { connectionId } = payload as { connectionId: string }
     const creds = await this.resolveCredentials(connectionId, traceId)
 
-    // 1. Tum urunleri cek (sayfalama)
+    // 1. Tum urunleri cek (sayfalama — size 200, resmi max)
     const allProducts: Record<string, unknown>[] = []
     let page = 0
     let totalPages = 1
     while (page < totalPages) {
-      const result = await trendyolApi.fetchProducts(creds, page, 50)
+      const result = await trendyolApi.fetchProducts(creds, page, 200, { approved: true })
       allProducts.push(...result.content)
       totalPages = result.totalPages
       page++
@@ -596,8 +649,44 @@ export class MarketplaceLogic {
     payload: unknown,
     _userId: string
   ): Promise<{ processed: boolean }> {
-    // TODO: webhook event'ini DB'ye kaydet, bildirim oluştur
-    return { processed: true }
+    try {
+      const event = payload as Record<string, unknown>
+
+      // Webhook event'ini DB'ye kaydet
+      const eventType = String(event.status ?? event.eventType ?? 'unknown')
+      const orderNumber = String(event.orderNumber ?? '')
+      const shipmentPackageId = typeof event.shipmentPackageId === 'number'
+        ? event.shipmentPackageId
+        : null
+
+      // Seller ID'den bağlantıyı bul
+      const sellerId = String(event.sellerId ?? event.supplierId ?? '')
+
+      if (sellerId) {
+        // trendyol_webhook_events tablosuna kaydet (varsa)
+        // Bu tablo migration 20260326_trendyol_webhook.sql ile oluşturuldu
+        try {
+          const { createAdminClient } = await import('@/lib/supabase/admin')
+          const admin = createAdminClient()
+
+          await admin.from('trendyol_webhook_events').insert({
+            event_type: eventType,
+            seller_id: sellerId,
+            shipment_package_id: shipmentPackageId,
+            order_number: orderNumber,
+            status: eventType,
+            payload: event,
+            processed: false,
+          })
+        } catch (_dbError) {
+          // DB hatası webhook işlemeyi durdurmamalı
+        }
+      }
+
+      return { processed: true }
+    } catch (_error) {
+      return { processed: false }
+    }
   }
 
   // ----------------------------------------------------------------

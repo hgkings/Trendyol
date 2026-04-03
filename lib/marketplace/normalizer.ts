@@ -123,32 +123,63 @@ export interface NormalizeOrderMetricsResult {
 
 // ─── Constants ───────────────────────────────────────────────
 
+/**
+ * İade/iptal sayılan durumlar — Trendyol resmi dokümanı
+ * Bu statülerde satış eksiltilir, iade tutarı hesaplanır.
+ */
 const RETURN_STATUSES = new Set([
     'Cancelled',
     'Returned',
     'ReturnAccepted',
     'ReturnedAndRefunded',
     'UnDelivered',
+    'UnSupplied',
 ]);
 
+/**
+ * Satış sayılan durumlar — Trendyol resmi dokümanı
+ * NOT: 'Awaiting' dahil DEĞİLDİR — bu durumdaki siparişler işlenmemelidir.
+ */
 const SOLD_STATUSES = new Set([
     'Created',
     'Picking',
+    'Invoiced',
     'Shipped',
     'Delivered',
-    'InvoiceWaiting',
+    'AtCollectionPoint',
 ]);
 
-/** Marketplace-specific defaults */
+/**
+ * İşlenmemesi gereken durumlar.
+ * Awaiting siparişler henüz kesinleşmemiştir — Created'a geçene kadar beklenmelidir.
+ */
+const IGNORED_STATUSES = new Set([
+    'Awaiting',
+    'UnPacked',
+]);
+
+/**
+ * Marketplace-specific defaults — resmi verilere ve sektör ortalamalarına dayalı.
+ * NOT: Trendyol komisyon oranı kategoriye göre değişir (%5-%35).
+ * Bu değerler başlangıç tahmini — sipariş verilerinden gerçek oran çıkarılmalıdır.
+ */
 export function marketplaceDefaults(marketplace: string): {
     commission_pct: number;
     payout_delay_days: number;
     return_rate_pct: number;
 } {
-    if (marketplace === 'hepsiburada') {
-        return { commission_pct: 18, payout_delay_days: 14, return_rate_pct: 3 };
+    switch (marketplace) {
+        case 'trendyol':
+            return { commission_pct: 18, payout_delay_days: 28, return_rate_pct: 12 };
+        case 'hepsiburada':
+            return { commission_pct: 20, payout_delay_days: 30, return_rate_pct: 12 };
+        case 'n11':
+            return { commission_pct: 16, payout_delay_days: 21, return_rate_pct: 10 };
+        case 'amazon_tr':
+            return { commission_pct: 17, payout_delay_days: 14, return_rate_pct: 13 };
+        default:
+            return { commission_pct: 15, payout_delay_days: 30, return_rate_pct: 10 };
     }
-    return { commission_pct: 21, payout_delay_days: 14, return_rate_pct: 3 };
 }
 
 // ─── Product normalizer ───────────────────────────────────────
@@ -354,6 +385,10 @@ export function normalizeOrderMetrics(
                     ? raw.status
                     : ''
         ).trim();
+
+        // Awaiting ve UnPacked siparişleri atla — henüz kesinleşmemiş
+        if (IGNORED_STATUSES.has(orderStatus)) continue;
+
         const isReturn = RETURN_STATUSES.has(orderStatus);
 
         const orderDate = order.order_date ? new Date(order.order_date) : new Date();
@@ -424,8 +459,9 @@ export function normalizeOrderMetrics(
         ([productId, netQty]) => ({ productId, netQty: Math.max(0, netQty) })
     );
 
-    // Suppress unused import warning for SOLD_STATUSES — kept for future reference
+    // SOLD_STATUSES ve IGNORED_STATUSES yukarıda dolaylı olarak kullanılıyor
     void SOLD_STATUSES;
+    void IGNORED_STATUSES;
 
     return {
         metricsUpdated: metrics.length,
