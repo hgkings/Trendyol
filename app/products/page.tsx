@@ -6,7 +6,7 @@ import { useAlerts } from '@/contexts/alert-context';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { ProductsTable } from '@/components/dashboard/products-table';
 import { deleteAnalysis, saveAnalysis, generateId } from '@/lib/api/analyses';
-import { parseCSV, analysesToCSV, analysesToJSON } from '@/lib/csv';
+import { parseCSV, analysesToXLSX, analysesToJSON } from '@/lib/csv';
 import { ProductInput } from '@/types';
 import { calculateProfit } from '@/utils/calculations';
 import { calculateRisk } from '@/utils/risk-engine';
@@ -76,19 +76,24 @@ export default function ProductsPage() {
     URL.revokeObjectURL(url);
   };
 
-  const handleExportCSV = () => {
+  const handleExportXLSX = () => {
     if (analyses.length === 0 || !isPro) {
       if (!isPro) setShowUpgrade(true);
       return;
     }
-    const csv = analysesToCSV(analyses);
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'urunler.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const buffer = analysesToXLSX(analyses);
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'karnet_urunler.xlsx';
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Excel dosyası indirildi');
+    } catch {
+      toast.error('Excel dosyası oluşturulamadı');
+    }
   };
 
   if (loading && analyses.length === 0) {
@@ -123,9 +128,9 @@ export default function ProductsPage() {
               <Download className="mr-1.5 h-4 w-4" />
               JSON
             </Button>
-            <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={analyses.length === 0} className="whitespace-nowrap">
+            <Button variant="outline" size="sm" onClick={handleExportXLSX} disabled={analyses.length === 0} className="whitespace-nowrap">
               <Download className="mr-1.5 h-4 w-4" />
-              {isPro ? 'CSV' : 'CSV (Pro)'}
+              {isPro ? 'Excel' : 'Excel (Pro)'}
             </Button>
             <Button variant="outline" size="sm" onClick={() => setShowBulkUpdate(true)} disabled={analyses.length === 0} className="whitespace-nowrap">
               <Settings2 className="mr-1.5 h-4 w-4" />

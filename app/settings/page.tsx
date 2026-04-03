@@ -41,7 +41,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { deleteAnalysis, getStoredAnalyses } from '@/lib/api/analyses';
-import { analysesToCSV, analysesToJSON } from '@/lib/csv';
+import { analysesToXLSX, analysesToJSON } from '@/lib/csv';
 // MFASetup devre disi — yakinda aktif edilecek
 // import { MFASetup } from '@/components/auth/mfa-setup';
 import { createClient } from '@/lib/supabase/client';
@@ -178,13 +178,24 @@ export default function SettingsPage() {
         URL.revokeObjectURL(url);
     };
 
-    const handleExportCSV = () => {
+    const handleExportXLSX = () => {
         if (analyses.length === 0) {
             toast.error('Dışa aktarılacak analiz yok.');
             return;
         }
-        downloadFile(analysesToCSV(analyses), 'karnet-analizler.csv', 'text/csv;charset=utf-8');
-        toast.success('CSV dışa aktarıldı.');
+        try {
+            const buffer = analysesToXLSX(analyses);
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'karnet-analizler.xlsx';
+            a.click();
+            URL.revokeObjectURL(url);
+            toast.success('Excel dosyası indirildi.');
+        } catch {
+            toast.error('Excel dosyası oluşturulamadı.');
+        }
     };
 
     const handleExportJSON = () => {
@@ -741,9 +752,9 @@ export default function SettingsPage() {
                         <p className="text-sm font-medium">Verileri Dışa Aktar</p>
                         <p className="text-xs text-muted-foreground">Tüm analizlerinizi CSV veya JSON formatında indirin.</p>
                         <div className="flex gap-2">
-                            <Button variant="outline" size="sm" className="gap-1.5 rounded-[10px]" onClick={handleExportCSV}>
+                            <Button variant="outline" size="sm" className="gap-1.5 rounded-[10px]" onClick={handleExportXLSX}>
                                 <Download className="h-4 w-4" />
-                                CSV İndir
+                                Excel İndir
                             </Button>
                             <Button variant="outline" size="sm" className="gap-1.5 rounded-[10px]" onClick={handleExportJSON}>
                                 <Download className="h-4 w-4" />

@@ -214,56 +214,139 @@ const RISK_TR: Record<string, string> = {
   safe: 'Dusuk', moderate: 'Orta', risky: 'Yuksek', dangerous: 'Kritik',
 };
 
+/**
+ * XLSX export — sadeleştirilmiş 13 sütun, bold başlık, auto-width.
+ * Döndürür: ArrayBuffer (Blob oluşturmak için).
+ */
+export function analysesToXLSX(analyses: AnalysisForExport[]): ArrayBuffer {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const XLSX = require('xlsx');
+
+  const headers = [
+    'Urun Adi',
+    'Pazaryeri',
+    'Satis Fiyati (TL)',
+    'Urun Maliyeti (TL)',
+    'Kargo (TL)',
+    'Paketleme (TL)',
+    'Reklam (TL)',
+    'Komisyon %',
+    'KDV %',
+    'Iade %',
+    'Birim Net Kar (TL)',
+    'Kar Marji %',
+    'Aylik Net Kar (TL)',
+  ];
+
+  const MARKETPLACE_LABELS: Record<string, string> = {
+    trendyol: 'Trendyol',
+    hepsiburada: 'Hepsiburada',
+    n11: 'n11',
+    amazon_tr: 'Amazon TR',
+    custom: 'Ozel',
+  };
+
+  const rows = analyses.map((a) => {
+    const inp = a.input;
+    const res = a.result;
+    return [
+      inp.product_name || 'Isimsiz',
+      MARKETPLACE_LABELS[inp.marketplace] || inp.marketplace,
+      num(inp.sale_price),
+      num(inp.product_cost),
+      num(inp.shipping_cost),
+      num(inp.packaging_cost),
+      num(inp.ad_cost_per_sale),
+      num(inp.commission_pct),
+      num(inp.vat_pct),
+      num(inp.return_rate_pct),
+      num(res.unit_net_profit),
+      num(res.margin_pct),
+      num(res.monthly_net_profit),
+    ];
+  });
+
+  const wsData = [headers, ...rows];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Auto-size sütun genişlikleri
+  const colWidths = headers.map((h, colIdx) => {
+    let maxLen = h.length;
+    for (const row of rows) {
+      const cellLen = String(row[colIdx] ?? '').length;
+      if (cellLen > maxLen) maxLen = cellLen;
+    }
+    return { wch: Math.min(maxLen + 4, 40) };
+  });
+  ws['!cols'] = colWidths;
+
+  // Sayısal sütunlar için Türkçe para formatı (3-6: TL, 7-9: %, 10-12: TL/%)
+  const TL_FORMAT = '#,##0.00 "TL"';
+  const PCT_FORMAT = '#,##0.0"%"';
+  for (let r = 1; r <= rows.length; r++) {
+    for (let c = 0; c < headers.length; c++) {
+      const cellRef = XLSX.utils.encode_cell({ r, c });
+      if (!ws[cellRef]) continue;
+
+      if (c >= 2 && c <= 6) {
+        // TL sütunları
+        ws[cellRef].z = TL_FORMAT;
+      } else if (c >= 7 && c <= 9) {
+        // Yüzde sütunları
+        ws[cellRef].z = PCT_FORMAT;
+      } else if (c === 10 || c === 12) {
+        // Birim Net Kar, Aylık Net Kar
+        ws[cellRef].z = TL_FORMAT;
+      } else if (c === 11) {
+        // Kar Marjı %
+        ws[cellRef].z = PCT_FORMAT;
+      }
+    }
+  }
+
+  // Başlık satırı bold + açık gri arka plan
+  for (let c = 0; c < headers.length; c++) {
+    const cellRef = XLSX.utils.encode_cell({ r: 0, c });
+    if (!ws[cellRef]) continue;
+    ws[cellRef].s = {
+      font: { bold: true },
+      fill: { fgColor: { rgb: 'F3F4F6' } },
+      alignment: { horizontal: 'center' },
+    };
+  }
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Urunler');
+
+  return XLSX.write(wb, { bookType: 'xlsx', type: 'array' }) as ArrayBuffer;
+}
+
+/** CSV export (geriye dönük uyumluluk) */
 export function analysesToCSV(analyses: AnalysisForExport[]): string {
   const headers = [
-    'Urun Adi', 'Pazaryeri', 'Tarih',
-    'Satis Fiyati (TL)', 'Satis Fiyati KDV Haric (TL)', 'Aylik Satis Adedi',
-    'Urun Maliyeti (TL)', 'Kargo (TL)', 'Paketleme (TL)', 'Reklam Birim (TL)', 'Diger Gider (TL)',
+    'Urun Adi', 'Pazaryeri',
+    'Satis Fiyati (TL)', 'Urun Maliyeti (TL)', 'Kargo (TL)', 'Paketleme (TL)', 'Reklam (TL)',
     'Komisyon %', 'KDV %', 'Iade %',
-    'Komisyon Tutari (TL)', 'KDV Tutari (TL)', 'Iade Kaybi (TL)', 'Servis Bedeli (TL)',
-    'Degisken Maliyet (TL)', 'Toplam Birim Maliyet (TL)',
-    'Birim Net Kar (TL)', 'Kar Marji %', 'Basabas Fiyati (TL)',
-    'Aylik Ciro (TL)', 'Aylik Toplam Maliyet (TL)', 'Aylik Net Kar (TL)', 'Yillik Tahmini Kar (TL)',
-    'Risk Skoru', 'Risk Seviyesi', 'Durum',
+    'Birim Net Kar (TL)', 'Kar Marji %', 'Aylik Net Kar (TL)',
   ];
 
   const rows = analyses.map((a) => {
     const inp = a.input;
     const res = a.result;
-    const monthlyProfit = num(res.monthly_net_profit);
-    const unitProfit = num(res.unit_net_profit);
-
     return [
       csvSafe(inp.product_name || 'Isimsiz'),
       inp.marketplace || 'trendyol',
-      a.createdAt ? new Date(a.createdAt).toLocaleDateString('tr-TR') : '',
       fmtNum(num(inp.sale_price)),
-      fmtNum(num(res.sale_price_excl_vat)),
-      fmtNum(num(inp.monthly_sales_volume), 0),
       fmtNum(num(inp.product_cost)),
       fmtNum(num(inp.shipping_cost)),
       fmtNum(num(inp.packaging_cost)),
       fmtNum(num(inp.ad_cost_per_sale)),
-      fmtNum(num(inp.other_cost)),
       fmtNum(num(inp.commission_pct), 0),
       fmtNum(num(inp.vat_pct), 0),
       fmtNum(num(inp.return_rate_pct), 0),
-      fmtNum(num(res.commission_amount)),
-      fmtNum(num(res.vat_amount)),
-      fmtNum(num(res.expected_return_loss)),
-      fmtNum(num(res.service_fee_amount)),
-      fmtNum(num(res.unit_variable_cost)),
-      fmtNum(num(res.unit_total_cost)),
-      fmtNum(unitProfit),
+      fmtNum(num(res.unit_net_profit)),
       fmtNum(num(res.margin_pct), 1),
-      fmtNum(num(res.breakeven_price)),
-      fmtNum(num(res.monthly_revenue)),
-      fmtNum(num(res.monthly_total_cost)),
-      fmtNum(monthlyProfit),
-      fmtNum(monthlyProfit * 12),
-      fmtNum(num(a.risk.score), 0),
-      RISK_TR[a.risk.level] || a.risk.level,
-      unitProfit > 0 ? 'Karli' : unitProfit === 0 ? 'Basabas' : 'Zarar',
+      fmtNum(num(res.monthly_net_profit)),
     ];
   });
 

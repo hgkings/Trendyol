@@ -49,7 +49,7 @@ import { calculateProfit, calculateAdCeiling, n } from '@/utils/calculations';
 import { calculateProAccounting } from '@/utils/pro-accounting';
 import { calculateRisk } from '@/utils/risk-engine';
 import { toast } from 'sonner';
-import { analysesToJSON, analysesToCSV } from '@/lib/csv';
+import { analysesToJSON, analysesToXLSX } from '@/lib/csv';
 import { ProLockedSection } from '@/components/shared/pro-locked-section';
 import { UpgradeModal } from '@/components/shared/upgrade-modal';
 import { isProUser } from '@/utils/access';
@@ -154,20 +154,20 @@ export default function AnalysisResultPage() {
     URL.revokeObjectURL(url);
   };
 
-  const handleExportCSV = () => {
+  const handleExportXLSX = () => {
     if (!analysis || !isPro) return;
     try {
-      const csv = analysesToCSV([analysis]);
-      const blob = new Blob([csv], { type: 'text/csv' });
+      const buffer = analysesToXLSX([analysis]);
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${analysis.input.product_name}-analiz.csv`;
+      a.download = `${analysis.input.product_name}-analiz.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success('CSV dosyası indirildi.');
+      toast.success('Excel dosyası indirildi.');
     } catch {
-      toast.error('CSV dışa aktarma başarısız.');
+      toast.error('Excel dışa aktarma başarısız.');
     }
   };
 
@@ -291,9 +291,9 @@ export default function AnalysisResultPage() {
               JSON
             </Button>
             {isPro ? (
-              <Button variant="outline" size="sm" onClick={handleExportCSV}>
+              <Button variant="outline" size="sm" onClick={handleExportXLSX}>
                 <Download className="mr-1.5 h-4 w-4" />
-                CSV
+                Excel
               </Button>
             ) : (
               <Button variant="outline" size="sm" disabled>
