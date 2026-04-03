@@ -1290,12 +1290,20 @@ export default function FinancePage() {
                                     <td className="p-3 text-center">
                                       {isWinning ? (
                                         <Badge className="text-[10px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                                          Kazanıyor
+                                          Buybox Kazanıyor
                                         </Badge>
                                       ) : priceDiff > 0 ? (
                                         <span className="text-[10px] text-red-600 dark:text-red-400 font-medium">
                                           +{formatCurrency(priceDiff)} pahalı
                                         </span>
+                                      ) : priceDiff < 0 ? (
+                                        <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">
+                                          {formatCurrency(Math.abs(priceDiff))} ucuz ama {bb.buyboxOrder}. sırada
+                                        </span>
+                                      ) : !bb.hasCompetitor ? (
+                                        <Badge className="text-[10px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                          Tek Satıcı
+                                        </Badge>
                                       ) : (
                                         <Badge variant="outline" className="text-[10px]">
                                           {bb.buyboxOrder}. sıra

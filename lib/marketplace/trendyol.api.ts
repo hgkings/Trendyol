@@ -892,7 +892,10 @@ export async function checkBuybox(
     }
 
     const url = `${PRODUCT_BASE_URL}/${creds.sellerId}/products/buybox-information`
-    const headers = buildHeaders(creds)
+    const headers = {
+        ...buildHeaders(creds),
+        'storeFrontCode': 'TR', // Trendyol Türkiye — resmi doküman zorunlu kılıyor
+    }
 
     const res = await fetchWithRetryAndBody(url, headers, 'POST', { barcodes })
 

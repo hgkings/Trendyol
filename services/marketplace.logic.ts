@@ -1302,27 +1302,33 @@ export class MarketplaceLogic {
       buyboxOrder: number
       hasCompetitor: boolean
     }>
+    errors?: string[]
+    totalProducts?: number
+    checkedProducts?: number
   }> {
     const { connectionId } = payload as { connectionId: string }
     const creds = await this.resolveCredentials(connectionId, traceId)
 
-    // Trendyol'dan güncel ürün listesini çek (gerçek fiyatlar için)
-    const productPage = await trendyolApi.fetchProducts(creds, 0, 200, { approved: true })
-    const trendyolProducts = productPage.content
-
-    // Barcode → ürün bilgisi haritası (Trendyol'dan gelen güncel fiyatlar)
+    // Trendyol'dan tüm güncel ürünleri çek (sayfalama ile)
     const barcodeToProduct = new Map<string, { name: string; price: number }>()
-    for (const p of trendyolProducts) {
-      const barcode = (p.barcode as string) ?? ''
-      if (barcode) {
-        barcodeToProduct.set(barcode, {
-          name: (p.title as string) ?? barcode,
-          price: (p.salePrice as number) ?? 0,
-        })
+    let page = 0
+    let totalPages = 1
+    while (page < totalPages && page < 25) { // max 5000 ürün
+      const productPage = await trendyolApi.fetchProducts(creds, page, 200, { approved: true })
+      for (const p of productPage.content) {
+        const barcode = (p.barcode as string) ?? ''
+        if (barcode) {
+          barcodeToProduct.set(barcode, {
+            name: (p.title as string) ?? barcode,
+            price: (p.salePrice as number) ?? 0,
+          })
+        }
       }
+      totalPages = productPage.totalPages
+      page++
     }
 
-    const barcodes = Array.from(barcodeToProduct.keys()).slice(0, 50)
+    const barcodes = Array.from(barcodeToProduct.keys()).slice(0, 100) // max 100 ürün (10 batch × 10)
     if (barcodes.length === 0) {
       return { results: [] }
     }
@@ -1332,6 +1338,7 @@ export class MarketplaceLogic {
       barcode: string; productName: string; currentPrice: number;
       buyboxPrice: number; buyboxOrder: number; hasCompetitor: boolean
     }> = []
+    const errors: string[] = []
 
     for (let i = 0; i < barcodes.length; i += 10) {
       const batch = barcodes.slice(i, i + 10)
@@ -1348,12 +1355,18 @@ export class MarketplaceLogic {
             hasCompetitor: bb.hasMultipleSeller,
           })
         }
-      } catch (_err) {
-        // Batch hatası diğerlerini durdurmamalı
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Bilinmeyen hata'
+        errors.push(`Batch ${Math.floor(i / 10) + 1}: ${msg}`)
       }
     }
 
-    return { results: allResults }
+    return {
+      results: allResults,
+      ...(errors.length > 0 ? { errors } : {}),
+      totalProducts: barcodeToProduct.size,
+      checkedProducts: barcodes.length,
+    }
   }
 
   async rotateKeys(
