@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useAlerts } from '@/contexts/alert-context';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
@@ -43,17 +43,22 @@ export default function ProductsPage() {
       const data = await res.json();
       if (data.success) {
         setStockData(data);
-      } else {
-        toast.error(data.error || 'Stok verisi alınamadı');
       }
     } catch {
-      toast.error('Stok verisi çekilemedi');
+      // Stok çekilemezse sessizce devam et — bağlantı yoksa normal
     } finally {
       setStockLoading(false);
     }
   }, []);
 
+
   const isPro = isProUser(user);
+
+  // Sayfa yüklendiğinde otomatik stok çek
+  useEffect(() => {
+    if (isPro) fetchStock();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPro]);
 
   const handleDelete = async (id: string) => {
     const result = await deleteAnalysis(id);
