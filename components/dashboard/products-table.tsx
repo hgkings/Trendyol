@@ -254,7 +254,7 @@ export function ProductsTable({ analyses, onDelete, stockMap }: ProductsTablePro
             const inputs = a.input as unknown as Record<string, unknown>;
             const barcode = (inputs.barcode as string) ?? '';
             const sku = (inputs.merchant_sku as string) ?? '';
-            const stock = stockMap?.get(barcode) ?? stockMap?.get(sku);
+            const stock = stockMap?.get(barcode) ?? stockMap?.get(sku) ?? stockMap?.get(a.input.product_name.toLowerCase());
             const imgUrl = stock?.imageUrl ?? (inputs.image_url as string | undefined);
             const stok = stock?.quantity ?? (inputs.stock_quantity as number | undefined);
 
@@ -401,7 +401,7 @@ export function ProductsTable({ analyses, onDelete, stockMap }: ProductsTablePro
                   const inputs = a.input as unknown as Record<string, unknown>;
                   const barcode = (inputs.barcode as string) ?? '';
                   const sku = (inputs.merchant_sku as string) ?? '';
-                  const stock = stockMap?.get(barcode) ?? stockMap?.get(sku);
+                  const stock = stockMap?.get(barcode) ?? stockMap?.get(sku) ?? stockMap?.get(a.input.product_name.toLowerCase());
                   const imgUrl = stock?.imageUrl ?? (inputs.image_url as string | undefined);
                   const stok = stock?.quantity ?? (inputs.stock_quantity as number | undefined);
 

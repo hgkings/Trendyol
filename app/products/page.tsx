@@ -191,7 +191,16 @@ export default function ProductsPage() {
         <ProductsTable
           analyses={analyses}
           onDelete={handleDelete}
-          stockMap={stockData ? new Map(stockData.products.map(p => [p.barcode, { barcode: p.barcode, quantity: p.quantity, salePrice: p.salePrice, imageUrl: p.imageUrl, productUrl: p.productUrl }])) : undefined}
+          stockMap={stockData ? (() => {
+            const map = new Map<string, { barcode: string; quantity: number; salePrice: number; imageUrl: string | null; productUrl: string | null }>();
+            for (const p of stockData.products) {
+              const item = { barcode: p.barcode, quantity: p.quantity, salePrice: p.salePrice, imageUrl: p.imageUrl, productUrl: p.productUrl };
+              if (p.barcode) map.set(p.barcode, item);
+              if (p.stockCode && p.stockCode !== p.barcode) map.set(p.stockCode, item);
+              if (p.title) map.set(p.title.toLowerCase(), item);
+            }
+            return map;
+          })() : undefined}
         />
 
       </div>
