@@ -45,7 +45,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 
         {/* Scrollable Main Content */}
         <main className="flex-1 overflow-y-auto md:pl-60 h-[calc(100vh-64px)]">
-          <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+          <div className="mx-auto max-w-full px-4 py-8 sm:px-6 lg:px-8">
             {children}
           </div>
         </main>
