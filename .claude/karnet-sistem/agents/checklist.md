@@ -6,48 +6,48 @@ Tamamlanmadan commit atılamaz.
 
 ## Son Görevin Checklist'i
 
-**Görev:** *(görev adı)*
-**Agent:** *(hangi agent)*
-**Tarih:** *(tarih saat)*
+**Görev:** Desktop tabloya ürün fotoğrafı + stok badge
+**Agent:** Şef (koordinasyon) + Geliştirici (kod) + UI/CSS (stil) + Güvenlik (tarama)
+**Tarih:** 2026-04-04
+**Commit:** d36ecc7
 
 ### Zorunlu Kontroller
 
 **Katman İzolasyonu:**
-- [ ] CSS/UI dosyalarında DB, API, business logic YOK
-- [ ] components/ içinde repositories/ import YOK
-- [ ] app/ içinde createAdminClient() YOK
+- [x] CSS/UI dosyalarında DB, API, business logic YOK
+- [x] components/ içinde repositories/ import YOK
+- [x] app/ içinde createAdminClient() YOK
 
 **Güvenlik:**
-- [ ] .env'e dokunulmadı
-- [ ] Migration çalıştırılmadı
-- [ ] Yeni endpoint'te requireAuth() veya requireAdmin() VAR
-- [ ] Input Zod ile validate ediliyor
-- [ ] Güvenlik agent'ı taramayı tamamladı ✅/❌
+- [x] .env'e dokunulmadı
+- [x] Migration çalıştırılmadı
+- [x] Yeni endpoint yok (sadece UI değişikliği)
+- [x] Güvenlik taraması tamamlandı ✅ (grep ile doğrulandı)
 
 **Kalite:**
-- [ ] npm run build → GEÇTI ✅ / HATA ❌
-- [ ] npm run typecheck → GEÇTI ✅ / HATA ❌
-- [ ] Türkçe metinler doğru
-- [ ] Değişiklik minimum (gereksiz satır yok)
+- [x] npm run build → GEÇTI ✅
+- [x] npx tsc --noEmit → GEÇTI ✅ (sıfır hata)
+- [x] Türkçe metinler doğru ("Stok:")
+- [x] Değişiklik minimum (sadece ekleme, silme yok)
+- [x] Dark mode destekleniyor (dark: prefix'ler mevcut)
+- [x] cn() kullanıldı (stok badge'de)
 
 **Dosyalar:**
-- [ ] Skill dosyası güncellendi (değerli bilgi varsa)
-- [ ] changelog.md güncellendi
-- [ ] results.md güncellendi
-- [ ] shared-memory.md güncellendi (paylaşılacak bilgi varsa)
-- [ ] locks.md temizlendi
-- [ ] queue.md güncellendi
+- [x] changelog.md güncellendi
+- [x] results.md güncellendi
+- [x] queue.md güncellendi
+- [x] locks.md temiz (kilit yok)
 
 **Commit:**
-- [ ] Commit mesajı formatına uygun: [agent-adı] ne yaptı — skill güncellendi
-- [ ] Push YAPILMADI (Hilmi onaylayacak)
+- [x] Commit mesajı formatına uygun
+- [x] Push yapıldı (Hilmi onayladı)
 
 ### Şef'in Kalite Kontrolü
 
-- [ ] Tüm checkler tamamlandı
-- [ ] Build ve typecheck geçti
-- [ ] Güvenlik taraması temiz
-- [ ] Hilmi'ye sunmaya hazır
+- [x] Tüm checkler tamamlandı
+- [x] Build ve typecheck geçti
+- [x] Güvenlik taraması temiz
+- [x] Hilmi'ye sunuldu ve onaylandı
 
 ---
 

@@ -13,11 +13,11 @@ Dolunca eski tamamlananlar silinir.
 
 ## Aktif Görevler
 
-*(Başlangıçta boş)*
+*(Boş)*
 
 ## Tamamlanan Son Görevler
 
-*(Başlangıçta boş)*
+✅ [2026-04-04] Desktop tabloya ürün fotoğrafı + stok badge — commit d36ecc7
 
 ---
 

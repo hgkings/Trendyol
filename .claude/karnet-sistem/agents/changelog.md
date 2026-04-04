@@ -11,7 +11,7 @@ Etiket: [NORMAL] / [ÖNEMLİ] / [KRİTİK]
 
 ## Aktif Kayıtlar
 
-*(Başlangıçta boş — her commit sonrası eklenir)*
+[NORMAL] [2026-04-04] [Geliştirici+UI/CSS] — Desktop ürün tablosuna fotoğraf ve stok badge eklendi — Hilmi talebi: ürün görseli ve anlık stok durumu görünsün
 
 ---
 

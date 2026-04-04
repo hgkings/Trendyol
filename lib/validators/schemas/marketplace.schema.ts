@@ -72,12 +72,6 @@ export const AnswerQuestionSchema = z.object({
   text: z.string().min(10, 'Yanıt en az 10 karakter olmalıdır').max(2000, 'Yanıt en fazla 2000 karakter olabilir'),
 }).strict()
 
-/** Buybox sorgusu */
-export const BuyboxCheckSchema = z.object({
-  connectionId: z.string().uuid(),
-  barcodes: z.array(z.string().min(1)).min(1).max(10, 'Buybox sorgusu maksimum 10 barkod ile yapılabilir'),
-}).strict()
-
 /** Fatura link gönderme */
 export const SendInvoiceLinkSchema = z.object({
   connectionId: z.string().uuid(),

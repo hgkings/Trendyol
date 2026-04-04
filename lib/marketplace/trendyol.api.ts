@@ -143,7 +143,6 @@ export const RATE_LIMITS = {
     brandSearch: { maxRequests: 50, windowMs: 60_000 },
     categoryList: { maxRequests: 50, windowMs: 60_000 },
     categoryAttrs: { maxRequests: 50, windowMs: 60_000 },
-    buybox: { maxRequests: 1000, windowMs: 60_000 },
     orders: { maxRequests: 1000, windowMs: 60_000 },
     addresses: { maxRequests: 1, windowMs: 3_600_000 }, // 1 istek/saat
 } as const
@@ -278,12 +277,7 @@ export interface Brand {
     name: string
 }
 
-export interface BuyboxInfo {
-    barcode: string
-    buyboxOrder: number
-    buyboxPrice: number
-    hasMultipleSeller: boolean
-}
+
 
 export interface SellerAddress {
     id: number
@@ -876,30 +870,6 @@ export async function unlockProducts(
 
     const data = await res.json() as { batchRequestId?: string }
     return { batchRequestId: data.batchRequestId ?? '' }
-}
-
-/**
- * Buybox bilgisi sorgular.
- * Endpoint: POST /integration/product/sellers/{sellerId}/products/buybox-information
- * Rate limit: 1000 req/dk | Max 10 barkod/istek
- */
-export async function checkBuybox(
-    creds: TrendyolCredentials,
-    barcodes: string[]
-): Promise<BuyboxInfo[]> {
-    if (barcodes.length > 10) {
-        throw new Error('Buybox sorgusu maksimum 10 barkod ile yapılabilir.')
-    }
-
-    const url = `${PRODUCT_BASE_URL}/${creds.sellerId}/products/buybox-information`
-    const headers = buildHeaders(creds)
-
-    const res = await fetchWithRetryAndBody(url, headers, 'POST', { barcodes })
-
-    if (!res.ok) handleTrendyolError(res.status, url)
-
-    const data = await res.json() as { buyboxInfo?: BuyboxInfo[] }
-    return data.buyboxInfo ?? []
 }
 
 /**

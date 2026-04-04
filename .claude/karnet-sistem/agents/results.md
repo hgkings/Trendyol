@@ -11,7 +11,7 @@ Etiket: [NORMAL] / [ÖNEMLİ] / [KRİTİK]
 
 ## Aktif Kayıtlar
 
-*(Başlangıçta boş — her görev sonrası eklenir)*
+[NORMAL] [2026-04-04] [Şef] — Desktop tabloya fotoğraf + stok badge — ✅ Başarılı — Mobil zaten vardı, desktop eksikti. stockMap prop'u mevcut, sadece render eklendi. Stok eşikleri: 0→kırmızı, 1-10→sarı, 11+→gri.
 
 ---
 
