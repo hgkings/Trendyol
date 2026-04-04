@@ -1223,33 +1223,96 @@ export async function fetchAllClaims(
             if (content.length === 0) break
 
             content.forEach((item: Record<string, unknown>) => {
-                const lines = (item.claimLines as Record<string, unknown>[] | undefined)
+                // Trendyol gerçek yapı: items[].orderLine + items[].claimItems[]
+                const rawItems = (item.items as Array<Record<string, unknown>>) ?? []
+                // Fallback: eski format (claimLines veya lines)
+                const fallbackLines = (item.claimLines as Record<string, unknown>[] | undefined)
                     || (item.lines as Record<string, unknown>[] | undefined)
-                    || []
+
+                const claimId = String(item.id ?? item.claimId ?? '')
+                const orderId = String(item.orderId ?? '')
+                const orderNumber = String(item.orderNumber ?? '')
+                const claimDate = trendyolTariheDonustur(
+                    (item.claimDate ?? item.creationDate) as number | null | undefined, 'createdDate'
+                )
+
+                // İade sebebi: items[0].claimItems[0].customerClaimItemReason.name
+                let claimReason = ''
+                let totalAmount = 0
+                const parsedLines: TrendyolClaimLine[] = []
+                // Durum: items[0].claimItems[0].claimItemStatus.name
+                let claimStatus = String(item.status ?? '')
+
+                if (rawItems.length > 0) {
+                    for (const ri of rawItems) {
+                        const orderLine = (ri.orderLine as Record<string, unknown>) ?? {}
+                        const claimItems = (ri.claimItems as Array<Record<string, unknown>>) ?? []
+
+                        const productName = String(orderLine.productName ?? '')
+                        const barcode = String(orderLine.barcode ?? '')
+                        const price = Number(orderLine.price ?? 0)
+                        const quantity = claimItems.length || 1
+
+                        totalAmount += price * quantity
+
+                        // İlk claim item'dan sebep ve durum al
+                        if (claimItems.length > 0) {
+                            const ci = claimItems[0]
+                            const reason = (ci.customerClaimItemReason as Record<string, unknown>)
+                            if (reason?.name && !claimReason) claimReason = String(reason.name)
+                            const statusObj = (ci.claimItemStatus as Record<string, unknown>)
+                            if (statusObj?.name && !claimStatus) claimStatus = String(statusObj.name)
+                        }
+
+                        parsedLines.push({
+                            claimId,
+                            orderId,
+                            orderNumber,
+                            claimType: String(item.claimType ?? ''),
+                            claimReason: claimReason || String(item.claimIssueReasonText ?? ''),
+                            claimDate,
+                            status: claimStatus,
+                            amount: price,
+                            quantity,
+                            productName,
+                            barcode,
+                        })
+                    }
+                } else if (fallbackLines) {
+                    // Eski format fallback
+                    claimReason = String(item.claimIssueReasonText ?? item.reason ?? '')
+                    totalAmount = Number(item.refundAmount ?? item.amount ?? 0)
+                    claimStatus = String(item.status ?? '')
+                    for (const l of fallbackLines) {
+                        parsedLines.push({
+                            claimId,
+                            orderId,
+                            orderNumber,
+                            claimType: String(item.claimType ?? ''),
+                            claimReason: String(l.claimIssueReasonText ?? claimReason),
+                            claimDate,
+                            status: String(l.status ?? claimStatus),
+                            amount: Number(l.refundAmount ?? l.amount ?? 0),
+                            quantity: Number(l.quantity ?? 1),
+                            productName: String(l.productName ?? l.name ?? ''),
+                            barcode: String(l.barcode ?? ''),
+                        })
+                    }
+                }
+
+                if (!claimReason) claimReason = String(item.claimIssueReasonText ?? item.reason ?? 'Belirtilmemiş')
+                if (totalAmount === 0) totalAmount = Number(item.refundAmount ?? item.amount ?? 0)
+
                 results.push({
-                    claimId: (item.id as string) ?? (item.claimId as string) ?? '',
-                    orderId: (item.orderId as string) ?? '',
-                    orderNumber: (item.orderNumber as string) ?? '',
-                    claimType: (item.claimType as string) ?? '',
-                    claimReason: (item.claimIssueReasonText as string) ?? (item.reason as string) ?? '',
-                    claimDate: trendyolTariheDonustur(item.creationDate as number | null | undefined, 'createdDate'),
-                    status: (item.status as string) ?? '',
-                    totalAmount: (item.refundAmount as number) ?? (item.amount as number) ?? 0,
-                    lines: lines.map((l: Record<string, unknown>): TrendyolClaimLine => ({
-                        claimId: (item.id as string) ?? '',
-                        orderId: (item.orderId as string) ?? '',
-                        orderNumber: (item.orderNumber as string) ?? '',
-                        claimType: (item.claimType as string) ?? '',
-                        claimReason: (l.claimIssueReasonText as string) ?? (item.claimIssueReasonText as string) ?? '',
-                        claimDate: item.creationDate
-                            ? new Date(item.creationDate as number).toISOString()
-                            : null,
-                        status: (l.status as string) ?? (item.status as string) ?? '',
-                        amount: (l.refundAmount as number) ?? (l.amount as number) ?? 0,
-                        quantity: (l.quantity as number) ?? 1,
-                        productName: (l.productName as string) ?? (l.name as string) ?? '',
-                        barcode: (l.barcode as string) ?? '',
-                    })),
+                    claimId,
+                    orderId,
+                    orderNumber,
+                    claimType: String(item.claimType ?? ''),
+                    claimReason,
+                    claimDate,
+                    status: claimStatus,
+                    totalAmount,
+                    lines: parsedLines,
                 })
             })
 
