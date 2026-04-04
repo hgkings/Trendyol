@@ -1440,7 +1440,11 @@ async function fetchSettlementsChunk(
         const url = `${FINANCE_BASE_URL}/${creds.sellerId}/settlements?${params.toString()}`
         const res = await fetchWithRetry(url, headers)
 
-        if (!res.ok) handleTrendyolError(res.status, url)
+        if (!res.ok) {
+          // Trendyol'un gerçek hata mesajını oku
+          const errBody = await res.text().catch(() => '')
+          throw new Error(`Trendyol Finance API hatası (HTTP ${res.status}): ${errBody.slice(0, 500)}`)
+        }
 
         const data = await res.json() as { content?: Record<string, unknown>[]; totalPages?: number }
         const items = (data.content || []).map((item: Record<string, unknown>): SellerSettlement => ({
