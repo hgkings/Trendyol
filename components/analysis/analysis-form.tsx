@@ -242,24 +242,22 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
   const iadeOranCek = async () => {
     setIadeOranCekiliyor(true);
     try {
-      const [claimRes, finRes] = await Promise.all([
+      const [claimRes, orderCountRes] = await Promise.all([
         fetch('/api/marketplace/trendyol/claims?gun=30'),
-        fetch('/api/marketplace/trendyol/finance?startDate=' +
-          new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10) +
-          '&endDate=' + new Date().toISOString().slice(0, 10)),
+        fetch('/api/marketplace/trendyol/order-count?gun=30'),
       ]);
       const claimJson = await claimRes.json();
-      const finJson = await finRes.json();
+      const orderJson = await orderCountRes.json();
       const iadeSayisi: number = (claimJson?.claims as unknown[] | undefined)?.length ?? 0;
-      const siparisAdedi: number = (finJson?.settlements as unknown[] | undefined)?.length ?? 0;
+      const siparisAdedi: number = (orderJson?.totalOrders as number) ?? 0;
       if (siparisAdedi > 0) {
         const oran = Math.round((iadeSayisi / siparisAdedi) * 1000) / 10;
         handleFieldChange('return_rate_pct', oran);
-        toast.success(`İade oranı Trendyol'dan çekildi: %${oran}`);
+        toast.success(`İade oranı Trendyol'dan çekildi: %${oran} (${iadeSayisi} iade / ${siparisAdedi} sipariş)`);
       } else if (iadeSayisi > 0) {
-        toast.info(`${iadeSayisi} iade bulundu ama hakediş verisi yok. İade oranı hesaplanamadı.`);
+        toast.info(`${iadeSayisi} iade bulundu ama sipariş verisi alınamadı.`);
       } else {
-        toast.error('Yeterli sipariş verisi bulunamadı.');
+        toast.error('Son 30 günde sipariş verisi bulunamadı.');
       }
     } catch {
       toast.error('İade oranı alınamadı.');

@@ -527,6 +527,20 @@ export class MarketplaceLogic {
     }
   }
 
+  async getOrderCount(
+    traceId: string,
+    payload: unknown,
+    _userId: string
+  ): Promise<{ totalOrders: number }> {
+    const { connectionId, days } = payload as { connectionId: string; days?: number }
+    const creds = await this.resolveCredentials(connectionId, traceId)
+
+    const end = Date.now()
+    const start = end - (days ?? 30) * 24 * 60 * 60 * 1000
+    const result = await trendyolApi.fetchOrders(creds, start, end, 0, 1)
+    return { totalOrders: result.totalElements }
+  }
+
   async getTrendyolClaims(
     traceId: string,
     payload: unknown,
