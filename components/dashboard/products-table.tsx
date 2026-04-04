@@ -410,7 +410,7 @@ export function ProductsTable({ analyses, onDelete, stockMap }: ProductsTablePro
                           </div>
                         )}
                         <div className="flex flex-col min-w-0">
-                          <span className="font-semibold text-foreground truncate max-w-[180px] sm:max-w-xs">{a.input.product_name}</span>
+                          <Link href={`/analysis/${a.id}`} className="font-semibold text-foreground truncate max-w-[180px] sm:max-w-xs hover:text-primary hover:underline transition-colors">{a.input.product_name}</Link>
                           <span className="text-[10px] text-muted-foreground mt-0.5">
                             {new Date(a.createdAt).toLocaleDateString('tr-TR')}
                           </span>
