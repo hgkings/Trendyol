@@ -54,7 +54,7 @@ import { ProLockedSection } from '@/components/shared/pro-locked-section';
 import { UpgradeModal } from '@/components/shared/upgrade-modal';
 import { isProUser } from '@/utils/access';
 import { createClient } from '@/lib/supabase/client';
-import { CollapsibleCard } from '@/components/shared/collapsible-card';
+import { AccordionSection } from '@/components/shared/accordion-section';
 
 export default function AnalysisResultPage() {
   const params = useParams();
@@ -373,9 +373,12 @@ export default function AnalysisResultPage() {
           <div className="lg:col-span-8 space-y-6 min-w-0">
 
             {/* Cost Breakdown */}
-            <CostBreakdown input={input} result={result} />
+            <AccordionSection icon="📊" title="Maliyet Dağılımı">
+              <CostBreakdown input={input} result={result} />
+            </AccordionSection>
 
             {/* İade Analizi Kartı */}
+            <AccordionSection icon="📦" title="İade Analizi">
             {(() => {
               const returnRate = n(input.return_rate_pct, 0);
               const monthlySales = n(input.monthly_sales_volume, 0);
@@ -464,45 +467,48 @@ export default function AnalysisResultPage() {
                 </div>
               );
             })()}
+            </AccordionSection>
 
             {/* VAT Impact & Monthly Revenue */}
-            <div className="grid gap-6 md:grid-cols-2">
-              <VatImpactCard input={input} result={result} />
-              <div className="rounded-2xl border border-border/40 bg-card p-5">
-                <p className="text-xs font-medium text-muted-foreground">Aylik Ciro</p>
-                <p className="mt-1 text-2xl font-bold">{formatCurrency(result.monthly_revenue)}</p>
-                <p className="mt-1 text-xs text-muted-foreground break-all">{input.monthly_sales_volume} adet x {formatCurrency(input.sale_price)}</p>
+            <AccordionSection icon="🏛️" title="KDV & Vergi Pozisyonu">
+              <div className="grid gap-6 md:grid-cols-2">
+                <VatImpactCard input={input} result={result} />
+                <div className="rounded-2xl border border-border/40 bg-card p-5">
+                  <p className="text-xs font-medium text-muted-foreground">Aylik Ciro</p>
+                  <p className="mt-1 text-2xl font-bold">{formatCurrency(result.monthly_revenue)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground break-all">{input.monthly_sales_volume} adet x {formatCurrency(input.sale_price)}</p>
+                </div>
               </div>
-            </div>
+            </AccordionSection>
 
             {/* Scenario Simulator */}
-            <div className="min-w-0">
+            <AccordionSection icon="⚙️" title="Senaryo Simülatörü">
               <ScenarioSimulator input={input} />
-            </div>
+            </AccordionSection>
 
             {/* Kampanya Simülatörü */}
-            <div className="min-w-0">
+            <AccordionSection icon="🏷️" title="Kampanya Simülatörü">
               <CampaignSimulator input={input} originalResult={result} />
-            </div>
+            </AccordionSection>
 
-            {/* Collapsible Heavy Data Sections */}
-            <CollapsibleCard title="Hassasiyet Analizi" description="Farklı senaryolarda kâr değişimi" defaultOpen={false}>
+            {/* Pro Data Sections */}
+            <AccordionSection icon="📈" title="Hassasiyet Analizi">
               <ProLockedSection title="Hassasiyet Analizi" feature="sensitivityAnalysis">
                 <SensitivityTable input={input} />
               </ProLockedSection>
-            </CollapsibleCard>
+            </AccordionSection>
 
-            <CollapsibleCard title="Pazaryeri Karşılaştırması" description="Diğer pazaryerleri" defaultOpen={false}>
+            <AccordionSection icon="🛒" title="Pazaryeri Karşılaştırması">
               <ProLockedSection title="Pazaryeri Karşılaştırması" feature="marketplaceComparison">
                 <MarketplaceComparison input={input} />
               </ProLockedSection>
-            </CollapsibleCard>
+            </AccordionSection>
 
-            <CollapsibleCard title="Nakit Akışı Tahmini" description="Tahmini nakit durumu" defaultOpen={false}>
+            <AccordionSection icon="💰" title="Nakit Akışı Tahmini">
               <ProLockedSection title="Nakit Akışı Tahmini" feature="cashflow">
                 <CashflowEstimator input={input} />
               </ProLockedSection>
-            </CollapsibleCard>
+            </AccordionSection>
 
           </div>
 
