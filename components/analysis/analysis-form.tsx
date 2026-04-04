@@ -447,11 +447,11 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">Satış KDV %</Label>
-                    <Input type="number" className="h-10" value={input.sale_vat_pct ?? 20} onChange={(e) => handleFieldChange('sale_vat_pct', parseFloat(e.target.value))} />
+                    <Input type="number" className="h-10 text-foreground" value={input.sale_vat_pct ?? 20} onChange={(e) => handleFieldChange('sale_vat_pct', parseFloat(e.target.value))} />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">Alış KDV %</Label>
-                    <Input type="number" className="h-10" value={input.purchase_vat_pct ?? 20} onChange={(e) => handleFieldChange('purchase_vat_pct', parseFloat(e.target.value))} />
+                    <Input type="number" className="h-10 text-foreground" value={input.purchase_vat_pct ?? 20} onChange={(e) => handleFieldChange('purchase_vat_pct', parseFloat(e.target.value))} />
                   </div>
                 </div>
               </div>
@@ -465,7 +465,7 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">Hizmet KDV (Komisyon) %</Label>
-                    <Input type="number" className="h-10" value={input.marketplace_fee_vat_pct ?? 20} onChange={(e) => handleFieldChange('marketplace_fee_vat_pct', parseFloat(e.target.value))} />
+                    <Input type="number" className="h-10 text-foreground" value={input.marketplace_fee_vat_pct ?? 20} onChange={(e) => handleFieldChange('marketplace_fee_vat_pct', parseFloat(e.target.value))} />
                   </div>
                 </div>
               </div>
@@ -494,7 +494,7 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
                         <span className="text-xs text-muted-foreground flex-1">KDV Dahil</span>
                         <div className="relative w-20">
                           <Input
-                            className="h-9 px-2 text-sm pr-5"
+                            className="h-9 px-2 text-sm pr-5 text-foreground"
                             type="number"
                             value={(input[item.pct as keyof ProductInput] as number) ?? 20}
                             onChange={(e) => handleFieldChange(item.pct as keyof ProductInput, parseFloat(e.target.value))}
