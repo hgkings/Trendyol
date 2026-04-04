@@ -667,6 +667,9 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
           </div>
           <p className="text-[11px] text-muted-foreground">
             Satışlarınızın yüzde kaçının iade edileceğini tahmin edin. Otomatik hesaplanan değeri dilediğinizde manuel değiştirebilirsiniz.
+            {input.marketplace === 'trendyol' && (
+              <span className="text-muted-foreground/70"> &quot;Trendyol&apos;dan Çek&quot; butonu sadece son 30 günün verisiyle hesaplar.</span>
+            )}
             {input.marketplace === 'amazon_tr' && (
               <span className="text-blue-400"> Amazon TR koşulsuz iade politikası nedeniyle +%3 eklendi.</span>
             )}
