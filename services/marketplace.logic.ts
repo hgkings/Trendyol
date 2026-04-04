@@ -146,42 +146,14 @@ export class MarketplaceLogic {
       await this.marketplaceRepo.storeSecrets(connectionId, encryptedBlob)
     }
 
-    // Otomatik doğrulama — API'ye test isteği at, sonuca göre durumu güncelle
-    try {
-      const creds = { apiKey: input.apiKey, apiSecret: input.apiSecret, sellerId: input.sellerId }
+    // Doğrudan connected yap — doğrulama sync sırasında yapılır
+    // (Vercel 10sn timeout nedeniyle connect içinde API çağrısı riskli)
+    await this.marketplaceRepo.updateConnectionStatus(connectionId, 'connected')
 
-      let testResult: { success: boolean; message: string; storeName?: string }
-
-      if (input.marketplace === 'trendyol') {
-        testResult = await trendyolApi.testConnection(creds)
-      } else {
-        const hbCreds = { apiKey: creds.apiKey, apiSecret: creds.apiSecret, merchantId: creds.sellerId }
-        testResult = await hepsiburadaApi.testConnection(hbCreds)
-      }
-
-      if (testResult.success) {
-        await this.marketplaceRepo.updateConnectionStatus(connectionId, 'connected')
-        return {
-          connectionId,
-          status: 'connected' as ConnectionStatus,
-          message: testResult.message,
-          storeName: testResult.storeName ?? null,
-        }
-      } else {
-        await this.marketplaceRepo.updateConnectionStatus(connectionId, 'error')
-        return {
-          connectionId,
-          status: 'error' as ConnectionStatus,
-          message: testResult.message || 'API bilgileri doğrulanamadı',
-        }
-      }
-    } catch (_verifyError) {
-      // Doğrulama başarısız olsa bile bağlantı kaydedildi
-      return {
-        connectionId,
-        status: 'pending_test' as ConnectionStatus,
-        message: 'Bağlantı kaydedildi ancak doğrulama zaman aşımına uğradı. Daha sonra tekrar deneyin.',
-      }
+    return {
+      connectionId,
+      status: 'connected' as ConnectionStatus,
+      message: 'Bağlantı kaydedildi. Ürünleri senkronize etmek için "Ürünleri Senkronla" butonuna basın.',
     }
   }
 
@@ -423,32 +395,41 @@ export class MarketplaceLogic {
         merchant_sku?: string; barcode?: string; external_title?: string;
         internal_product_id?: string; match_confidence: string; connection_id?: string;
       }> = []
+      let dbWritten = 0
+      let dbErrors = 0
       for (const r of normalized.results) {
-        if (r.internalId && r.analysisUpdate) {
-          const updateData: Record<string, unknown> = {
-            barcode: r.analysisUpdate.barcode,
-            merchant_sku: r.analysisUpdate.merchant_sku,
-            marketplace_source: r.analysisUpdate.marketplace_source,
-            auto_synced: true,
+        try {
+          if (r.internalId && r.analysisUpdate) {
+            const updateData: Record<string, unknown> = {
+              barcode: r.analysisUpdate.barcode,
+              merchant_sku: r.analysisUpdate.merchant_sku,
+              marketplace_source: r.analysisUpdate.marketplace_source,
+              auto_synced: true,
+            }
+            if (r.analysisUpdate.inputs) updateData.inputs = r.analysisUpdate.inputs
+            if (r.analysisUpdate.outputs) updateData.outputs = r.analysisUpdate.outputs
+            await this.analysisRepo.update(r.internalId, updateData)
+            dbWritten++
+          } else if (r.newAnalysis) {
+            const newRow = await this.analysisRepo.create({
+              user_id: userId,
+              marketplace: r.newAnalysis.marketplace,
+              product_name: r.newAnalysis.product_name,
+              barcode: r.newAnalysis.barcode,
+              merchant_sku: r.newAnalysis.merchant_sku,
+              marketplace_source: r.newAnalysis.marketplace_source,
+              auto_synced: true,
+              inputs: r.newAnalysis.inputs,
+              outputs: r.newAnalysis.outputs,
+              risk_score: r.newAnalysis.risk_score,
+              risk_level: r.newAnalysis.risk_level,
+            })
+            r.mapEntry.internal_product_id = newRow.id
+            dbWritten++
           }
-          if (r.analysisUpdate.inputs) updateData.inputs = r.analysisUpdate.inputs
-          if (r.analysisUpdate.outputs) updateData.outputs = r.analysisUpdate.outputs
-          await this.analysisRepo.update(r.internalId, updateData)
-        } else if (r.newAnalysis) {
-          const newRow = await this.analysisRepo.create({
-            user_id: userId,
-            marketplace: r.newAnalysis.marketplace,
-            product_name: r.newAnalysis.product_name,
-            barcode: r.newAnalysis.barcode,
-            merchant_sku: r.newAnalysis.merchant_sku,
-            marketplace_source: r.newAnalysis.marketplace_source,
-            auto_synced: true,
-            inputs: r.newAnalysis.inputs,
-            outputs: r.newAnalysis.outputs,
-            risk_score: r.newAnalysis.risk_score,
-            risk_level: r.newAnalysis.risk_level,
-          })
-          r.mapEntry.internal_product_id = newRow.id
+        } catch (_dbErr) {
+          dbErrors++
+          continue // Bu ürün başarısız — diğerlerine devam
         }
 
         mapBatchRows.push({
@@ -469,10 +450,11 @@ export class MarketplaceLogic {
       }
 
       const count = allProducts.length
+      const errInfo = dbErrors > 0 ? `, ${dbErrors} hata` : ''
       await this.marketplaceRepo.updateSyncLog(syncLog.id, 'success',
-        `${count} ürün çekildi, ${normalized.matched} eşleşti, ${normalized.created} yeni oluşturuldu`)
+        `${count} çekildi, ${dbWritten} DB'ye yazıldı${errInfo}`)
       await this.marketplaceRepo.updateLastSyncAt(connectionId)
-      return { count, message: `${count} ürün senkronize edildi (${normalized.matched} eşleşti, ${normalized.created} yeni)` }
+      return { count: dbWritten, message: `${dbWritten}/${count} ürün kaydedildi${errInfo}` }
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Bilinmeyen hata'
       await this.marketplaceRepo.updateSyncLog(syncLog.id, 'failed', msg)
