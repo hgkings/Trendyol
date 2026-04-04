@@ -444,7 +444,7 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
 
               <div className="space-y-4 rounded-xl border border-border/40 bg-card p-5 shadow-sm">
                 <h4 className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">KDV Oranları</h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">Satış KDV %</Label>
                     <Input type="number" className="h-10 text-foreground" value={input.sale_vat_pct ?? 20} onChange={(e) => handleFieldChange('sale_vat_pct', parseFloat(e.target.value))} />
