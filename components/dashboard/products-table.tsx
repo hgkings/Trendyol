@@ -344,23 +344,23 @@ export function ProductsTable({ analyses, onDelete, stockMap }: ProductsTablePro
       </div>
 
       {/* --- Desktop Table --- */}
-      <div className="hidden md:block overflow-hidden rounded-2xl border border-border/40 bg-card">
+      <div className="hidden md:block rounded-2xl border border-border/40 bg-card">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[900px] text-sm">
             <thead>
               <tr className="border-b border-border/40 bg-muted/10 text-[11px] uppercase tracking-wider text-muted-foreground/70">
                 <th
-                  className="px-4 py-3.5 text-left font-semibold cursor-pointer select-none group"
-                  onClick={() => handleSort('monthly_net_profit')} // Default/Custom logic
+                  className="min-w-[200px] px-4 py-3.5 text-left font-semibold cursor-pointer select-none group"
+                  onClick={() => handleSort('monthly_net_profit')}
                 >
                   Ürün Detayı
                 </th>
-                <th className="hidden px-4 py-3.5 text-left font-semibold sm:table-cell">Pazaryeri</th>
-                <th className="hidden px-4 py-3.5 text-center font-semibold sm:table-cell">Stok</th>
-                <th className="hidden px-4 py-3.5 text-right font-semibold sm:table-cell">Ürün Fiyatı</th>
+                <th className="min-w-[100px] px-4 py-3.5 text-left font-semibold">Pazaryeri</th>
+                <th className="min-w-[70px] px-4 py-3.5 text-center font-semibold">Stok</th>
+                <th className="min-w-[110px] px-4 py-3.5 text-right font-semibold">Ürün Fiyatı</th>
 
                 <th
-                  className="px-4 py-3.5 text-right font-semibold cursor-pointer select-none group"
+                  className="min-w-[100px] px-4 py-3.5 text-right font-semibold cursor-pointer select-none group"
                   onClick={() => handleSort('monthly_net_profit')}
                 >
                   <div className="flex items-center justify-end gap-1 group-hover:text-foreground transition-colors">
@@ -369,7 +369,7 @@ export function ProductsTable({ analyses, onDelete, stockMap }: ProductsTablePro
                 </th>
 
                 <th
-                  className="hidden px-4 py-3.5 text-right font-semibold md:table-cell cursor-pointer select-none group"
+                  className="min-w-[80px] px-4 py-3.5 text-right font-semibold cursor-pointer select-none group whitespace-nowrap"
                   onClick={() => handleSort('margin_pct')}
                 >
                   <div className="flex items-center justify-end gap-1 group-hover:text-foreground transition-colors">
@@ -378,7 +378,7 @@ export function ProductsTable({ analyses, onDelete, stockMap }: ProductsTablePro
                 </th>
 
                 <th
-                  className="hidden px-4 py-3.5 text-right font-semibold lg:table-cell cursor-pointer select-none group"
+                  className="min-w-[100px] px-4 py-3.5 text-right font-semibold cursor-pointer select-none group whitespace-nowrap"
                   onClick={() => handleSort('monthly_net_profit')}
                 >
                   <div className="flex items-center justify-end gap-1 group-hover:text-foreground transition-colors">
@@ -387,14 +387,17 @@ export function ProductsTable({ analyses, onDelete, stockMap }: ProductsTablePro
                 </th>
 
                 <th
-                  className="px-4 py-3.5 text-center font-semibold cursor-pointer select-none group"
+                  className="min-w-[70px] px-4 py-3.5 text-center font-semibold cursor-pointer select-none group"
                   onClick={() => handleSort('risk_score')}
                 >
                   <div className="flex items-center justify-center gap-1 group-hover:text-foreground transition-colors">
                     Risk <SortIcon field="risk_score" />
                   </div>
                 </th>
-                <th className="px-4 py-3.5 text-right font-semibold">İşlem</th>
+                <th className={cn(
+                  "min-w-[120px] px-4 py-3.5 text-right font-semibold",
+                  "sticky right-0 bg-muted/10"
+                )}>İşlem</th>
               </tr>
             </thead>
             <tbody className="divide-y relative">
@@ -470,12 +473,12 @@ export function ProductsTable({ analyses, onDelete, stockMap }: ProductsTablePro
                         )}
                       </div>
                     </td>
-                    <td className="hidden px-4 py-3.5 sm:table-cell">
-                      <span className="inline-flex items-center rounded-full bg-muted/30 px-2.5 py-1 text-xs font-medium text-muted-foreground border border-border/40">
+                    <td className="px-4 py-3.5">
+                      <span className="inline-flex items-center rounded-full bg-muted/30 px-2.5 py-1 text-xs font-medium text-muted-foreground border border-border/40 whitespace-nowrap">
                         {getMarketplaceLabel(a.input.marketplace)}
                       </span>
                     </td>
-                    <td className="hidden px-4 py-3.5 text-center sm:table-cell">
+                    <td className="px-4 py-3.5 text-center">
                       {typeof stok === 'number' ? (
                         <span className={cn(
                           'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
@@ -491,7 +494,7 @@ export function ProductsTable({ analyses, onDelete, stockMap }: ProductsTablePro
                         <span className="text-xs text-muted-foreground/40">—</span>
                       )}
                     </td>
-                    <td className="hidden px-4 py-3.5 text-right sm:table-cell">
+                    <td className="px-4 py-3.5 text-right">
                       {stock?.salePrice != null && stock.salePrice > 0 ? (() => {
                         const analysisSalePrice = Number((inputs.sale_price as number) ?? 0);
                         const priceDiff = Math.abs(stock.salePrice - analysisSalePrice);
@@ -512,16 +515,16 @@ export function ProductsTable({ analyses, onDelete, stockMap }: ProductsTablePro
                     <td className={`px-4 py-3.5 text-right font-bold tabular-nums ${a.result.unit_net_profit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
                       {formatCurrency(a.result.unit_net_profit)}
                     </td>
-                    <td className={`hidden px-4 py-3.5 text-right font-bold tabular-nums md:table-cell ${a.result.margin_pct >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
+                    <td className={`px-4 py-3.5 text-right font-bold tabular-nums ${a.result.margin_pct >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
                       {formatPercent(a.result.margin_pct)}
                     </td>
-                    <td className={`hidden px-4 py-3.5 text-right font-bold tabular-nums lg:table-cell ${a.result.monthly_net_profit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
+                    <td className={`px-4 py-3.5 text-right font-bold tabular-nums ${a.result.monthly_net_profit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
                       {formatCurrency(a.result.monthly_net_profit)}
                     </td>
                     <td className="px-4 py-3.5 text-center">
                       <RiskBadge level={a.risk.level} />
                     </td>
-                    <td className="px-4 py-3.5 text-right">
+                    <td className="px-4 py-3.5 text-right sticky right-0 bg-card group-hover:bg-muted/10">
                       {/* Desktop Actions */}
                       <div className="hidden sm:flex items-center justify-end gap-1">
                         <Link href={`/analysis/${a.id}`}>
