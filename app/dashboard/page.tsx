@@ -234,36 +234,36 @@ export default function DashboardPage() {
       <div className="space-y-5 pb-10">
 
         {/* ═══ BÖLÜM 1 — Header ═══ */}
-        <div>
-          <div className="flex items-center justify-between mb-1">
+        <div className="grid grid-cols-[1fr_auto] mb-10">
+          <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Calendar size={14} />
+              <Calendar className="w-3.5 h-3.5" />
               <span>{dateStr}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Link href="/products">
-                <button className="flex items-center gap-1.5 px-3 py-2 text-sm text-muted-foreground bg-card border border-border/40 rounded-lg hover:bg-muted/20 transition-colors">
-                  <FileText size={14} />
-                  PDF Rapor
-                </button>
-              </Link>
-              <Link href="/products">
-                <button className="flex items-center gap-1.5 px-3 py-2 text-sm text-muted-foreground bg-card border border-border/40 rounded-lg hover:bg-muted/20 transition-colors">
-                  <Download size={14} />
-                  CSV
-                </button>
-              </Link>
-              <Link href="/analysis/new">
-                <button className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition-colors">
-                  <Plus size={14} />
-                  Yeni Analiz
-                </button>
-              </Link>
-            </div>
+            <h1 className="text-2xl font-bold text-foreground m-0">
+              {greeting}{name ? `, ${name}` : ''}
+            </h1>
           </div>
-          <h1 className="text-2xl font-bold text-foreground">
-            {greeting}{name ? `, ${name}` : ''}
-          </h1>
+          <div className="flex items-start pt-6 gap-2">
+            <Link href="/products">
+              <button className="flex items-center gap-1.5 px-3 py-2 text-sm text-muted-foreground bg-card border border-border/40 rounded-lg hover:bg-muted/20 transition-colors">
+                <FileText size={14} />
+                PDF Rapor
+              </button>
+            </Link>
+            <Link href="/products">
+              <button className="flex items-center gap-1.5 px-3 py-2 text-sm text-muted-foreground bg-card border border-border/40 rounded-lg hover:bg-muted/20 transition-colors">
+                <Download size={14} />
+                CSV
+              </button>
+            </Link>
+            <Link href="/analysis/new">
+              <button className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition-colors">
+                <Plus size={14} />
+                Yeni Analiz
+              </button>
+            </Link>
+          </div>
         </div>
 
         {/* ═══ BÖLÜM 2 — 4 Metrik Kart ═══ */}
