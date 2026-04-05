@@ -303,9 +303,9 @@ export default function DashboardPage() {
           ]}
         />
 
-        {/* ═══ BÖLÜM 6 — Son Analizler Tablosu ═══ */}
-        <div className="bg-card rounded-xl border border-border/40 overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
+        {/* ═══ BÖLÜM 6 — Son Analizler ═══ */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2">
               <List size={16} className="text-muted-foreground" />
               <span className="font-semibold text-foreground text-sm">Son Analizler</span>
@@ -314,68 +314,7 @@ export default function DashboardPage() {
               Tumunu Gor
             </Link>
           </div>
-
-          {recentAnalyses.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <Package className="h-8 w-8 text-muted-foreground/30" />
-              <p className="text-sm text-muted-foreground">Henuz analiz yapilmamis.</p>
-              <Link href="/analysis/new">
-                <button className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition-colors">
-                  <Plus size={14} />
-                  Ilk Analizini Baslat
-                </button>
-              </Link>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-muted/10 text-xs text-muted-foreground uppercase tracking-wide">
-                    <th className="text-left px-5 py-3 font-medium">Urun Adi</th>
-                    <th className="text-left px-4 py-3 font-medium">Pazaryeri</th>
-                    <th className="text-right px-4 py-3 font-medium">Net Kar</th>
-                    <th className="text-right px-4 py-3 font-medium">Marj</th>
-                    <th className="text-center px-4 py-3 font-medium">Risk</th>
-                    <th className="text-left px-4 py-3 font-medium">Tarih</th>
-                    <th className="text-center px-5 py-3 font-medium">Islem</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/20">
-                  {recentAnalyses.map(a => (
-                    <tr key={a.id} className="hover:bg-muted/10 transition-colors">
-                      <td className="px-5 py-3">
-                        <span className="font-medium text-foreground truncate block max-w-[200px]">{a.input.product_name}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="text-xs text-muted-foreground bg-muted/30 px-2 py-1 rounded-full">
-                          {getMarketplaceLabel(a.input.marketplace)}
-                        </span>
-                      </td>
-                      <td className={`px-4 py-3 text-right font-bold tabular-nums ${a.result.unit_net_profit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
-                        {formatCurrency(a.result.unit_net_profit)}
-                      </td>
-                      <td className={`px-4 py-3 text-right font-bold tabular-nums ${a.result.margin_pct >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-400'}`}>
-                        {formatPercent(a.result.margin_pct)}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <RiskBadge level={a.risk.level} />
-                      </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
-                        {new Date(a.createdAt).toLocaleDateString('tr-TR')}
-                      </td>
-                      <td className="px-5 py-3 text-center">
-                        <Link href={`/analysis/${a.id}`}>
-                          <button className="inline-flex items-center gap-1 text-xs font-medium text-orange-500 hover:text-orange-600 transition-colors">
-                            <Eye size={14} />
-                          </button>
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <ProductsTable analyses={analyses.slice(0, 10)} onDelete={handleDelete} />
         </div>
 
       </div>
