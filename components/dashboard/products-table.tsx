@@ -26,7 +26,11 @@ import {
   ChevronRight,
   MoreHorizontal,
   Package,
-  AlertTriangle
+  AlertTriangle,
+  CheckSquare,
+  Square,
+  MinusSquare,
+  Download
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -47,14 +51,17 @@ export interface StockItem {
 interface ProductsTableProps {
   analyses: Analysis[];
   onDelete?: (id: string) => void;
+  onBulkDelete?: (ids: string[]) => void;
+  onBulkExport?: (ids: string[]) => void;
   stockMap?: Map<string, StockItem>;
 }
 
 type SortField = 'monthly_net_profit' | 'margin_pct' | 'risk_score' | 'created_at';
 type SortOrder = 'asc' | 'desc';
 
-export function ProductsTable({ analyses, onDelete, stockMap }: ProductsTableProps) {
+export function ProductsTable({ analyses, onDelete, onBulkDelete, onBulkExport, stockMap }: ProductsTableProps) {
   // --- States ---
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [marketplaceFilter, setMarketplaceFilter] = useState<string>('all');
   const [riskFilter, setRiskFilter] = useState<string>('all');
@@ -146,6 +153,35 @@ export function ProductsTable({ analyses, onDelete, stockMap }: ProductsTablePro
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = filteredAndSortedData.slice(startIndex, startIndex + itemsPerPage);
+
+  // --- Selection ---
+  const allPageIds = paginatedData.map(a => a.id);
+  const allPageSelected = allPageIds.length > 0 && allPageIds.every(id => selectedIds.has(id));
+  const someSelected = selectedIds.size > 0;
+
+  const toggleOne = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (allPageSelected) {
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        allPageIds.forEach(id => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        allPageIds.forEach(id => next.add(id));
+        return next;
+      });
+    }
+  };
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -243,6 +279,47 @@ export function ProductsTable({ analyses, onDelete, stockMap }: ProductsTablePro
         </div>
       </div>
 
+      {/* --- Bulk Action Bar --- */}
+      {someSelected && (onBulkDelete || onBulkExport) && (
+        <div className="flex items-center justify-between bg-primary/10 border border-primary/20 rounded-xl px-4 py-3">
+          <span className="text-sm font-medium text-primary">
+            {selectedIds.size} ürün seçildi
+          </span>
+          <div className="flex items-center gap-2">
+            {onBulkExport && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={() => onBulkExport(Array.from(selectedIds))}
+              >
+                <Download className="h-3.5 w-3.5 mr-1.5" />
+                Dışa Aktar
+              </Button>
+            )}
+            {onBulkDelete && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
+                onClick={() => onBulkDelete(Array.from(selectedIds))}
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                Sil
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => setSelectedIds(new Set())}
+            >
+              Vazgeç
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* --- Mobile Card View --- */}
       <div className="md:hidden space-y-2">
         {paginatedData.length === 0 ? (
@@ -265,8 +342,11 @@ export function ProductsTable({ analyses, onDelete, stockMap }: ProductsTablePro
             const stok = stock?.quantity ?? (inputs.stock_quantity as number | undefined);
 
             return (
-            <div key={a.id} className="rounded-xl border border-border/40 bg-card p-3.5 space-y-2.5">
+            <div key={a.id} className={cn("rounded-xl border bg-card p-3.5 space-y-2.5", selectedIds.has(a.id) ? "border-primary/40 bg-primary/5" : "border-border/40")}>
               <div className="flex items-start gap-3">
+                <button onClick={() => toggleOne(a.id)} className="mt-1 shrink-0">
+                  {selectedIds.has(a.id) ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4 text-muted-foreground/40" />}
+                </button>
                 {imgUrl ? (
                   <img src={imgUrl} alt="" className="w-12 h-12 rounded-lg object-cover border border-border/30 shrink-0 bg-muted/20" loading="lazy" />
                 ) : (
@@ -349,6 +429,11 @@ export function ProductsTable({ analyses, onDelete, stockMap }: ProductsTablePro
           <table className="w-full min-w-[900px] text-sm">
             <thead>
               <tr className="border-b border-border/40 bg-muted/10 text-[11px] uppercase tracking-wider text-muted-foreground/70">
+                <th className="w-10 px-3 py-3.5">
+                  <button onClick={toggleAll} className="flex items-center justify-center">
+                    {allPageSelected ? <CheckSquare className="h-4 w-4 text-primary" /> : someSelected ? <MinusSquare className="h-4 w-4 text-primary/50" /> : <Square className="h-4 w-4 text-muted-foreground/40" />}
+                  </button>
+                </th>
                 <th
                   className="min-w-[200px] px-4 py-3.5 text-left font-semibold cursor-pointer select-none group"
                   onClick={() => handleSort('monthly_net_profit')}
@@ -403,7 +488,7 @@ export function ProductsTable({ analyses, onDelete, stockMap }: ProductsTablePro
             <tbody className="divide-y relative">
               {paginatedData.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="h-32 text-center text-muted-foreground">
+                  <td colSpan={10} className="h-32 text-center text-muted-foreground">
                     Sonuç bulunamadı.
                     <Button variant="link" onClick={() => {
                       setSearchTerm('');
@@ -427,7 +512,12 @@ export function ProductsTable({ analyses, onDelete, stockMap }: ProductsTablePro
                   const stok = stock?.quantity ?? (inputs.stock_quantity as number | undefined);
 
                   return (
-                  <tr key={a.id} className="transition-colors hover:bg-muted/10 group">
+                  <tr key={a.id} className={cn("transition-colors hover:bg-muted/10 group", selectedIds.has(a.id) && "bg-primary/5")}>
+                    <td className="w-10 px-3 py-3.5">
+                      <button onClick={() => toggleOne(a.id)} className="flex items-center justify-center">
+                        {selectedIds.has(a.id) ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4 text-muted-foreground/40" />}
+                      </button>
+                    </td>
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-3">
                         {imgUrl ? (

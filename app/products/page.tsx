@@ -72,6 +72,31 @@ export default function ProductsPage() {
     await refresh();
   };
 
+  const handleBulkDelete = async (ids: string[]) => {
+    if (!confirm(`${ids.length} ürün analizini silmek istediğinize emin misiniz?`)) return;
+    let success = 0;
+    for (const id of ids) {
+      const result = await deleteAnalysis(id);
+      if (result.success) success++;
+    }
+    toast.success(`${success} analiz silindi.`);
+    await refresh();
+  };
+
+  const handleBulkExport = (ids: string[]) => {
+    const selected = analyses.filter(a => ids.includes(a.id));
+    if (selected.length === 0) return;
+    const json = analysesToJSON(selected);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `karnet_secili_${selected.length}_urun.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`${selected.length} ürün dışa aktarıldı.`);
+  };
+
   const performImport = async (data: ProductInput[]) => {
     if (!user) return;
 
@@ -191,6 +216,8 @@ export default function ProductsPage() {
         <ProductsTable
           analyses={analyses}
           onDelete={handleDelete}
+          onBulkDelete={handleBulkDelete}
+          onBulkExport={handleBulkExport}
           stockMap={stockData ? (() => {
             const map = new Map<string, { barcode: string; quantity: number; salePrice: number; imageUrl: string | null; productUrl: string | null }>();
             for (const p of stockData.products) {
