@@ -401,9 +401,11 @@ export default function MarketplacePage() {
     const handleSyncProducts = async () => {
         setSyncingProducts(true);
         setLastLog(null);
+        const t = toast.loading('Ürünler senkronize ediliyor...');
         try {
             const res = await fetch(`${apiBase}/sync-products`, { method: 'POST' });
             const data = await res.json();
+            toast.dismiss(t);
             if (data.success) {
                 const count = data.count ?? data.total ?? '';
                 const msg = data.message || (count ? `${count} ürün senkronize edildi!` : 'Ürünler senkronize edildi!');
@@ -412,23 +414,26 @@ export default function MarketplacePage() {
 
                 // Otomatik sipariş verisi çek (satış adetleri için)
                 try {
-                    toast.info('Satış verileri çekiliyor...');
+                    const t2 = toast.loading('Satış verileri çekiliyor...');
                     const orderRes = await fetch(`${apiBase}/sync-orders`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({}),
                     });
                     const orderData = await orderRes.json();
+                    toast.dismiss(t2);
                     if (orderData.success) {
                         toast.success(orderData.message || 'Satış verileri güncellendi!');
                     }
-                } catch { /* sipariş sync opsiyonel — hata olursa sessiz devam */ }
+                } catch { /* sipariş sync opsiyonel */ }
             } else {
+                toast.dismiss(t);
                 toast.error(data.error || 'Ürün senkronizasyonu başarısız.');
                 setLastLog(data.error);
             }
             fetchStatus();
         } catch {
+            toast.dismiss(t);
             toast.error('Ürün senkronizasyonu sırasında hata oluştu.');
         } finally {
             setSyncingProducts(false);
@@ -438,6 +443,7 @@ export default function MarketplacePage() {
     const handleSyncOrders = async () => {
         setSyncingOrders(true);
         setLastLog(null);
+        const t = toast.loading('Siparişler senkronize ediliyor...');
         try {
             const res = await fetch(`${apiBase}/sync-orders`, {
                 method: 'POST',
@@ -445,6 +451,7 @@ export default function MarketplacePage() {
                 body: JSON.stringify({}),
             });
             const data = await res.json();
+            toast.dismiss(t);
             if (data.success) {
                 toast.success(data.message || 'Siparişler senkronize edildi!');
                 setLastLog(data.message);
@@ -454,6 +461,7 @@ export default function MarketplacePage() {
             }
             fetchStatus();
         } catch {
+            toast.dismiss(t);
             toast.error('Sipariş senkronizasyonu sırasında hata oluştu.');
         } finally {
             setSyncingOrders(false);
@@ -462,9 +470,11 @@ export default function MarketplacePage() {
 
     const webhookKur = async () => {
         setWebhookKuruluyor(true);
+        const t = toast.loading('Webhook kuruluyor...');
         try {
             const res = await fetch('/api/marketplace/trendyol/webhook-register', { method: 'POST' });
             const data = await res.json();
+            toast.dismiss(t);
             if (data.success) {
                 toast.success('Webhook kuruldu! Artık siparişler otomatik gelecek.');
                 fetchStatus();
@@ -487,9 +497,11 @@ export default function MarketplacePage() {
     const handleNormalizeOrders = async () => {
         setNormalizingOrders(true);
         setLastLog(null);
+        const t = toast.loading('Sipariş metrikleri hesaplanıyor...');
         try {
             const res = await fetch(`${apiBase}/normalize-orders`, { method: 'POST' });
             const data = await res.json();
+            toast.dismiss(t);
             if (data.success) {
                 toast.success(data.message || 'Sipariş metrikleri güncellendi!');
                 setLastLog(data.message);
@@ -500,6 +512,7 @@ export default function MarketplacePage() {
             }
             fetchStatus();
         } catch {
+            toast.dismiss(t);
             toast.error('Sipariş normalizasyonu sırasında hata oluştu.');
         } finally {
             setNormalizingOrders(false);
@@ -511,9 +524,11 @@ export default function MarketplacePage() {
     const handleNormalize = async () => {
         setNormalizing(true);
         setLastLog(null);
+        const t = toast.loading('Veriler normalize ediliyor...');
         try {
             const res = await fetch(`${apiBase}/normalize`, { method: 'POST' });
             const data = await res.json();
+            toast.dismiss(t);
             if (data.success) {
                 toast.success(data.message || 'Veriler normalize edildi!');
                 setLastLog(data.message);
@@ -523,6 +538,7 @@ export default function MarketplacePage() {
             }
             fetchStatus();
         } catch {
+            toast.dismiss(t);
             toast.error('Normalizasyon sırasında hata oluştu.');
         } finally {
             setNormalizing(false);

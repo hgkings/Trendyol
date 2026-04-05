@@ -306,6 +306,7 @@ export default function FinancePage() {
   const handleEnrich = useCallback(async () => {
     setEnriching(true)
     setEnrichResult(null)
+    const t = toast.loading('Gerçek verilerle güncelleniyor...')
     try {
       const res = await fetch(`/api/marketplace/${marketplace}/enrich`, {
         method: 'POST',
@@ -327,6 +328,7 @@ export default function FinancePage() {
       const msg = err instanceof Error ? err.message : 'Güncelleme sırasında hata oluştu'
       toast.error(msg)
     } finally {
+      toast.dismiss(t)
       setEnriching(false)
     }
   }, [marketplace, period])

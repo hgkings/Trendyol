@@ -40,14 +40,17 @@ export default function ProductsPage() {
 
   const fetchStock = useCallback(async () => {
     setStockLoading(true);
+    const t = toast.loading('Stok ve satış verileri çekiliyor...');
     try {
       const res = await fetch('/api/marketplace/trendyol/stock');
       const data = await res.json();
+      toast.dismiss(t);
       if (data.success) {
         setStockData(data);
+        toast.success(`${data.totalProducts} ürünün stok ve satış verisi güncellendi.`);
       }
     } catch {
-      // Stok çekilemezse sessizce devam et — bağlantı yoksa normal
+      toast.dismiss(t);
     } finally {
       setStockLoading(false);
     }
@@ -76,7 +79,9 @@ export default function ProductsPage() {
 
   const handleBulkDelete = async (ids: string[]) => {
     if (!confirm(`${ids.length} ürün analizini silmek istediğinize emin misiniz?`)) return;
+    const t = toast.loading(`${ids.length} ürün siliniyor...`);
     const result = await bulkDeleteAnalyses(ids);
+    toast.dismiss(t);
     if (result.success) {
       toast.success(`${result.deleted ?? ids.length} analiz silindi.`);
     } else {

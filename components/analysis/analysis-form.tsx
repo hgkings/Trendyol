@@ -241,6 +241,7 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
 
   const iadeOranCek = async () => {
     setIadeOranCekiliyor(true);
+    const t = toast.loading('İade oranı Trendyol\'dan çekiliyor...');
     try {
       const [claimRes, orderCountRes] = await Promise.all([
         fetch('/api/marketplace/trendyol/claims?gun=30'),
@@ -262,6 +263,7 @@ export function AnalysisForm({ initialData, analysisId, isDemo = false }: Analys
     } catch {
       toast.error('İade oranı alınamadı.');
     } finally {
+      toast.dismiss(t);
       setIadeOranCekiliyor(false);
     }
   };
