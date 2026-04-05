@@ -17,7 +17,7 @@ import {
     X
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { parseCSV, CSV_TEMPLATE } from '@/lib/csv';
+import { parseCSV, CSV_TEMPLATE, exportBlankTemplate } from '@/lib/csv';
 import { ProductInput } from '@/types';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '../shared/format';
@@ -53,14 +53,19 @@ export function CSVImportSection({ onImport }: CSVImportSectionProps) {
     };
 
     const handleDownloadTemplate = () => {
-        const blob = new Blob([CSV_TEMPLATE], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'karnet_sablon.csv';
-        a.click();
-        URL.revokeObjectURL(url);
-        toast.success('Şablon indirildi.');
+        try {
+            const buffer = exportBlankTemplate();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'karnet_sablon.xlsx';
+            a.click();
+            URL.revokeObjectURL(url);
+            toast.success('Excel sablon indirildi.');
+        } catch {
+            toast.error('Sablon olusturulamadi.');
+        }
     };
 
     const handleCopyTemplate = () => {
@@ -164,7 +169,7 @@ export function CSVImportSection({ onImport }: CSVImportSectionProps) {
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                     <Upload className="h-5 w-5 text-primary" />
-                    <h2 className="text-lg font-bold">CSV / Toplu Analiz Yükle</h2>
+                    <h2 className="text-lg font-bold">Toplu Analiz Yukle</h2>
                 </div>
             </div>
 
@@ -199,7 +204,7 @@ export function CSVImportSection({ onImport }: CSVImportSectionProps) {
                             </Button>
                             <Button variant="ghost" size="sm" className="h-8 text-xs flex-1 sm:flex-initial whitespace-nowrap" onClick={handleDownloadTemplate}>
                                 <Download className="mr-1.5 h-3.5 w-3.5" />
-                                Şablonu İndir
+                                Excel Sablon Indir
                             </Button>
                         </div>
                     </div>
@@ -213,7 +218,7 @@ export function CSVImportSection({ onImport }: CSVImportSectionProps) {
                                 <FileBox className="h-5 w-5 text-primary" />
                             </div>
                             <p className="text-sm font-medium">Dosyayı seçin veya buraya sürükleyin</p>
-                            <p className="text-[10px] text-muted-foreground">Sadece .csv dosyaları desteklenir</p>
+                            <p className="text-[10px] text-muted-foreground">CSV ve Excel (.xlsx) desteklenir</p>
                             <input
                                 ref={fileInputRef}
                                 type="file"
@@ -235,7 +240,7 @@ export function CSVImportSection({ onImport }: CSVImportSectionProps) {
                             />
                             <p className="text-[10px] text-muted-foreground flex items-center gap-1">
                                 <Info className="h-3 w-3" />
-                                Başlık satırı dahil edilmelidir. Virgül (,) ile ayrılmış formatta olmalıdır.
+                                Baslik satiri dahil edilmelidir. Virgul (,) veya noktali virgul (;) ile ayrilmis formatta olmalidir.
                             </p>
                         </div>
                     )}
