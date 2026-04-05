@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { useAlerts } from '@/contexts/alert-context';
 import { deleteAnalysis as storageDeleteAnalysis } from '@/lib/api/analyses';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
-import { ProductsTable } from '@/components/dashboard/products-table';
+import { ProductsTable, StockItem } from '@/components/dashboard/products-table';
 import { PazaryeriIstatistikKarti } from '@/components/shared/PazaryeriIstatistikKarti';
+import { isProUser } from '@/utils/access';
 import { formatCurrency, formatPercent } from '@/components/shared/format';
 import { RiskBadge } from '@/components/shared/risk-badge';
 import { getMarketplaceLabel } from '@/lib/marketplace-data';
@@ -44,6 +45,8 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const { analyses, loading, refresh } = useAlerts();
   const [trendyolConn, setTrendyolConn] = useState<ConnStatus>({ status: 'disconnected' });
+  const [stockMap, setStockMap] = useState<Map<string, StockItem> | undefined>();
+  const isPro = isProUser(user);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -57,6 +60,30 @@ export default function DashboardPage() {
       .finally(() => clearTimeout(timeout));
     return () => { controller.abort(); clearTimeout(timeout); };
   }, []);
+
+  // Stok verisini çek (Pro kullanıcılar için)
+  useEffect(() => {
+    if (!isPro) return;
+    fetch('/api/marketplace/trendyol/stock')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data?.success) return;
+        const map = new Map<string, StockItem>();
+        for (const p of data.products) {
+          const item: StockItem = { barcode: p.barcode, quantity: p.quantity, salePrice: p.salePrice, imageUrl: p.imageUrl, productUrl: p.productUrl };
+          if (p.barcode) map.set(p.barcode, item);
+          if (p.stockCode && p.stockCode !== p.barcode) map.set(p.stockCode, item);
+          if (p.title) {
+            map.set(p.title.toLowerCase(), item);
+            const norm = p.title.toLowerCase().replace(/[\s\-_./]+/g, '');
+            if (norm) map.set(norm, item);
+          }
+          if (p.id) map.set(p.id, item);
+        }
+        setStockMap(map);
+      })
+      .catch(() => {});
+  }, [isPro]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Bu analizi silmek istediginize emin misiniz?')) return;
@@ -314,7 +341,7 @@ export default function DashboardPage() {
               Tumunu Gor
             </Link>
           </div>
-          <ProductsTable analyses={analyses.slice(0, 10)} onDelete={handleDelete} />
+          <ProductsTable analyses={analyses.slice(0, 10)} onDelete={handleDelete} stockMap={stockMap} />
         </div>
 
       </div>
