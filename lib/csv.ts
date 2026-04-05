@@ -56,6 +56,20 @@ const HEADER_ALIASES: Record<string, string> = {
   'reklam_maliyeti': 'reklam_maliyeti',
   'iade_orani': 'iade_orani',
   'kdv_orani': 'kdv_orani',
+  // Maliyet şablonu başlıkları (exportCostTemplate formatı)
+  'urun adi': 'urun_adi',
+  'aylik satis adedi': 'aylik_satis_adedi',
+  'satis fiyati': 'satis_fiyati',
+  'urun maliyeti': 'urun_maliyeti',
+  'kargo': 'kargo_ucreti',
+  'paketleme': 'paketleme_maliyeti',
+  'reklam': 'reklam_maliyeti',
+  'komisyon %': 'komisyon_orani',
+  'komisyon': 'komisyon_orani',
+  'iade %': 'iade_orani',
+  'iade': 'iade_orani',
+  'kdv %': 'kdv_orani',
+  'kdv': 'kdv_orani',
 };
 
 export const CSV_TEMPLATE = `pazaryeri,urun_adi,aylik_satis_adedi,urun_maliyeti,satis_fiyati,komisyon_orani,kargo_ucreti,paketleme_maliyeti,reklam_maliyeti,iade_orani,kdv_orani
@@ -97,9 +111,16 @@ export function parseCSV(text: string): { data: ProductInput[]; errors: string[]
     return { data: [], errors: [`CSV dosyası en fazla ${MAX_ROWS} satır içerebilir (${lines.length - 1} satır bulundu).`], missingColumns: [] };
   }
 
-  // Başlıkları normalize et — hem TR hem EN kabul eder
-  const rawHeaders = lines[0].split(',').map((h) => h.trim().toLowerCase());
-  const headers = rawHeaders.map(h => HEADER_ALIASES[h] ?? h);
+  // Ayracı algıla — virgül veya noktalı virgül
+  const firstLine = lines[0];
+  const separator = firstLine.includes(';') ? ';' : ',';
+
+  // Başlıkları normalize et — hem TR hem EN hem maliyet şablonu kabul eder
+  const rawHeaders = firstLine.split(separator).map((h) => h.trim().toLowerCase().replace(/["%]/g, ''));
+  // ID kolonu varsa atla (maliyet şablonundan gelmiş)
+  const hasIdCol = rawHeaders[0] === 'id';
+  const headersToProcess = hasIdCol ? rawHeaders.slice(1) : rawHeaders;
+  const headers = headersToProcess.map(h => HEADER_ALIASES[h] ?? h);
 
   // Türkçe başlıkların varlığını kontrol et
   for (const col of TURKISH_COLUMNS) {
@@ -109,7 +130,7 @@ export function parseCSV(text: string): { data: ProductInput[]; errors: string[]
         eng => HEADER_ALIASES[eng] === col
       );
       const englishName = englishIdx >= 0 ? ENGLISH_COLUMNS[englishIdx] : col;
-      if (!rawHeaders.includes(englishName)) {
+      if (!headersToProcess.includes(englishName)) {
         missingColumns.push(col);
       }
     }
@@ -126,7 +147,9 @@ export function parseCSV(text: string): { data: ProductInput[]; errors: string[]
   const data: ProductInput[] = [];
 
   for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',').map((v) => v.trim());
+    const rawValues = lines[i].split(separator).map((v) => v.trim());
+    // ID kolonu varsa ilk değeri atla
+    const values = hasIdCol ? rawValues.slice(1) : rawValues;
     if (values.length !== headers.length) {
       errors.push(`Satır ${i + 1}: Sütun sayısı uyuşmuyor (${headers.length} beklenirken ${values.length} bulundu).`);
       continue;
