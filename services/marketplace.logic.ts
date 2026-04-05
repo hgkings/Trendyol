@@ -892,42 +892,147 @@ export class MarketplaceLogic {
     _traceId: string,
     payload: unknown,
     _userId: string
-  ): Promise<{ processed: boolean }> {
+  ): Promise<{ processed: boolean; ordersProcessed?: number }> {
     try {
-      const event = payload as Record<string, unknown>
+      const body = payload as Record<string, unknown>
+      const { createAdminClient } = await import('@/lib/supabase/admin')
+      const admin = createAdminClient()
 
-      // Webhook event'ini DB'ye kaydet
-      const eventType = String(event.status ?? event.eventType ?? 'unknown')
-      const orderNumber = String(event.orderNumber ?? '')
-      const shipmentPackageId = typeof event.shipmentPackageId === 'number'
-        ? event.shipmentPackageId
-        : null
+      // Trendyol webhook formatı: { content: [...sipariş paketleri...] } veya tek event
+      const content = (body.content as Array<Record<string, unknown>>) ?? [body]
 
-      // Seller ID'den bağlantıyı bul
-      const sellerId = String(event.sellerId ?? event.supplierId ?? '')
+      const SOLD_STATUSES = ['Created', 'Picking', 'Invoiced', 'Shipped', 'Delivered', 'AtCollectionPoint', 'Verified']
+      let ordersProcessed = 0
 
-      if (sellerId) {
-        // trendyol_webhook_events tablosuna kaydet (varsa)
-        // Bu tablo migration 20260326_trendyol_webhook.sql ile oluşturuldu
-        try {
-          const { createAdminClient } = await import('@/lib/supabase/admin')
-          const admin = createAdminClient()
+      for (const event of content) {
+        const eventType = String(event.shipmentPackageStatus ?? event.status ?? event.eventType ?? 'unknown')
+        const orderNumber = String(event.orderNumber ?? '')
+        const shipmentPackageId = typeof event.shipmentPackageId === 'number' ? event.shipmentPackageId : null
+        const sellerId = String(event.sellerId ?? event.supplierId ?? '')
 
-          await admin.from('trendyol_webhook_events').insert({
-            event_type: eventType,
-            seller_id: sellerId,
-            shipment_package_id: shipmentPackageId,
-            order_number: orderNumber,
-            status: eventType,
-            payload: event,
-            processed: false,
-          })
-        } catch (_dbError) {
-          // DB hatası webhook işlemeyi durdurmamalı
+        // 1. Event'i DB'ye kaydet
+        let eventId: string | null = null
+        if (sellerId) {
+          try {
+            const { data: insertedEvent } = await admin.from('trendyol_webhook_events').insert({
+              event_type: eventType,
+              seller_id: sellerId,
+              shipment_package_id: shipmentPackageId,
+              order_number: orderNumber,
+              status: eventType,
+              payload: event,
+              processed: false,
+            }).select('id').single()
+            eventId = insertedEvent?.id ?? null
+          } catch { /* DB hatası webhook işlemeyi durdurmamalı */ }
+        }
+
+        // 2. Sipariş satırlarını işle — satış verisi güncelle
+        if (SOLD_STATUSES.includes(eventType) || eventType === 'Cancelled' || eventType === 'Returned') {
+          const lines = (event.lines ?? event.orderItems ?? []) as Array<Record<string, unknown>>
+
+          // Seller ID'den user bul
+          let userId: string | null = null
+          if (sellerId) {
+            try {
+              const { data: conn } = await admin
+                .from('marketplace_connections')
+                .select('user_id')
+                .eq('seller_id', sellerId)
+                .eq('marketplace', 'trendyol')
+                .single()
+              userId = conn?.user_id ?? null
+            } catch { /* bağlantı bulunamazsa atla */ }
+          }
+
+          if (userId && lines.length > 0) {
+            // Kullanıcının analizlerini getir
+            const allAnalyses = await this.analysisRepo.findByUserId(userId)
+
+            for (const line of lines) {
+              const barcode = String(line.barcode ?? '').trim()
+              const productName = String(line.productName ?? '').trim().toLowerCase()
+              const qty = Number(line.quantity ?? 1)
+              const lineStatus = String(line.orderLineItemStatusName ?? eventType)
+
+              if (!barcode && !productName) continue
+
+              // Analiz eşleştir (barcode veya ürün adı ile)
+              const matchedAnalysis = allAnalyses.find(a => {
+                const inputs = (a.inputs ?? {}) as Record<string, unknown>
+                const aBarcode = String(inputs.barcode ?? '').trim()
+                const aName = String(a.product_name ?? '').trim().toLowerCase()
+                if (aBarcode && aBarcode === barcode) return true
+                if (aName && aName === productName) return true
+                if (aName && productName) {
+                  return aName.replace(/[\s\-_./]+/g, '') === productName.replace(/[\s\-_./]+/g, '')
+                }
+                return false
+              })
+
+              if (matchedAnalysis) {
+                const currentQty = matchedAnalysis.auto_sales_qty ?? 0
+                const isSale = SOLD_STATUSES.includes(lineStatus)
+                const isReturn = lineStatus === 'Cancelled' || lineStatus === 'Returned'
+
+                let newQty = currentQty
+                if (isSale) newQty = currentQty + qty
+                else if (isReturn) newQty = Math.max(0, currentQty - qty)
+
+                if (newQty !== currentQty) {
+                  const inputs = (matchedAnalysis.inputs ?? {}) as Record<string, unknown>
+                  inputs.monthly_sales_volume = newQty
+                  await this.analysisRepo.update(matchedAnalysis.id, {
+                    auto_sales_qty: newQty,
+                    inputs,
+                  })
+                  // Bellekteki analizi de güncelle (sonraki satırlar için)
+                  matchedAnalysis.auto_sales_qty = newQty
+                }
+              }
+            }
+            ordersProcessed++
+
+            // 2b. Kullanıcıya bildirim gönder
+            const isSaleEvent = SOLD_STATUSES.includes(eventType)
+            const isReturnEvent = eventType === 'Cancelled' || eventType === 'Returned'
+            const lineCount = lines.length
+            const totalAmount = lines.reduce((sum, l) => sum + Number(l.lineGrossAmount ?? l.lineUnitPrice ?? 0), 0)
+
+            try {
+              const notifTitle = isSaleEvent
+                ? `Yeni siparis: ${orderNumber}`
+                : isReturnEvent
+                  ? `Iade/Iptal: ${orderNumber}`
+                  : `Siparis guncellendi: ${orderNumber}`
+              const notifMessage = isSaleEvent
+                ? `${lineCount} urun, toplam ${totalAmount.toFixed(2)} TL`
+                : isReturnEvent
+                  ? `${lineCount} urun iade/iptal edildi`
+                  : `Durum: ${eventType}`
+
+              await admin.from('notifications').insert({
+                user_id: userId,
+                type: isReturnEvent ? 'warning' : 'info',
+                category: 'marketplace',
+                title: notifTitle,
+                message: notifMessage,
+                is_read: false,
+                dedupe_key: `webhook-${orderNumber}-${eventType}`,
+              })
+            } catch { /* bildirim opsiyonel */ }
+          }
+        }
+
+        // 3. Event'i processed olarak işaretle
+        if (eventId) {
+          try {
+            await admin.from('trendyol_webhook_events').update({ processed: true }).eq('id', eventId)
+          } catch { /* */ }
         }
       }
 
-      return { processed: true }
+      return { processed: true, ordersProcessed }
     } catch (_error) {
       return { processed: false }
     }
