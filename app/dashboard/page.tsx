@@ -136,6 +136,11 @@ export default function DashboardPage() {
   };
 
   // KPI calculations
+  const totalUnitsSold = useMemo(() => {
+    // orderSummary varsa shipped+delivered kullan, yoksa analizlerden monthly_sales_volume topla
+    if (orderSummary) return orderSummary.today + orderSummary.shipped;
+    return analyses.reduce((sum, a) => sum + (a.input.monthly_sales_volume ?? 0), 0);
+  }, [analyses, orderSummary]);
   const totalProfit = analyses.reduce((sum, a) => sum + a.result.monthly_net_profit, 0);
   const avgMargin = analyses.length > 0
     ? analyses.reduce((sum, a) => sum + a.result.margin_pct, 0) / analyses.length
@@ -276,16 +281,16 @@ export default function DashboardPage() {
             <div className="text-sm text-muted-foreground mt-1">{analyses.length} aktif urun</div>
           </div>
 
-          {/* Kritik Ürün */}
+          {/* Bu Ay Satış */}
           <div className="bg-card rounded-xl p-5 border border-border/40">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-muted-foreground">Kritik Urun</span>
+              <span className="text-sm font-medium text-muted-foreground">Bu Ay Satis</span>
               <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                <ShieldAlert size={16} className="text-blue-500" />
+                <ShoppingBag size={16} className="text-blue-600" />
               </div>
             </div>
-            <div className="text-3xl font-bold text-foreground">{riskyCount}</div>
-            <div className="text-sm text-muted-foreground mt-1">{riskyCount > 0 ? 'Acil aksiyon gerekli' : 'Risk bulunamadi'}</div>
+            <div className="text-3xl font-bold text-foreground">{totalUnitsSold.toLocaleString('tr-TR')}</div>
+            <div className="text-sm text-muted-foreground mt-1">Bu ay satilan urun</div>
           </div>
 
           {/* Toplam Ürün */}
