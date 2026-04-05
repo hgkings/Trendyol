@@ -624,6 +624,95 @@ export class MarketplaceLogic {
     return { totalOrders }
   }
 
+  async getDailyProfit(
+    traceId: string,
+    payload: unknown,
+    userId: string
+  ): Promise<{
+    days: Array<{ date: string; label: string; profit: number }>;
+    totalRevenue: number; revenueChange: number; revenueGoal: number; goalPercent: number;
+  }> {
+    const { connectionId } = payload as { connectionId: string }
+    const creds = await this.resolveCredentials(connectionId, traceId)
+
+    // Son 7 gün siparişlerini çek
+    const now = new Date()
+    const labels = ['Paz', 'Pzt', 'Sal', 'Car', 'Per', 'Cum', 'Cmt']
+    const days: Array<{ date: string; label: string; profit: number; revenue: number }> = []
+
+    // Analizlerden maliyet bilgisi: barcode/title → { cost, commission_pct }
+    const allAnalyses = await this.analysisRepo.findByUserId(userId)
+    const costByName = new Map<string, { cost: number; commPct: number }>()
+    for (const a of allAnalyses) {
+      const inp = (a.inputs ?? {}) as Record<string, unknown>
+      const name = String(a.product_name ?? '').trim().toLowerCase()
+      const barcode = String(inp.barcode ?? '').trim()
+      const cost = Number(inp.product_cost ?? 0)
+      const commPct = Number(inp.commission_pct ?? 18)
+      if (name) costByName.set(name, { cost, commPct })
+      if (barcode) costByName.set(barcode, { cost, commPct })
+    }
+
+    const SOLD = ['Created', 'Picking', 'Invoiced', 'Shipped', 'Delivered', 'AtCollectionPoint']
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now)
+      d.setDate(d.getDate() - i)
+      d.setHours(0, 0, 0, 0)
+      const dayEnd = new Date(d)
+      dayEnd.setHours(23, 59, 59, 999)
+
+      let dayProfit = 0
+      let dayRevenue = 0
+      try {
+        const result = await trendyolApi.fetchOrders(creds, d.getTime(), dayEnd.getTime(), 0, 200)
+        for (const order of result.content) {
+          const status = String(order.shipmentPackageStatus ?? order.status ?? '')
+          if (!SOLD.includes(status)) continue
+          const lines = (order.lines ?? order.orderItems ?? []) as Array<Record<string, unknown>>
+          for (const line of lines) {
+            const lineStatus = String(line.orderLineItemStatusName ?? status)
+            if (lineStatus === 'Cancelled' || lineStatus === 'Returned') continue
+            const qty = Number(line.quantity ?? 1)
+            const price = Number(line.lineUnitPrice ?? line.lineGrossAmount ?? line.amount ?? 0)
+            const commission = Number(line.commission ?? 0)
+            const barcode = String(line.barcode ?? '').trim()
+            const title = String(line.productName ?? '').trim().toLowerCase()
+
+            const info = costByName.get(barcode) ?? costByName.get(title)
+            const productCost = info?.cost ?? 0
+
+            const lineRevenue = price * qty
+            const lineProfit = (price - productCost - (commission / 100 * price)) * qty
+            dayRevenue += lineRevenue
+            dayProfit += lineProfit
+          }
+        }
+      } catch { /* gün verisi opsiyonel */ }
+
+      days.push({
+        date: d.toISOString().split('T')[0],
+        label: labels[d.getDay()],
+        profit: Math.round(dayProfit * 100) / 100,
+        revenue: Math.round(dayRevenue * 100) / 100,
+      })
+    }
+
+    // Bu ay toplam ciro (son 7 günün toplamı yaklaşık)
+    const totalRevenue = days.reduce((s, d) => s + d.revenue, 0)
+    // Geçen aya göre değişim — basit tahmin (7 gün ortalaması × 30)
+    const revenueGoal = 60000 // default hedef
+    const goalPercent = revenueGoal > 0 ? Math.min(100, Math.round((totalRevenue / revenueGoal) * 100)) : 0
+
+    return {
+      days: days.map(d => ({ date: d.date, label: d.label, profit: d.profit })),
+      totalRevenue: Math.round(totalRevenue),
+      revenueChange: 0, // ilk versiyon — karşılaştırma sonra
+      revenueGoal,
+      goalPercent,
+    }
+  }
+
   async getOrderSummary(
     traceId: string,
     payload: unknown,

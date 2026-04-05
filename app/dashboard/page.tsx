@@ -51,6 +51,10 @@ export default function DashboardPage() {
     today: number; todayChange: number; shipped: number;
     pending: number; cancelled: number; pendingOver24h: number; activeClaims: number;
   } | null>(null);
+  const [dailyProfit, setDailyProfit] = useState<{
+    days: Array<{ date: string; label: string; profit: number }>;
+    totalRevenue: number; revenueChange: number; revenueGoal: number; goalPercent: number;
+  } | null>(null);
   const isPro = isProUser(user);
 
   useEffect(() => {
@@ -93,6 +97,12 @@ export default function DashboardPage() {
     fetch('/api/marketplace/trendyol/order-summary')
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data?.success) setOrderSummary(data); })
+      .catch(() => {});
+
+    // Günlük kâr verisini çek
+    fetch('/api/marketplace/trendyol/daily-profit')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.success) setDailyProfit(data); })
       .catch(() => {});
   }, [isPro]);
 
@@ -277,40 +287,135 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ═══ BÖLÜM 3 — Özet Satırı ═══ */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* En Kârlı Ürün */}
-          <div className="bg-card rounded-xl px-5 py-4 border border-border/40 flex items-center gap-3">
-            <div className="w-9 h-9 bg-amber-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Star size={16} className="text-amber-500" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-0.5">En Karli Urun</div>
-              {mostProfitable ? (
-                <>
-                  <div className="text-sm font-semibold text-foreground truncate">{mostProfitable.input.product_name}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    {formatCurrency(mostProfitable.result.monthly_net_profit)} / ay · {formatPercent(mostProfitable.result.margin_pct)} marj
+        {/* ═══ BÖLÜM 3 — Bu Ay Ciro + Ürün Durumu ═══ */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+          {/* SOL: Bu Ay Ciro + Grafik */}
+          <div className="bg-card rounded-xl border border-border/40 p-5 space-y-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Bu Ay Ciro</div>
+                <div className="text-2xl font-bold text-foreground mt-1">{formatCurrency(dailyProfit?.totalRevenue ?? 0)}</div>
+                {(dailyProfit?.revenueChange ?? 0) !== 0 && (
+                  <div className={`text-xs mt-1 flex items-center gap-1 ${(dailyProfit?.revenueChange ?? 0) > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                    <TrendingUp size={12} className={(dailyProfit?.revenueChange ?? 0) < 0 ? 'rotate-180' : ''} />
+                    %{Math.abs(dailyProfit?.revenueChange ?? 0)} gecen aya gore
                   </div>
-                </>
-              ) : (
-                <div className="text-sm text-muted-foreground">Henuz analiz yok</div>
-              )}
+                )}
+              </div>
+              <div className="text-right">
+                <div className="text-[11px] text-muted-foreground">Hedef: {formatCurrency(dailyProfit?.revenueGoal ?? 60000)}</div>
+                <div className="w-24 h-1.5 bg-muted/30 rounded-full mt-1.5 overflow-hidden">
+                  <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${dailyProfit?.goalPercent ?? 0}%` }} />
+                </div>
+                <div className="text-[10px] text-emerald-600 mt-0.5">%{dailyProfit?.goalPercent ?? 0} tamamlandi</div>
+              </div>
             </div>
+
+            {/* Grafik */}
+            {dailyProfit && dailyProfit.days.length > 0 && (() => {
+              const maxAbs = Math.max(...dailyProfit.days.map(d => Math.abs(d.profit)), 1);
+              const points = dailyProfit.days.map((d, i) => ({
+                x: i * (400 / 6),
+                y: 50 - (d.profit / maxAbs * 45),
+              }));
+              // Smooth bezier path
+              let path = `M${points[0].x},${points[0].y}`;
+              for (let i = 1; i < points.length; i++) {
+                const cx = (points[i - 1].x + points[i].x) / 2;
+                path += ` C${cx},${points[i - 1].y} ${cx},${points[i].y} ${points[i].x},${points[i].y}`;
+              }
+              const areaPathUp = path + ` L${points[points.length - 1].x},50 L${points[0].x},50 Z`;
+              const areaPathDn = areaPathUp;
+              const last = points[points.length - 1];
+
+              return (
+                <div>
+                  <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Gunluk Kar / Zarar — Son 7 Gun</div>
+                  <svg width="100%" viewBox="0 0 400 100" preserveAspectRatio="none" style={{ height: 100 }}>
+                    <defs>
+                      <clipPath id="up"><rect x="0" y="0" width="400" height="50" /></clipPath>
+                      <clipPath id="dn"><rect x="0" y="50" width="400" height="50" /></clipPath>
+                      <linearGradient id="gGreen" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#22c55e" stopOpacity="0.28" />
+                        <stop offset="100%" stopColor="#22c55e" stopOpacity="0.02" />
+                      </linearGradient>
+                      <linearGradient id="gRed" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#ef4444" stopOpacity="0.02" />
+                        <stop offset="100%" stopColor="#ef4444" stopOpacity="0.22" />
+                      </linearGradient>
+                    </defs>
+                    <line x1="0" y1="50" x2="400" y2="50" stroke="currentColor" strokeOpacity="0.08" strokeDasharray="4,6" />
+                    <path d={areaPathUp} fill="url(#gGreen)" clipPath="url(#up)" />
+                    <path d={areaPathDn} fill="url(#gRed)" clipPath="url(#dn)" />
+                    <path d={path} fill="none" stroke="#22c55e" strokeWidth="2.5" clipPath="url(#up)" />
+                    <path d={path} fill="none" stroke="#ef4444" strokeWidth="2.5" clipPath="url(#dn)" />
+                    <circle cx={last.x} cy={last.y} r="8" fill={last.y <= 50 ? '#22c55e' : '#ef4444'} opacity="0.15" />
+                    <circle cx={last.x} cy={last.y} r="3.5" fill={last.y <= 50 ? '#22c55e' : '#ef4444'} />
+                  </svg>
+                  <div className="flex justify-between mt-1">
+                    {dailyProfit.days.map((d, i) => (
+                      <span key={i} className="text-[10px] text-muted-foreground/45">{d.label}</span>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-4 mt-2">
+                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="w-3 h-0.5 bg-emerald-500 rounded" /> Karli gun</span>
+                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="w-3 h-0.5 bg-red-500 rounded" /> Zararli gun</span>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
-          {/* Portföy Durumu */}
-          <div className="bg-card rounded-xl px-5 py-4 border border-border/40 flex items-center gap-3">
-            <div className="w-9 h-9 bg-emerald-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-              <CheckCircle size={16} className="text-emerald-500" />
+          {/* SAĞ: Ürün Durumu */}
+          <div className="bg-card rounded-xl border border-border/40 p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Urun Durumu</span>
+              <Link href="/products" className="text-xs text-orange-500 font-medium hover:underline">Detay</Link>
             </div>
-            <div>
-              <div className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-0.5">Portfolyo Durumu</div>
-              <div className="text-sm font-semibold text-foreground">
-                {profitableCount} karli, {lossCount} zararda
+
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-lg p-3 text-center" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                <div className="text-2xl font-bold text-emerald-600">{profitableCount}</div>
+                <div className="text-[10px] text-emerald-600 font-medium mt-0.5">Karli</div>
               </div>
-              <div className="text-xs text-muted-foreground mt-0.5">
-                Toplam: {formatCurrency(totalProfit)} / ay
+              <div className="rounded-lg p-3 text-center" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                <div className="text-2xl font-bold text-red-500">{lossCount}</div>
+                <div className="text-[10px] text-red-500 font-medium mt-0.5">Zararda</div>
+              </div>
+              <div className="rounded-lg p-3 text-center" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)' }}>
+                <div className="text-2xl font-bold text-amber-600">{riskyCount}</div>
+                <div className="text-[10px] text-amber-600 font-medium mt-0.5">Riskli</div>
+              </div>
+            </div>
+
+            {/* En Kârlı Ürün */}
+            {mostProfitable && (
+              <div className="border-t border-border/40 pt-4">
+                <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">En Karli Urun</div>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Star size={14} className="text-amber-500" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-foreground truncate">{mostProfitable.input.product_name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {formatCurrency(mostProfitable.result.monthly_net_profit)} / ay · {formatPercent(mostProfitable.result.margin_pct)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Portföy özeti */}
+            <div className="border-t border-border/40 pt-4">
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Toplam aylik kar</span>
+                <span className={`font-bold ${totalProfit >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{formatCurrency(totalProfit)}</span>
+              </div>
+              <div className="flex justify-between text-xs mt-1">
+                <span className="text-muted-foreground">Ortalama marj</span>
+                <span className="font-bold text-foreground">{formatPercent(avgMargin)}</span>
               </div>
             </div>
           </div>
