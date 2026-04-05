@@ -99,12 +99,34 @@ export function CSVImportSection({ onImport }: CSVImportSectionProps) {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            const text = ev.target?.result as string;
-            handleProcessText(text);
-        };
-        reader.readAsText(file);
+        const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+
+        if (isExcel) {
+            // Excel dosyasını ArrayBuffer olarak oku, CSV'ye çevir
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    // eslint-disable-next-line @typescript-eslint/no-require-imports
+                    const XLSX = require('xlsx');
+                    const wb = XLSX.read(ev.target?.result, { type: 'array' });
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    const csvText: string = XLSX.utils.sheet_to_csv(ws, { FS: ';' });
+                    handleProcessText(csvText);
+                } catch {
+                    toast.error('Excel dosyası okunamadı.');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        } else {
+            // CSV/metin dosyası
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const text = ev.target?.result as string;
+                handleProcessText(text);
+            };
+            reader.readAsText(file);
+        }
+
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
@@ -195,7 +217,7 @@ export function CSVImportSection({ onImport }: CSVImportSectionProps) {
                             <input
                                 ref={fileInputRef}
                                 type="file"
-                                accept=".csv"
+                                accept=".csv,.xlsx,.xls"
                                 className="hidden"
                                 onChange={handleFileUpload}
                             />
