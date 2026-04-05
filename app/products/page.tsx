@@ -147,6 +147,8 @@ export default function ProductsPage() {
         return;
       }
 
+      const loadingToast = toast.loading(`${updates.length} ürün işleniyor...`);
+
       let updated = 0;
       let created = 0;
 
@@ -192,6 +194,7 @@ export default function ProductsPage() {
         }
       }
 
+      toast.dismiss(loadingToast);
       const parts: string[] = [];
       if (updated > 0) parts.push(`${updated} ürün güncellendi`);
       if (created > 0) parts.push(`${created} yeni ürün eklendi`);
