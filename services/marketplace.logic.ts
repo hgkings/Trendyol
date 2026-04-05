@@ -526,6 +526,61 @@ export class MarketplaceLogic {
         }
       }
 
+      // Fallback: Eşleştirme yapılmamış ürünler için barcode/ürün adı ile satış adedi hesapla
+      // normalizer eşleşmemiş ürünleri atlıyor — burada doğrudan sipariş verisinden hesaplıyoruz
+      const allAnalyses = await this.analysisRepo.findByUserId(userId)
+      if (allAnalyses.length > 0 && orders.length > 0) {
+        // Sipariş satırlarından ürün bazlı satış sayısı topla (barcode → adet)
+        const SOLD_STATUSES = ['Created', 'Picking', 'Invoiced', 'Shipped', 'Delivered', 'AtCollectionPoint']
+        const salesByBarcode = new Map<string, number>()
+        const salesByTitle = new Map<string, number>()
+
+        for (const order of orders) {
+          const status = String(order.status ?? order.shipmentPackageStatus ?? '')
+          if (!SOLD_STATUSES.includes(status)) continue
+          const lines = (order.lines ?? order.orderItems ?? []) as Array<Record<string, unknown>>
+          for (const line of lines) {
+            const qty = Number(line.quantity ?? 1)
+            const barcode = String(line.barcode ?? '').trim()
+            const title = String(line.productName ?? line.title ?? '').trim().toLowerCase()
+            if (barcode) salesByBarcode.set(barcode, (salesByBarcode.get(barcode) ?? 0) + qty)
+            if (title) salesByTitle.set(title, (salesByTitle.get(title) ?? 0) + qty)
+          }
+        }
+
+        // Her analiz için eşleşme dene (auto_sales_qty henüz güncellenmemişse)
+        for (const a of allAnalyses) {
+          if (a.auto_sales_qty && a.auto_sales_qty > 0) continue // Zaten güncellendi
+          const inputs = (a.inputs ?? {}) as Record<string, unknown>
+          const aBarcode = String(inputs.barcode ?? '').trim()
+          const aName = String(a.product_name ?? '').trim().toLowerCase()
+
+          let matched = 0
+          if (aBarcode && salesByBarcode.has(aBarcode)) {
+            matched = salesByBarcode.get(aBarcode)!
+          } else if (aName && salesByTitle.has(aName)) {
+            matched = salesByTitle.get(aName)!
+          } else {
+            // Normalize eşleşme dene
+            const normName = aName.replace(/[\s\-_./]+/g, '')
+            for (const [title, qty] of salesByTitle) {
+              if (title.replace(/[\s\-_./]+/g, '') === normName) {
+                matched = qty
+                break
+              }
+            }
+          }
+
+          if (matched > 0) {
+            inputs.monthly_sales_volume = matched
+            await this.analysisRepo.update(a.id, {
+              auto_sales_qty: matched,
+              inputs,
+            })
+          }
+        }
+      }
+
       const count = orders.length
       await this.marketplaceRepo.updateSyncLog(syncLog.id, 'success', `${count} sipariş çekildi, ${result.metricsUpdated} metrik güncellendi`)
       await this.marketplaceRepo.updateLastSyncAt(connectionId)
