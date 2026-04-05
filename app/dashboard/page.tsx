@@ -121,7 +121,31 @@ export default function DashboardPage() {
     ? analyses.reduce((best, a) => a.result.monthly_net_profit > best.result.monthly_net_profit ? a : best, analyses[0])
     : null;
 
-  // Kritik ürünler (zarar eden veya riskli)
+  // Kritik ürün durumu
+  const criticalProducts = useMemo(() => {
+    const lossCount = analyses.filter(a => a.result.unit_net_profit < 0).length;
+    const lowMarginCount = analyses.filter(a => a.result.margin_pct >= 0 && a.result.margin_pct < 10).length;
+    // Stok riski: stockMap'ten 5 altı stoklu ürünleri say
+    let lowStockCount = 0;
+    if (stockMap) {
+      const counted = new Set<string>();
+      for (const a of analyses) {
+        const inputs = a.input as unknown as Record<string, unknown>;
+        const barcode = String(inputs.barcode ?? '').trim();
+        const nameKey = a.input.product_name.toLowerCase();
+        const normKey = nameKey.replace(/[\s\-_./]+/g, '');
+        const stock = (barcode ? stockMap.get(barcode) : undefined)
+          ?? stockMap.get(nameKey)
+          ?? stockMap.get(normKey);
+        if (stock && stock.quantity <= 5 && !counted.has(a.id)) {
+          lowStockCount++;
+          counted.add(a.id);
+        }
+      }
+    }
+    return { total: lossCount + lowMarginCount + lowStockCount, lossCount, lowMarginCount, lowStockCount };
+  }, [analyses, stockMap]);
+
   const kritikUrunler = useMemo(() =>
     analyses
       .filter(a => a.result.monthly_net_profit <= 0 || a.risk.level === 'risky' || a.risk.level === 'dangerous')
@@ -292,43 +316,63 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ═══ BÖLÜM 4 — Kritik Ürün Önerileri ═══ */}
-        {kritikUrunler.length > 0 && (
+        {/* ═══ BÖLÜM 4 — Kritik Ürün Durumu ═══ */}
+        {criticalProducts.total > 0 && (
           <div className="bg-amber-500/5 dark:bg-amber-500/10 rounded-xl border border-amber-500/20 overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-amber-500/20">
+            {/* Başlık */}
+            <div className="flex items-center justify-between px-5 pt-5 pb-4">
               <div className="flex items-center gap-2">
-                <AlertTriangle size={16} className="text-amber-600" />
-                <span className="font-semibold text-amber-800 dark:text-amber-400 text-sm">Kritik Urun Onerileri</span>
-                <span className="text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-full">
-                  {kritikUrunler.length} urun
+                <AlertTriangle size={16} className="text-amber-500" />
+                <span className="font-semibold text-foreground text-sm">Kritik Urun Durumu</span>
+                <span className="text-xs font-medium text-amber-600 bg-amber-500/15 px-2 py-0.5 rounded-full">
+                  {criticalProducts.total}
                 </span>
               </div>
-              <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Acil aksiyon gerekiyor</span>
+              <Link href="/products" className="text-xs text-amber-600 font-medium hover:underline">
+                Tumunu Gor
+              </Link>
             </div>
-            <div className="divide-y divide-amber-500/10">
-              {kritikUrunler.map(urun => (
-                <div key={urun.id} className="flex items-center justify-between px-5 py-3">
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-foreground truncate">{urun.input.product_name}</div>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <TrendingDown size={12} className="text-red-400" />
-                      <span className="text-xs text-red-500">
-                        {urun.result.monthly_net_profit <= 0 ? 'Zarar ediyor' : 'Yuksek risk'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <span className="text-sm font-semibold text-red-600 dark:text-red-400 bg-red-500/10 px-2.5 py-1 rounded-full">
-                      {formatPercent(urun.result.margin_pct)}
-                    </span>
-                    <Link href={`/analysis/${urun.id}`}>
-                      <button className="flex items-center gap-1 text-xs font-medium text-amber-700 dark:text-amber-400 bg-card border border-amber-500/20 px-3 py-1.5 rounded-lg hover:bg-amber-500/10 transition-colors">
-                        Incele <ArrowRight size={12} />
-                      </button>
-                    </Link>
-                  </div>
+
+            {/* 3 Sütun */}
+            <div className="grid grid-cols-3 divide-x divide-amber-500/15 border-t border-amber-500/15">
+              {/* Zarar Eden */}
+              <div className="p-5 flex flex-col gap-3" style={{ background: 'linear-gradient(135deg, rgba(239,68,68,0.08) 0%, transparent 60%)' }}>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full" style={{ background: '#ef4444', boxShadow: '0 0 6px rgba(239,68,68,0.7)' }} />
+                  <span className="text-xs font-semibold" style={{ color: '#ef4444' }}>Zarar Eden</span>
                 </div>
-              ))}
+                <div className="text-4xl font-extrabold" style={{ color: '#ef4444' }}>{criticalProducts.lossCount}</div>
+                <p className="text-[11px] text-muted-foreground">Satis fiyati maliyetin altinda</p>
+                <Link href="/products?filter=loss" className="text-xs font-medium hover:underline" style={{ color: '#ef4444' }}>
+                  Incele
+                </Link>
+              </div>
+
+              {/* Düşük Marj */}
+              <div className="p-5 flex flex-col gap-3" style={{ background: 'linear-gradient(135deg, rgba(249,115,22,0.08) 0%, transparent 60%)' }}>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full" style={{ background: '#f97316', boxShadow: '0 0 6px rgba(249,115,22,0.7)' }} />
+                  <span className="text-xs font-semibold" style={{ color: '#f97316' }}>Dusuk Marj</span>
+                </div>
+                <div className="text-4xl font-extrabold" style={{ color: '#f97316' }}>{criticalProducts.lowMarginCount}</div>
+                <p className="text-[11px] text-muted-foreground">%10&apos;un altinda marj</p>
+                <Link href="/products?filter=low-margin" className="text-xs font-medium hover:underline" style={{ color: '#f97316' }}>
+                  Incele
+                </Link>
+              </div>
+
+              {/* Stok Riski */}
+              <div className="p-5 flex flex-col gap-3" style={{ background: 'linear-gradient(135deg, rgba(234,179,8,0.08) 0%, transparent 60%)' }}>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full" style={{ background: '#eab308', boxShadow: '0 0 6px rgba(234,179,8,0.7)' }} />
+                  <span className="text-xs font-semibold" style={{ color: '#ca8a04' }}>Stok Riski</span>
+                </div>
+                <div className="text-4xl font-extrabold" style={{ color: '#ca8a04' }}>{criticalProducts.lowStockCount}</div>
+                <p className="text-[11px] text-muted-foreground">Stok tukenme esiginde</p>
+                <Link href="/products?filter=low-stock" className="text-xs font-medium hover:underline" style={{ color: '#ca8a04' }}>
+                  Incele
+                </Link>
+              </div>
             </div>
           </div>
         )}
