@@ -132,19 +132,19 @@ export const CARGO_PROVIDERS = [
 
 /** Endpoint bazlı rate limit kuralları (resmi) */
 export const RATE_LIMITS = {
-    general: { maxRequests: 50, windowMs: 10_000 },
-    productCreation: { maxRequests: 1000, windowMs: 60_000 },
-    productUpdate: { maxRequests: 1000, windowMs: 60_000 },
-    stockPriceUpdate: { maxRequests: Infinity, windowMs: 0 }, // NO LIMIT (ama 15dk dedup)
-    productFilter: { maxRequests: 2000, windowMs: 60_000 },
-    productDeletion: { maxRequests: 100, windowMs: 60_000 },
-    batchCheck: { maxRequests: 1000, windowMs: 60_000 },
-    brandList: { maxRequests: 50, windowMs: 60_000 },
-    brandSearch: { maxRequests: 50, windowMs: 60_000 },
-    categoryList: { maxRequests: 50, windowMs: 60_000 },
-    categoryAttrs: { maxRequests: 50, windowMs: 60_000 },
-    orders: { maxRequests: 1000, windowMs: 60_000 },
-    addresses: { maxRequests: 1, windowMs: 3_600_000 }, // 1 istek/saat
+    general: { maxRequests: 2000, windowMs: 60_000 },        // Ürün filtreleme limiti (docs: 2000/dk)
+    productCreation: { maxRequests: 1000, windowMs: 60_000 }, // docs: 1000/dk
+    productUpdate: { maxRequests: 1000, windowMs: 60_000 },   // docs: 1000/dk
+    stockPriceUpdate: { maxRequests: Infinity, windowMs: 0 },  // docs: NO LIMIT
+    productFilter: { maxRequests: 2000, windowMs: 60_000 },   // docs: 2000/dk
+    productDeletion: { maxRequests: 100, windowMs: 60_000 },  // docs: 100/dk
+    batchCheck: { maxRequests: 1000, windowMs: 60_000 },      // docs: 1000/dk
+    brandList: { maxRequests: 50, windowMs: 60_000 },         // docs: 50/dk
+    brandSearch: { maxRequests: 50, windowMs: 60_000 },       // docs: 50/dk
+    categoryList: { maxRequests: 50, windowMs: 60_000 },      // docs: 50/dk
+    categoryAttrs: { maxRequests: 50, windowMs: 60_000 },     // docs: 50/dk
+    orders: { maxRequests: 1000, windowMs: 60_000 },          // docs: 1000/dk (tahmini)
+    addresses: { maxRequests: 1, windowMs: 3_600_000 },       // docs: 1/saat
 } as const
 
 // ─── Tipler ──────────────────────────────────────────────────────
@@ -307,8 +307,8 @@ export interface ClaimIssueReason {
 
 const rateLimiter = {
     requests: [] as number[],
-    maxRequests: 50,
-    windowMs: 10_000,
+    maxRequests: 2000,
+    windowMs: 60_000,
 }
 
 async function checkRateLimit(): Promise<void> {
