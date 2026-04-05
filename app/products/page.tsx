@@ -134,24 +134,55 @@ export default function ProductsPage() {
         return;
       }
 
-      let success = 0;
-      for (const { id, updates: fields } of updates) {
-        const existing = analyses.find(a => a.id === id);
-        if (!existing) continue;
+      let updated = 0;
+      let created = 0;
 
-        const updatedInput: ProductInput = { ...existing.input, ...fields };
-        const result = calculateProfit(updatedInput);
-        const risk = calculateRisk(updatedInput, result);
-        const res = await saveAnalysis({
-          ...existing,
-          input: updatedInput,
-          result,
-          risk,
-        });
-        if (res.success) success++;
+      for (const { id, isNew, updates: fields } of updates) {
+        if (!isNew && id) {
+          // Mevcut ürün güncelleme
+          const existing = analyses.find(a => a.id === id);
+          if (!existing) continue;
+          const updatedInput: ProductInput = { ...existing.input, ...fields };
+          const result = calculateProfit(updatedInput);
+          const risk = calculateRisk(updatedInput, result);
+          const res = await saveAnalysis({ ...existing, input: updatedInput, result, risk });
+          if (res.success) updated++;
+        } else if (isNew && fields.product_name) {
+          // Yeni ürün oluşturma
+          if (!user) continue;
+          const newInput: ProductInput = {
+            marketplace: fields.marketplace ?? 'trendyol',
+            product_name: fields.product_name,
+            monthly_sales_volume: fields.monthly_sales_volume ?? 100,
+            product_cost: fields.product_cost ?? 0,
+            sale_price: fields.sale_price ?? 0,
+            commission_pct: fields.commission_pct ?? 18,
+            shipping_cost: fields.shipping_cost ?? 0,
+            packaging_cost: fields.packaging_cost ?? 0,
+            ad_cost_per_sale: fields.ad_cost_per_sale ?? 0,
+            return_rate_pct: fields.return_rate_pct ?? 12,
+            vat_pct: fields.vat_pct ?? 20,
+            other_cost: fields.other_cost ?? 0,
+            payout_delay_days: 28,
+          };
+          const result = calculateProfit(newInput);
+          const risk = calculateRisk(newInput, result);
+          const res = await saveAnalysis({
+            id: generateId(),
+            userId: user.id,
+            input: newInput,
+            result,
+            risk,
+            createdAt: new Date().toISOString(),
+          });
+          if (res.success) created++;
+        }
       }
 
-      toast.success(`${success} ürünün maliyetleri güncellendi.`);
+      const parts: string[] = [];
+      if (updated > 0) parts.push(`${updated} ürün güncellendi`);
+      if (created > 0) parts.push(`${created} yeni ürün eklendi`);
+      toast.success(parts.join(', ') || 'İşlem tamamlandı.');
       await refresh();
     } catch {
       toast.error('Dosya okunamadı veya format hatalı.');

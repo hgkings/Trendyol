@@ -450,7 +450,8 @@ export function exportCostTemplate(analyses: AnalysisWithId[]): ArrayBuffer {
  */
 export function parseCostTemplate(file: ArrayBuffer): Array<{
   id: string;
-  updates: Partial<ProductInput>;
+  isNew: boolean;
+  updates: Partial<ProductInput> & { product_name?: string };
 }> {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const XLSX = require('xlsx');
@@ -460,8 +461,7 @@ export function parseCostTemplate(file: ArrayBuffer): Array<{
 
   if (rows.length < 2) return [];
 
-  // İlk satır başlık — atla
-  const results: Array<{ id: string; updates: Partial<ProductInput> }> = [];
+  const results: Array<{ id: string; isNew: boolean; updates: Partial<ProductInput> & { product_name?: string } }> = [];
 
   const MP_REVERSE: Record<string, Marketplace> = {
     'trendyol': 'trendyol', 'hepsiburada': 'hepsiburada',
@@ -470,16 +470,20 @@ export function parseCostTemplate(file: ArrayBuffer): Array<{
 
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
-    if (!row || !row[0]) continue;
+    if (!row) continue;
 
-    const id = String(row[0]).trim();
-    if (!id) continue;
-
+    const id = String(row[0] ?? '').trim();
+    const productName = String(row[1] ?? '').trim();
     const mp = String(row[2] ?? '').toLowerCase().trim();
+
+    // Boş satır atla — ne ID ne de ürün adı var
+    if (!id && !productName) continue;
 
     results.push({
       id,
+      isNew: !id,
       updates: {
+        product_name: productName || undefined,
         marketplace: MP_REVERSE[mp] ?? 'trendyol',
         monthly_sales_volume: num(row[3]),
         sale_price: num(row[4]),
@@ -508,25 +512,28 @@ export function exportBlankTemplate(): ArrayBuffer {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const XLSX = require('xlsx');
 
+  // Maliyet şablonuyla AYNI başlıklar — ID boş bırakılır (yeni ürün)
   const headers = [
-    'pazaryeri',
-    'urun_adi',
-    'aylik_satis_adedi',
-    'urun_maliyeti',
-    'satis_fiyati',
-    'komisyon_orani',
-    'kargo_ucreti',
-    'paketleme_maliyeti',
-    'reklam_maliyeti',
-    'iade_orani',
-    'kdv_orani',
+    'ID',
+    'Urun Adi',
+    'Pazaryeri',
+    'Aylik Satis Adedi',
+    'Satis Fiyati',
+    'Urun Maliyeti',
+    'Kargo',
+    'Paketleme',
+    'Reklam',
+    'Komisyon %',
+    'Iade %',
+    'KDV %',
+    'Diger Giderler',
   ];
 
-  // 3 örnek satır
+  // 2 örnek satır (ID boş — yeni ürün olarak eklenir)
   const examples = [
-    ['trendyol', 'Ornek Urun 1', 100, 50, 150, 18, 10, 3, 5, 12, 20],
-    ['hepsiburada', 'Ornek Urun 2', 50, 80, 200, 15, 12, 4, 8, 10, 20],
-    ['trendyol', '', '', '', '', '', '', '', '', '', ''],
+    ['', 'Ornek Urun 1', 'Trendyol', 100, 150, 50, 10, 3, 5, 18, 12, 20, 0],
+    ['', 'Ornek Urun 2', 'Hepsiburada', 50, 200, 80, 12, 4, 8, 15, 10, 20, 0],
+    ['', '', '', '', '', '', '', '', '', '', '', '', ''],
   ];
 
   const wsData = [headers, ...examples];
@@ -543,7 +550,7 @@ export function exportBlankTemplate(): ArrayBuffer {
     }
   }
 
-  // Örnek satırlar gri (kullanıcı silecek)
+  // Örnek satırlar gri
   for (let r = 1; r <= 2; r++) {
     for (let c = 0; c < headers.length; c++) {
       const cellRef = XLSX.utils.encode_cell({ r, c });
