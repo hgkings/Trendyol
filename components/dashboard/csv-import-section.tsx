@@ -197,16 +197,6 @@ export function CSVImportSection({ onImport }: CSVImportSectionProps) {
                             </button>
                         </div>
 
-                        <div className="flex gap-2 w-full sm:w-auto">
-                            <Button variant="ghost" size="sm" className="h-8 text-xs flex-1 sm:flex-initial whitespace-nowrap" onClick={handleCopyTemplate}>
-                                <Copy className="mr-1.5 h-3.5 w-3.5" />
-                                Şablonu Kopyala
-                            </Button>
-                            <Button variant="ghost" size="sm" className="h-8 text-xs flex-1 sm:flex-initial whitespace-nowrap" onClick={handleDownloadTemplate}>
-                                <Download className="mr-1.5 h-3.5 w-3.5" />
-                                Excel Sablon Indir
-                            </Button>
-                        </div>
                     </div>
 
                     {mode === 'upload' ? (
