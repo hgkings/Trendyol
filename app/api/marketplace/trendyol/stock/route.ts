@@ -93,8 +93,8 @@ export async function GET() {
             for (const line of lines) {
               const lineStatus = String(line.orderLineItemStatusName ?? status)
               if (EXCLUDED_STATUSES.includes(lineStatus)) continue
-              const barcode = String(line.barcode ?? '').trim()
-              const stockCode = String(line.stockCode ?? '').trim()
+              const barcode = String(line.barcode ?? '').trim().toLowerCase()
+              const stockCode = String(line.stockCode ?? '').trim().toLowerCase()
               const qty = Number(line.quantity ?? 1)
               if (barcode) salesByBarcode.set(barcode, (salesByBarcode.get(barcode) ?? 0) + qty)
               if (stockCode && stockCode !== barcode) salesByBarcode.set(stockCode, (salesByBarcode.get(stockCode) ?? 0) + qty)
@@ -109,8 +109,8 @@ export async function GET() {
       // Satış adedini ürünlere yaz — barcode + stockCode ile eşleştir
       let matchedProducts = 0
       for (const p of products) {
-        const byBarcode = p.barcode ? salesByBarcode.get(p.barcode) : undefined
-        const byStockCode = p.stockCode ? salesByBarcode.get(p.stockCode) : undefined
+        const byBarcode = p.barcode ? salesByBarcode.get(p.barcode.toLowerCase()) : undefined
+        const byStockCode = p.stockCode ? salesByBarcode.get(p.stockCode.toLowerCase()) : undefined
         const sales = byBarcode ?? byStockCode ?? 0
         if (sales > 0) {
           p.monthlySales = sales
