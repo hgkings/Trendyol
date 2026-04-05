@@ -86,15 +86,19 @@ export default function ProductsPage() {
   const handleBulkExport = (ids: string[]) => {
     const selected = analyses.filter(a => ids.includes(a.id));
     if (selected.length === 0) return;
-    const json = analysesToJSON(selected);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `karnet_secili_${selected.length}_urun.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success(`${selected.length} ürün dışa aktarıldı.`);
+    try {
+      const buffer = analysesToXLSX(selected);
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `karnet_secili_${selected.length}_urun.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`${selected.length} ürün Excel olarak indirildi.`);
+    } catch {
+      toast.error('Excel dosyası oluşturulamadı.');
+    }
   };
 
   const performImport = async (data: ProductInput[]) => {
