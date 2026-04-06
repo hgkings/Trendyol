@@ -1699,6 +1699,12 @@ export class MarketplaceLogic {
     for (const m of mapRows) {
       if (m.internal_product_id) {
         extToInt.set(m.external_product_id, m.internal_product_id)
+        if (m.barcode) {
+          extToInt.set(m.barcode, m.internal_product_id)
+        }
+        if (m.merchant_sku) {
+          extToInt.set(m.merchant_sku, m.internal_product_id)
+        }
       }
     }
 
