@@ -1453,7 +1453,7 @@ async function fetchSettlementsChunk(
     headers: Record<string, string>,
     startDate: string,
     endDate: string,
-    transactionTypes: string[] = ['Sale', 'Return', 'CommissionPositive', 'CommissionNegative']
+    transactionTypes: string[] = ['Sale', 'Return']
 ): Promise<SellerSettlement[]> {
     const allItems: SellerSettlement[] = []
     const MAX_PAGES = 20
@@ -1464,8 +1464,8 @@ async function fetchSettlementsChunk(
         params.set('endDate', endDate)
         params.set('size', '500')
         params.set('page', String(page))
-        // transactionType tekli gönderilmeli — her tip için ayrı istek
-        params.set('transactionType', transactionTypes[0] ?? 'Sale')
+        // transactionTypes (çoğul) — virgülle ayrılmış çoklu tip tek istekte
+        params.set('transactionTypes', transactionTypes.join(','))
 
         const url = `${FINANCE_BASE_URL}/${creds.sellerId}/settlements?${params.toString()}`
         const res = await fetchWithRetry(url, headers)
@@ -1517,29 +1517,33 @@ export async function getSellerSettlements(
 
     const baslangic = new Date(startDate)
     const bitis = new Date(endDate)
+    const errors: string[] = []
 
-    // Her transactionType için ayrı istek (Trendyol tek tip bekliyor)
-    for (const tt of types) {
-      let mevcutBaslangic = new Date(baslangic)
+    // transactionTypes (çoğul) ile tek istekte çoklu tip — 14 günlük pencereler
+    let mevcutBaslangic = new Date(baslangic)
 
-      while (mevcutBaslangic <= bitis) {
-        const mevcutBitis = new Date(mevcutBaslangic)
-        mevcutBitis.setDate(mevcutBitis.getDate() + 14)
-        if (mevcutBitis > bitis) mevcutBitis.setTime(bitis.getTime())
+    while (mevcutBaslangic <= bitis) {
+      const mevcutBitis = new Date(mevcutBaslangic)
+      mevcutBitis.setDate(mevcutBitis.getDate() + 14)
+      if (mevcutBitis > bitis) mevcutBitis.setTime(bitis.getTime())
 
-        const start = String(mevcutBaslangic.getTime())
-        const end = String(mevcutBitis.getTime())
+      const start = String(mevcutBaslangic.getTime())
+      const end = String(mevcutBitis.getTime())
 
-        try {
-          const chunk = await fetchSettlementsChunk(creds, headers, start, end, [tt])
-          results.push(...chunk)
-        } catch {
-          // Bir tip hata verirse diğerlerine devam et
-        }
-
-        mevcutBaslangic = new Date(mevcutBitis)
-        mevcutBaslangic.setDate(mevcutBaslangic.getDate() + 1)
+      try {
+        const chunk = await fetchSettlementsChunk(creds, headers, start, end, types)
+        results.push(...chunk)
+      } catch (err) {
+        errors.push(err instanceof Error ? err.message : String(err))
       }
+
+      mevcutBaslangic = new Date(mevcutBitis)
+      mevcutBaslangic.setDate(mevcutBaslangic.getDate() + 1)
+    }
+
+    // Tüm pencereler başarısız olduysa hatayı fırlat
+    if (results.length === 0 && errors.length > 0) {
+      throw new Error(`Hakediş verisi alınamadı: ${errors[0]}`)
     }
 
     return results
@@ -1581,9 +1585,8 @@ export async function getOtherFinancials(
         params.set('startDate', start)
         params.set('endDate', end)
         params.set('size', '500')
-        for (const tt of types) {
-            params.append('transactionType', tt)
-        }
+        // transactionTypes (çoğul) — virgülle ayrılmış çoklu tip
+        params.set('transactionTypes', types.join(','))
 
         // Sayfalama ile çek
         for (let page = 0; page < 20; page++) {
@@ -1591,7 +1594,10 @@ export async function getOtherFinancials(
             const url = `${FINANCE_BASE_URL}/${creds.sellerId}/otherfinancials?${params.toString()}`
             const res = await fetchWithRetry(url, headers)
 
-            if (!res.ok) break // Hata durumunda pencereyi atla
+            if (!res.ok) {
+              const errBody = await res.text().catch(() => '')
+              throw new Error(`Trendyol OtherFinancials API hatası (HTTP ${res.status}): ${errBody.slice(0, 300)}`)
+            }
 
             const data = await res.json() as { content?: Record<string, unknown>[]; totalPages?: number }
             const chunk = (data.content || []).map((item: Record<string, unknown>): OtherFinancial => ({
