@@ -278,15 +278,6 @@ export default function FinancePage() {
         if (finData.warning) {
           toast.error(`Hakediş: ${finData.warning}`)
         }
-        // DEBUG: API yanıtını göster — sorun teşhisi için geçici
-        if (finData.debug) {
-          const d = finData.debug as Record<string, unknown>
-          console.log('[Finance DEBUG]', d)
-          toast.info(`DEBUG: ${d.dateRange} | settlements: ${d.settlementCount} | other: ${d.otherFinancialsCount} | seller: ${d.sellerId}`, { duration: 15000 })
-          if (d.firstSettlement) {
-            toast.info(`İlk kayıt: ${String(d.firstSettlement).slice(0, 200)}`, { duration: 15000 })
-          }
-        }
       } else {
         const errMsg = finData.error || finData.warning || `Finans verisi alınamadı (HTTP ${financeRes.status})`
         toast.error(errMsg)
