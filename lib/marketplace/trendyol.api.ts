@@ -349,6 +349,8 @@ function buildHeaders(creds: TrendyolCredentials): Record<string, string> {
         'Authorization': `Basic ${token}`,
         'Content-Type': 'application/json',
         'User-Agent': `${String(creds.sellerId).trim()} - SelfIntegration`,
+        // Trendyol her servis için storeFrontCode ister; Türkiye satıcıları için TR.
+        'storeFrontCode': 'TR',
     }
 }
 
