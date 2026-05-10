@@ -1014,7 +1014,13 @@ export class MarketplaceLogic {
     traceId: string,
     payload: unknown,
     _userId: string
-  ): Promise<{ settlements: trendyolApi.SellerSettlement[]; otherFinancials: trendyolApi.OtherFinancial[]; warning?: string }> {
+  ): Promise<{
+    settlements: trendyolApi.SellerSettlement[]
+    otherFinancials: trendyolApi.OtherFinancial[]
+    pendingSettlements: trendyolApi.SellerSettlement[]
+    pendingOtherFinancials: trendyolApi.OtherFinancial[]
+    warning?: string
+  }> {
     const { connectionId, days, startDate, endDate } = payload as {
       connectionId: string; days?: number; startDate?: string; endDate?: string
     }
@@ -1035,29 +1041,72 @@ export class MarketplaceLogic {
       endStr = end.toISOString().split('T')[0]
     }
 
+    // Pending Tahsilat penceresi: son 35 gün (Trendyol tipik ödeme süresi 14-28 gün)
+    // Bu pencere, gelecek odemeTarihi'li tüm bekleyen hakedişleri kapsar.
+    const today = new Date()
+    const pendingStart = new Date(today.getTime() - 35 * 24 * 60 * 60 * 1000)
+    const pendingStartStr = pendingStart.toISOString().split('T')[0]
+    const todayStr = today.toISOString().split('T')[0]
+
+    // Kullanıcının seçtiği aralık zaten pending penceresini kapsıyorsa
+    // tek fetch yeter; aksi halde paralel ek fetch yapıyoruz.
+    const userStart = new Date(startStr)
+    const userEnd = new Date(endStr)
+    const reuseUserRange = userStart <= pendingStart && userEnd >= today
+
     // Finans API — hata olursa boş dizi dön ama mesajı ilet
     let settlements: trendyolApi.SellerSettlement[] = []
     let otherFinancials: trendyolApi.OtherFinancial[] = []
+    let pendingSettlementsRaw: trendyolApi.SellerSettlement[] = []
+    let pendingOtherRaw: trendyolApi.OtherFinancial[] = []
     let financeError: string | undefined
 
-    const results = await Promise.allSettled([
+    const fetches: Promise<unknown>[] = [
       trendyolApi.getSellerSettlements(creds, startStr, endStr),
       trendyolApi.getOtherFinancials(creds, startStr, endStr),
-    ])
+    ]
+    if (!reuseUserRange) {
+      fetches.push(trendyolApi.getSellerSettlements(creds, pendingStartStr, todayStr))
+      fetches.push(trendyolApi.getOtherFinancials(creds, pendingStartStr, todayStr))
+    }
+    const results = await Promise.allSettled(fetches)
 
     if (results[0].status === 'fulfilled') {
-      settlements = results[0].value
+      settlements = results[0].value as trendyolApi.SellerSettlement[]
     } else {
       financeError = results[0].reason instanceof Error ? results[0].reason.message : 'Hakediş verisi alınamadı'
     }
-
     if (results[1].status === 'fulfilled') {
-      otherFinancials = results[1].value
+      otherFinancials = results[1].value as trendyolApi.OtherFinancial[]
     }
+
+    if (reuseUserRange) {
+      pendingSettlementsRaw = settlements
+      pendingOtherRaw = otherFinancials
+    } else {
+      if (results[2]?.status === 'fulfilled') {
+        pendingSettlementsRaw = results[2].value as trendyolApi.SellerSettlement[]
+      }
+      if (results[3]?.status === 'fulfilled') {
+        pendingOtherRaw = results[3].value as trendyolApi.OtherFinancial[]
+      }
+    }
+
+    // odemeTarihi >= bugün olanlar = henüz hesaba düşmemiş bekleyen tahsilatlar
+    const todayMs = new Date(todayStr).getTime()
+    const isPending = (dateStr: string | null): boolean => {
+      if (!dateStr) return false
+      const t = new Date(dateStr).getTime()
+      return Number.isFinite(t) && t >= todayMs
+    }
+    const pendingSettlements = pendingSettlementsRaw.filter(s => isPending(s.odemeTarihi))
+    const pendingOtherFinancials = pendingOtherRaw.filter(o => isPending(o.tarih))
 
     return {
       settlements,
       otherFinancials,
+      pendingSettlements,
+      pendingOtherFinancials,
       ...(financeError ? { warning: financeError } : {}),
     }
   }

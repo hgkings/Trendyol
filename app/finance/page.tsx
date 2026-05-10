@@ -203,6 +203,130 @@ function tarihFormati(tarih: string | null): string {
   } catch { return '—' }
 }
 
+// ─── Tahsilat Takvimi yardımcıları ───────────────────────────────
+
+interface TahsilatGunu {
+  tarih: string          // YYYY-MM-DD
+  tarihLabel: string     // "11 May 2026, Pzt"
+  bucket: 'bugun' | 'buHafta' | 'buAy' | 'sonrakiAy' | 'daha'
+  bucketLabel: string
+  brutSatis: number
+  komisyon: number
+  kargoKesintisi: number
+  iadeKesintisi: number
+  digerKesintiler: number
+  netHakedis: number
+  satisAdet: number
+  kalemler: Array<{
+    siparisId: string
+    barkod: string
+    islemTipi: string
+    brut: number
+    komisyon: number
+    saticiHakedis: number
+  }>
+}
+
+function gunOlarakFark(target: Date, ref: Date): number {
+  const a = new Date(target.getFullYear(), target.getMonth(), target.getDate()).getTime()
+  const b = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate()).getTime()
+  return Math.round((a - b) / (24 * 60 * 60 * 1000))
+}
+
+function bucketIcin(odemeTarihi: Date, today: Date): { bucket: TahsilatGunu['bucket']; label: string } {
+  const fark = gunOlarakFark(odemeTarihi, today)
+  if (fark <= 0) return { bucket: 'bugun', label: 'Bugün' }
+  if (fark <= 7) return { bucket: 'buHafta', label: 'Bu hafta' }
+  if (odemeTarihi.getFullYear() === today.getFullYear() && odemeTarihi.getMonth() === today.getMonth()) {
+    return { bucket: 'buAy', label: 'Bu ay' }
+  }
+  const sonrakiAy = new Date(today.getFullYear(), today.getMonth() + 1, 1)
+  if (odemeTarihi.getFullYear() === sonrakiAy.getFullYear() && odemeTarihi.getMonth() === sonrakiAy.getMonth()) {
+    return { bucket: 'sonrakiAy', label: 'Önümüzdeki ay' }
+  }
+  return { bucket: 'daha', label: 'Daha sonra' }
+}
+
+function gunFormatla(tarih: Date): string {
+  return tarih.toLocaleDateString('tr-TR', {
+    day: '2-digit', month: 'short', year: 'numeric', weekday: 'short',
+  })
+}
+
+function tahsilatTakvimiOlustur(
+  settlements: Settlement[],
+  others: OtherFinancial[]
+): TahsilatGunu[] {
+  const today = new Date()
+  const harita = new Map<string, TahsilatGunu>()
+
+  const getGun = (tarihStr: string): TahsilatGunu | null => {
+    const t = new Date(tarihStr)
+    if (!Number.isFinite(t.getTime())) return null
+    const key = t.toISOString().split('T')[0]
+    let g = harita.get(key)
+    if (!g) {
+      const { bucket, label } = bucketIcin(t, today)
+      g = {
+        tarih: key,
+        tarihLabel: gunFormatla(t),
+        bucket, bucketLabel: label,
+        brutSatis: 0, komisyon: 0, kargoKesintisi: 0,
+        iadeKesintisi: 0, digerKesintiler: 0, netHakedis: 0,
+        satisAdet: 0, kalemler: [],
+      }
+      harita.set(key, g)
+    }
+    return g
+  }
+
+  for (const s of settlements) {
+    if (!s.odemeTarihi) continue
+    const g = getGun(s.odemeTarihi)
+    if (!g) continue
+
+    const tipLower = (s.islemTipi || '').toLowerCase()
+    const isSale = s.islemTipi === 'Sale' || tipLower === 'satış' || tipLower.includes('sale')
+    const isReturn = s.islemTipi === 'Return' || tipLower === 'iade' || tipLower.includes('return')
+
+    if (isSale) {
+      const brut = s.alacak > 0 ? s.alacak : s.saticiHakedis + Math.abs(s.komisyonTutari)
+      const net = s.saticiHakedis > 0 ? s.saticiHakedis : brut - Math.abs(s.komisyonTutari)
+      g.brutSatis += brut
+      g.komisyon += Math.abs(s.komisyonTutari)
+      g.netHakedis += net
+      g.satisAdet++
+      g.kalemler.push({
+        siparisId: s.siparisId, barkod: s.barkod, islemTipi: s.islemTipi,
+        brut, komisyon: Math.abs(s.komisyonTutari), saticiHakedis: net,
+      })
+    } else if (isReturn) {
+      const iade = Math.abs(s.borc)
+      const komisyonIadesi = s.komisyonTutari < 0 ? Math.abs(s.komisyonTutari) : 0
+      g.iadeKesintisi += iade
+      g.komisyon -= komisyonIadesi
+      g.netHakedis -= (iade - komisyonIadesi)
+    } else {
+      g.netHakedis += s.alacak - s.borc
+    }
+  }
+
+  for (const o of others) {
+    if (!o.tarih) continue
+    const g = getGun(o.tarih)
+    if (!g) continue
+    const tip = (o.islemTipi || '').toLowerCase()
+    const kargo = tip.includes('cargo') || tip.includes('kargo') || tip === 'stoppage'
+    if (o.tutar < 0) {
+      if (kargo) g.kargoKesintisi += Math.abs(o.tutar)
+      else g.digerKesintiler += Math.abs(o.tutar)
+    }
+    g.netHakedis += o.tutar
+  }
+
+  return Array.from(harita.values()).sort((a, b) => a.tarih.localeCompare(b.tarih))
+}
+
 const PIE_COLORS = ['#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6', '#10b981', '#6b7280']
 
 function ChartTooltipContent({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; name: string; color: string }>; label?: string }) {
@@ -237,11 +361,13 @@ export default function FinancePage() {
   // Veri
   const [settlements, setSettlements] = useState<Settlement[]>([])
   const [otherFinancials, setOtherFinancials] = useState<OtherFinancial[]>([])
+  const [pendingSettlements, setPendingSettlements] = useState<Settlement[]>([])
+  const [pendingOtherFinancials, setPendingOtherFinancials] = useState<OtherFinancial[]>([])
   const [claims, setClaims] = useState<Claim[]>([])
   const [connected, setConnected] = useState(false)
 
   // Sekme
-  const [activeTab, setActiveTab] = useState<'ozet' | 'islemler' | 'iadeler' | 'guncelle'>('ozet')
+  const [activeTab, setActiveTab] = useState<'ozet' | 'tahsilat' | 'islemler' | 'iadeler' | 'guncelle'>('ozet')
 
   // Upgrade modal
   const [showUpgrade, setShowUpgrade] = useState(false)
@@ -268,6 +394,8 @@ export default function FinancePage() {
         setConnected(false)
         setSettlements([])
         setOtherFinancials([])
+        setPendingSettlements([])
+        setPendingOtherFinancials([])
         setClaims([])
         return
       }
@@ -279,6 +407,8 @@ export default function FinancePage() {
       if (financeRes.ok && finData.success !== false) {
         setSettlements(finData.settlements || [])
         setOtherFinancials(finData.otherFinancials || [])
+        setPendingSettlements(finData.pendingSettlements || [])
+        setPendingOtherFinancials(finData.pendingOtherFinancials || [])
         if (finData.warning) {
           toast.error(`Hakediş: ${finData.warning}`)
         }
@@ -364,6 +494,38 @@ export default function FinancePage() {
       .slice(0, 8)
       .map(([tip, adet]) => ({ tip, adet }))
   }, [ozet])
+
+  // Tahsilat Takvimi — gelecek odemeTarihi'li satırlar paymentDate'e göre gruplandı
+  const tahsilatTakvimi = useMemo(
+    () => tahsilatTakvimiOlustur(pendingSettlements, pendingOtherFinancials),
+    [pendingSettlements, pendingOtherFinancials]
+  )
+
+  const tahsilatOzeti = useMemo(() => {
+    const init = {
+      bugun: 0, buHafta: 0, buAy: 0, sonrakiAy: 0, daha: 0,
+      toplamNet: 0, toplamSatis: 0, toplamGun: tahsilatTakvimi.length,
+      ilkOdemeTarihi: null as string | null, sonOdemeTarihi: null as string | null,
+    }
+    for (const g of tahsilatTakvimi) {
+      init[g.bucket] += g.netHakedis
+      init.toplamNet += g.netHakedis
+      init.toplamSatis += g.satisAdet
+      if (!init.ilkOdemeTarihi || g.tarih < init.ilkOdemeTarihi) init.ilkOdemeTarihi = g.tarih
+      if (!init.sonOdemeTarihi || g.tarih > init.sonOdemeTarihi) init.sonOdemeTarihi = g.tarih
+    }
+    return init
+  }, [tahsilatTakvimi])
+
+  const [acikGunler, setAcikGunler] = useState<Set<string>>(new Set())
+  const toggleGun = useCallback((tarih: string) => {
+    setAcikGunler(prev => {
+      const next = new Set(prev)
+      if (next.has(tarih)) next.delete(tarih)
+      else next.add(tarih)
+      return next
+    })
+  }, [])
 
   // ─── Pro olmayan kullanıcılar ────────────────────────────────
 
@@ -515,6 +677,7 @@ export default function FinancePage() {
         <div className="flex gap-1 p-1 rounded-xl bg-muted/30 border border-border/30 w-fit overflow-x-auto">
           {([
             { key: 'ozet', label: 'Hakediş Özeti', icon: Wallet },
+            { key: 'tahsilat', label: 'Tahsilat Takvimi', icon: Calendar },
             { key: 'islemler', label: 'İşlem Detayları', icon: Receipt },
             { key: 'iadeler', label: 'İade Analizi', icon: RotateCcw },
             { key: 'guncelle', label: 'Gerçek Veri', icon: RefreshCw },
@@ -787,6 +950,259 @@ export default function FinancePage() {
                 </CardContent>
               </Card>
             </div>
+          </motion.div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════ */}
+        {/*  SEKME: TAHSİLAT TAKVİMİ — Hangi gün ne kadar gelecek    */}
+        {/* ══════════════════════════════════════════════════════════ */}
+
+        {activeTab === 'tahsilat' && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-6"
+          >
+            {/* Bilgi banner'ı */}
+            <Card className="border-amber-500/30 bg-amber-500/5">
+              <CardContent className="p-4 flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-amber-500/10 shrink-0">
+                  <Calendar className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div className="text-xs leading-relaxed text-muted-foreground">
+                  <span className="font-semibold text-foreground">Tahsilat Takvimi</span>, Trendyol&apos;un her satış için bildirdiği
+                  &nbsp;<span className="font-mono text-foreground">odemeTarihi</span> alanına göre gruplandırılır.
+                  Yani bu tarihler tahmin değil, <span className="font-semibold">Trendyol&apos;un planladığı gerçek tarihler</span>.
+                  Sattığın bir ürün ~14–28 gün sonra hesabına geçer; burada o gün hangi siparişler için ne kadar net hakediş alacağını görürsün.
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Özet KPI'lar */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="border-border/40 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent" />
+                <CardContent className="p-4 relative">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] font-medium text-muted-foreground">Bekleyen Toplam</span>
+                    <div className="p-1.5 rounded-lg bg-emerald-500/10">
+                      <Wallet className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                  </div>
+                  <p className="text-xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
+                    {formatCurrency(tahsilatOzeti.toplamNet)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {formatNumber(tahsilatOzeti.toplamSatis)} bekleyen satış
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/40 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent" />
+                <CardContent className="p-4 relative">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] font-medium text-muted-foreground">Bu Hafta</span>
+                    <div className="p-1.5 rounded-lg bg-blue-500/10">
+                      <TrendingUp className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                  </div>
+                  <p className="text-xl font-bold tabular-nums text-blue-700 dark:text-blue-400">
+                    {formatCurrency(tahsilatOzeti.bugun + tahsilatOzeti.buHafta)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-1">7 gün içinde</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/40 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-transparent" />
+                <CardContent className="p-4 relative">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] font-medium text-muted-foreground">Bu Ay</span>
+                    <div className="p-1.5 rounded-lg bg-violet-500/10">
+                      <Calendar className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
+                    </div>
+                  </div>
+                  <p className="text-xl font-bold tabular-nums text-violet-700 dark:text-violet-400">
+                    {formatCurrency(tahsilatOzeti.bugun + tahsilatOzeti.buHafta + tahsilatOzeti.buAy)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Ay sonuna kadar</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/40 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent" />
+                <CardContent className="p-4 relative">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] font-medium text-muted-foreground">Önümüzdeki Ay</span>
+                    <div className="p-1.5 rounded-lg bg-amber-500/10">
+                      <TrendingDown className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                    </div>
+                  </div>
+                  <p className="text-xl font-bold tabular-nums text-amber-700 dark:text-amber-400">
+                    {formatCurrency(tahsilatOzeti.sonrakiAy + tahsilatOzeti.daha)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Sonraki dönem</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Takvim listesi — bucket'a göre gruplandırılmış */}
+            {tahsilatTakvimi.length === 0 ? (
+              <Card className="border-border/40">
+                <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
+                  <div className="p-3 rounded-full bg-muted/40">
+                    <Calendar className="h-8 w-8 text-muted-foreground/40" />
+                  </div>
+                  <div className="text-center space-y-1">
+                    <h3 className="text-sm font-semibold">Bekleyen tahsilat yok</h3>
+                    <p className="text-xs text-muted-foreground max-w-md">
+                      Trendyol&apos;dan henüz hesabına geçmemiş bir hakediş bulamadık. Yeni satışların burada görünecek.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                {(['bugun', 'buHafta', 'buAy', 'sonrakiAy', 'daha'] as const).map(bucketKey => {
+                  const grup = tahsilatTakvimi.filter(g => g.bucket === bucketKey)
+                  if (grup.length === 0) return null
+                  const grupToplam = grup.reduce((acc, g) => acc + g.netHakedis, 0)
+                  const grupSatis = grup.reduce((acc, g) => acc + g.satisAdet, 0)
+                  const baslik = grup[0].bucketLabel
+
+                  return (
+                    <div key={bucketKey} className="space-y-2">
+                      <div className="flex items-center justify-between px-1">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                          <h3 className="text-sm font-semibold">{baslik}</h3>
+                          <Badge variant="outline" className="text-[10px]">
+                            {grup.length} gün · {grupSatis} satış
+                          </Badge>
+                        </div>
+                        <p className="text-sm font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
+                          {formatCurrency(grupToplam)}
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        {grup.map(gun => {
+                          const acik = acikGunler.has(gun.tarih)
+                          return (
+                            <Card key={gun.tarih} className="border-border/40 overflow-hidden">
+                              <button
+                                type="button"
+                                onClick={() => toggleGun(gun.tarih)}
+                                className="w-full p-4 flex items-center justify-between gap-3 hover:bg-muted/20 transition-colors text-left"
+                              >
+                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                  <div className="p-2 rounded-lg bg-emerald-500/10 shrink-0">
+                                    <Calendar className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-semibold truncate">{gun.tarihLabel}</p>
+                                    <p className="text-[11px] text-muted-foreground">
+                                      {gun.satisAdet} satış
+                                      {gun.komisyon > 0 && ` · komisyon ${formatCurrency(gun.komisyon)}`}
+                                      {gun.kargoKesintisi > 0 && ` · kargo ${formatCurrency(gun.kargoKesintisi)}`}
+                                      {gun.iadeKesintisi > 0 && ` · iade ${formatCurrency(gun.iadeKesintisi)}`}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3 shrink-0">
+                                  <p className="text-base font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
+                                    {formatCurrency(gun.netHakedis)}
+                                  </p>
+                                  <ArrowUpRight className={`h-4 w-4 text-muted-foreground transition-transform ${acik ? 'rotate-180' : ''}`} />
+                                </div>
+                              </button>
+
+                              {acik && (
+                                <div className="border-t border-border/30 bg-muted/10">
+                                  {/* Gün özeti tablosu */}
+                                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-4 border-b border-border/20 bg-card">
+                                    <div>
+                                      <p className="text-[10px] text-muted-foreground">Brüt Satış</p>
+                                      <p className="text-sm font-semibold tabular-nums">+{formatCurrency(gun.brutSatis)}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-[10px] text-muted-foreground">Komisyon</p>
+                                      <p className="text-sm font-semibold tabular-nums text-amber-700 dark:text-amber-400">
+                                        -{formatCurrency(gun.komisyon)}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-[10px] text-muted-foreground">Kargo</p>
+                                      <p className="text-sm font-semibold tabular-nums text-blue-700 dark:text-blue-400">
+                                        {gun.kargoKesintisi > 0 ? `-${formatCurrency(gun.kargoKesintisi)}` : '—'}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-[10px] text-muted-foreground">İade</p>
+                                      <p className="text-sm font-semibold tabular-nums text-red-700 dark:text-red-400">
+                                        {gun.iadeKesintisi > 0 ? `-${formatCurrency(gun.iadeKesintisi)}` : '—'}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-[10px] text-muted-foreground">Net</p>
+                                      <p className="text-sm font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
+                                        {formatCurrency(gun.netHakedis)}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {/* Sipariş detayları */}
+                                  {gun.kalemler.length > 0 ? (
+                                    <div className="overflow-x-auto">
+                                      <table className="w-full text-xs">
+                                        <thead>
+                                          <tr className="border-b border-border/30 bg-muted/30">
+                                            <th className="text-left p-3 font-medium text-muted-foreground text-[10px]">Sipariş No</th>
+                                            <th className="text-left p-3 font-medium text-muted-foreground text-[10px]">Barkod</th>
+                                            <th className="text-left p-3 font-medium text-muted-foreground text-[10px]">Tip</th>
+                                            <th className="text-right p-3 font-medium text-muted-foreground text-[10px]">Brüt</th>
+                                            <th className="text-right p-3 font-medium text-muted-foreground text-[10px]">Komisyon</th>
+                                            <th className="text-right p-3 font-medium text-muted-foreground text-[10px]">Net</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {gun.kalemler.map((k, i) => (
+                                            <tr key={`${gun.tarih}-${i}`} className="border-b border-border/20 hover:bg-muted/10">
+                                              <td className="p-3 tabular-nums font-mono">{k.siparisId || '—'}</td>
+                                              <td className="p-3 tabular-nums font-mono">{k.barkod || '—'}</td>
+                                              <td className="p-3">
+                                                <Badge variant="outline" className="text-[10px] font-medium">{k.islemTipi}</Badge>
+                                              </td>
+                                              <td className="p-3 text-right tabular-nums">+{formatCurrency(k.brut)}</td>
+                                              <td className="p-3 text-right tabular-nums text-amber-700 dark:text-amber-400">
+                                                -{formatCurrency(k.komisyon)}
+                                              </td>
+                                              <td className="p-3 text-right tabular-nums font-semibold text-emerald-700 dark:text-emerald-400">
+                                                {formatCurrency(k.saticiHakedis)}
+                                              </td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  ) : (
+                                    <div className="p-4 text-[11px] text-muted-foreground text-center">
+                                      Bu güne ait satış kalemi yok — sadece kesinti/ayarlama satırları var.
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </Card>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </motion.div>
         )}
 
