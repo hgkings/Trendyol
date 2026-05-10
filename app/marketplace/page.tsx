@@ -116,17 +116,6 @@ export default function MarketplacePage() {
     // Seller ID validation error
     const [sellerIdError, setSellerIdError] = useState('');
 
-    // Finans kartı state'leri
-    const [finansData, setFinansData] = useState<{
-        toplamKomisyon: number;
-        toplamHakedis: number;
-        toplamAlacak: number;
-        toplamBorc: number;
-        kayitSayisi: number;
-    } | null>(null);
-    const [finansYukleniyor, setFinansYukleniyor] = useState(false);
-    const [finansHata, setFinansHata] = useState<string | null>(null);
-    const [seciliAralik, setSeciliAralik] = useState<'7' | '30' | '90'>('30');
 
     // Komisyon çek
     const [komisyonYukleniyor, setKomisyonYukleniyor] = useState(false);
@@ -172,54 +161,8 @@ export default function MarketplacePage() {
         setConnection(null);
         setLastLog(null);
         setOrderMetrics(null);
-        setFinansData(null);
         fetchStatus();
     }, [fetchStatus]);
-
-    const finansVerisiniGetir = async (gun: string) => {
-        setFinansYukleniyor(true);
-        setFinansHata(null);
-        try {
-            const bugun = new Date();
-            const baslangic = new Date();
-            baslangic.setDate(bugun.getDate() - Number(gun));
-            const startDate = baslangic.toISOString().split('T')[0];
-            const endDate = bugun.toISOString().split('T')[0];
-
-            const financeUrl = selectedMarketplace === 'trendyol'
-                ? `/api/marketplace/trendyol/finance?gun=${gun}&startDate=${startDate}&endDate=${endDate}`
-                : `/api/marketplace/hepsiburada/finance?gun=${gun}`;
-            const response = await fetch(financeUrl);
-            const json = await response.json() as Record<string, unknown>;
-            if (!response.ok || !json.success) {
-                throw new Error((json.error as string) || 'Finans verisi alınamadı');
-            }
-            // API { success, settlements: [...], otherFinancials: [...] } döndürür
-            const settlements = (json.settlements ?? []) as Array<Record<string, number>>;
-            let toplamKomisyon = 0, toplamHakedis = 0, toplamAlacak = 0, toplamBorc = 0;
-            for (const item of settlements) {
-                toplamKomisyon += item.komisyonTutari || 0;
-                toplamHakedis += item.saticiHakedis || 0;
-                toplamAlacak += item.alacak || 0;
-                toplamBorc += item.borc || 0;
-            }
-            setFinansData({ toplamKomisyon, toplamHakedis, toplamAlacak, toplamBorc, kayitSayisi: settlements.length });
-        } catch (error: unknown) {
-            setFinansHata(error instanceof Error ? error.message : 'Finans verisi alınamadı');
-        } finally {
-            setFinansYukleniyor(false);
-        }
-    };
-
-    useEffect(() => {
-        if (
-            connection?.status === 'connected' &&
-            connection?.seller_id
-        ) {
-            finansVerisiniGetir(seciliAralik);
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [connection, seciliAralik, selectedMarketplace]);
 
     useEffect(() => {
         if (connection?.status === 'connected') {
@@ -855,114 +798,6 @@ export default function MarketplacePage() {
                                         </div>
                                     )}
                                 </div>
-
-                                {/* ─── Finans Kartı — bağlı + seller_id varsa ─── */}
-                                {connection?.status === 'connected' && connection?.seller_id && (
-                                    <div className="rounded-xl border border-border bg-card p-6">
-                                        {/* Başlık + Zaman aralığı */}
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-lg">📊</span>
-                                                <div>
-                                                    <h3 className="font-semibold text-sm">{mpConfig.label} Finansal Özet</h3>
-                                                    <p className="text-xs text-muted-foreground">{mpConfig.label}&apos;dan otomatik çekilen komisyon ve kesinti verileri</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-1">
-                                                {(['7', '30', '90'] as const).map((gun) => (
-                                                    <button
-                                                        key={gun}
-                                                        onClick={() => setSeciliAralik(gun)}
-                                                        className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                                                            seciliAralik === gun
-                                                                ? 'bg-primary text-primary-foreground'
-                                                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                                                        }`}
-                                                    >
-                                                        {gun} gün
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {/* Yükleniyor */}
-                                        {finansYukleniyor && (
-                                            <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground text-sm">
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                                Trendyol'dan veriler çekiliyor...
-                                            </div>
-                                        )}
-
-                                        {/* Hata */}
-                                        {finansHata && !finansYukleniyor && (
-                                            <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 rounded-lg p-3">
-                                                <AlertTriangle className="h-4 w-4 shrink-0" />
-                                                <span>{finansHata}</span>
-                                                <button
-                                                    onClick={() => finansVerisiniGetir(seciliAralik)}
-                                                    className="ml-auto text-xs underline"
-                                                >
-                                                    Tekrar dene
-                                                </button>
-                                            </div>
-                                        )}
-
-                                        {/* 4 metrik kart */}
-                                        {finansData && !finansYukleniyor && finansData.kayitSayisi > 0 && (
-                                            <>
-                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                                                    <div className="rounded-lg bg-muted/50 p-3 text-center">
-                                                        <p className="text-xs text-muted-foreground mb-1">Toplam Komisyon</p>
-                                                        <p className="text-lg font-bold text-destructive">
-                                                            ₺{finansData.toplamKomisyon.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                        </p>
-                                                    </div>
-                                                    <div className="rounded-lg bg-muted/50 p-3 text-center">
-                                                        <p className="text-xs text-muted-foreground mb-1">Satıcı Hakediş</p>
-                                                        <p className="text-lg font-bold text-blue-500">
-                                                            ₺{finansData.toplamHakedis.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                        </p>
-                                                    </div>
-                                                    <div className="rounded-lg bg-muted/50 p-3 text-center">
-                                                        <p className="text-xs text-muted-foreground mb-1">Toplam Borç</p>
-                                                        <p className="text-lg font-bold text-orange-500">
-                                                            ₺{finansData.toplamBorc.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                        </p>
-                                                    </div>
-                                                    <div className="rounded-lg bg-primary/10 border border-primary/20 p-3 text-center">
-                                                        <p className="text-xs text-muted-foreground mb-1">Toplam Alacak</p>
-                                                        <p className="text-lg font-bold text-primary">
-                                                            ₺{finansData.toplamAlacak.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t border-border">
-                                                    <span>Son {seciliAralik} günde {finansData.kayitSayisi} işlem</span>
-                                                    <span className="flex items-center gap-1.5">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
-                                                        Trendyol'dan canlı veri
-                                                    </span>
-                                                </div>
-                                            </>
-                                        )}
-
-                                        {/* Veri yok */}
-                                        {finansData && finansData.kayitSayisi === 0 && !finansYukleniyor && (
-                                            <div className="text-center py-6 text-muted-foreground text-sm">
-                                                Son {seciliAralik} günde işlem bulunamadı.
-                                                {seciliAralik !== '90' && (
-                                                    <><br />
-                                                    <button
-                                                        onClick={() => setSeciliAralik('90')}
-                                                        className="text-primary underline mt-1 text-xs"
-                                                    >
-                                                        90 güne genişlet
-                                                    </button></>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
 
                                 {/* Last Log */}
                                 {lastLog && (
