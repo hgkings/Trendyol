@@ -84,15 +84,11 @@ function hesaplaOzet(settlements: Settlement[], others: OtherFinancial[]): Finan
   let brutSatis = 0
   let komisyonKesintisi = 0
   let iadeKesintisi = 0
-  let toplamAlacak = 0
-  let toplamBorc = 0
+  let netHakedis = 0
   let satisAdet = 0
   const islemTipleri: Record<string, number> = {}
 
   for (const s of settlements) {
-    toplamAlacak += s.alacak
-    toplamBorc += s.borc
-
     const tip = s.islemTipi || 'Diger'
     islemTipleri[tip] = (islemTipleri[tip] || 0) + 1
 
@@ -101,21 +97,29 @@ function hesaplaOzet(settlements: Settlement[], others: OtherFinancial[]): Finan
     const isReturn = tip === 'Return' || tipLower === 'iade' || tipLower.includes('return')
 
     if (isSale) {
-      // Brüt satış = satıcı hakediş + komisyon (credit alanı 0 olabiliyor)
+      // Trendyol Satış satırında alacak = brüt (müşterinin ödediği),
+      // saticiHakedis = komisyon düşülmüş net (satıcının aldığı).
       const satisTutari = s.alacak > 0
         ? s.alacak
         : s.saticiHakedis + Math.abs(s.komisyonTutari)
+      const netTutar = s.saticiHakedis > 0
+        ? s.saticiHakedis
+        : satisTutari - Math.abs(s.komisyonTutari)
       brutSatis += satisTutari
       satisAdet++
       komisyonKesintisi += Math.abs(s.komisyonTutari)
+      netHakedis += netTutar
     } else if (isReturn) {
-      iadeKesintisi += Math.abs(s.borc)
-      if (s.komisyonTutari < 0) {
-        komisyonKesintisi -= Math.abs(s.komisyonTutari)
-      }
+      // İade: müşteriye geri ödenen tutar borc'ta, varsa komisyon geri yansır.
+      const iadeTutar = Math.abs(s.borc)
+      iadeKesintisi += iadeTutar
+      const komisyonIadesi = s.komisyonTutari < 0 ? Math.abs(s.komisyonTutari) : 0
+      komisyonKesintisi -= komisyonIadesi
+      netHakedis -= (iadeTutar - komisyonIadesi)
+    } else {
+      // Diğer settlement işlemleri (CommissionPositive/Negative, Adjustment, vb.)
+      netHakedis += s.alacak - s.borc
     }
-    // CommissionPositive/CommissionNegative → toplamAlacak/toplamBorc'a zaten dahil
-    // Ayrıca kategorize etmeye gerek yok — netHakedis'te otomatik hesaplanıyor
   }
 
   let digerKesintiler = 0
@@ -123,9 +127,9 @@ function hesaplaOzet(settlements: Settlement[], others: OtherFinancial[]): Finan
     if (o.tutar < 0) {
       digerKesintiler += Math.abs(o.tutar)
     }
+    netHakedis += o.tutar
   }
 
-  const netHakedis = toplamAlacak - toplamBorc
   const komisyonOrani = brutSatis > 0 ? (komisyonKesintisi / brutSatis) * 100 : 0
   const ortalamaSiparisTutari = satisAdet > 0 ? brutSatis / satisAdet : 0
 
